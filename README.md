@@ -1,8 +1,10 @@
 ![5.4](https://img.shields.io/badge/5.4.1-darkgreen)
-# PCG Extended Toolkit | Example Project
+# PCGEx Example Project
 
-![PCGEx](/Resources/Icon128.png)
+![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
 
 # What is it?
- This is a lightweight Unreal 5.4.1 Project showcasing various capabilities of [PCGEx](https://nebukam.github.io/PCGExtendedToolkit).  
+ This is a lightweight Unreal 5.4.1 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
  *The PCGEx plugin is registered as a git submodule.*
+
+ > Note that this project is currently WIP, come back regularily for updates!
