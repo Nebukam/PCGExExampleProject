@@ -5,7 +5,6 @@
 
 # What is it?
  This is a lightweight Unreal 5.4.1 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
- *The PCGEx plugin is registered as a git submodule.*
 
  > This project is currently WIP, come back regularily for updates!
 
