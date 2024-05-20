@@ -10,4 +10,4 @@
 
 ## Important notes
 - #### PCGExtendedToolkit is registered as a submodule, hence *if you did not clone this repo using git, you will need to install it manually*.
-- #### Most examples are visible through debug display only, so when loading a map and changing the PCG Graph, *you need to do a `Clean` then `Generate` in order for the debug to be drawn.*
+- #### Some examples are visible through debug display only, so when loading a map and changing the PCG Graph, *you need to do a `Clean` then `Generate` in order for the debug to be drawn.*
