@@ -11,5 +11,5 @@
 ![image](https://github.com/Nebukam/PCGExExampleProject/assets/5935407/ecbcfac4-938b-4455-8fb5-ef10c7a19fa0)
 
 ## Important notes
-- #### PCGExtendedToolkit is registered as a submodule, hence *if you did not clone this repo using git, you will need to install it manually*.
+- #### The included PCGExtendedToolkit is the latest package published for 5.4.
 - #### Some examples are visible through debug display only, so when loading a map and changing the PCG Graph, *you need to do a `Clean` then `Generate` in order for the debug to be drawn.*
