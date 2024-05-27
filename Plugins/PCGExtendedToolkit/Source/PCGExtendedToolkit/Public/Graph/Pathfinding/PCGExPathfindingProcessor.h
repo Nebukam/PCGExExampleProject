@@ -66,10 +66,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	bool bAddGoalToPath = true;
 
-	/** Drives how the seed & goal points are selected within the graph. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
-	EPCGExClusterClosestSearchMode NodePickingMode = EPCGExClusterClosestSearchMode::Node;
+	/** Drive how a seed selects a node. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Node Picking", meta=(PCG_Overridable))
+	FPCGExNodeSelectionSettings SeedPicking;
 
+	/** Drive how a goal selects a node. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Node Picking", meta=(PCG_Overridable))
+	FPCGExNodeSelectionSettings GoalPicking;
+	
 	/** Search algorithm. */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta = (PCG_Overridable, NoResetToDefault, ShowOnlyInnerProperties))
 	TObjectPtr<UPCGExSearchOperation> SearchAlgorithm;
@@ -94,16 +98,32 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Extra Weighting", meta=(EditCondition="bWeightUpVisited"))
 	double VisitedEdgesWeightFactor = 1;
 
+	/** Use a seed attribute value to tag output paths. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging")
+	bool bUseSeedAttributeToTagPath;
+
 	/** Output various statistics. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(EditCondition="bUseSeedAttributeToTagPath"))
+	FPCGAttributePropertyInputSelector SeedTagAttribute;
+
+	/** Use a seed attribute value to tag output paths. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging")
+	bool bUseGoalAttributeToTagPath;
+
+	/** Output various statistics. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(EditCondition="bUseGoalAttributeToTagPath"))
+	FPCGAttributePropertyInputSelector GoalTagAttribute;
+	
+	/** Output various statistics. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Advanced")
 	FPCGExPathStatistics Statistics;
 
 	/** Projection settings, used by some algorithms. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Advanced", meta = (PCG_Overridable))
 	FPCGExGeo2DProjectionSettings ProjectionSettings;
 
 	/** Whether or not to search for closest node using an octree. Depending on your dataset, enabling this may be either much faster, or slightly slower. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Advanced")
 	bool bUseOctreeSearch = false;
 };
 
@@ -121,6 +141,9 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPathfindingProcessorContext : public FPCGExE
 	UPCGExSearchOperation* SearchAlgorithm = nullptr;
 	UPCGExHeuristicOperation* Heuristics = nullptr;
 	FPCGExHeuristicModifiersSettings* HeuristicsModifiers = nullptr;
+
+	PCGEx::FLocalToStringGetter* SeedTagValueGetter = nullptr;
+	PCGEx::FLocalToStringGetter* GoalTagValueGetter = nullptr;
 	//UPCGExSubPointsBlendOperation* Blending = nullptr;
 
 	bool bAddSeedToPath = true;

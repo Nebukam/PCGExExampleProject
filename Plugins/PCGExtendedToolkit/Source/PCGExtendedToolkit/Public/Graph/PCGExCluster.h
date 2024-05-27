@@ -20,6 +20,40 @@ enum class EPCGExClusterClosestSearchMode : uint8
 	Edge UMETA(DisplayName = "Closest edge", ToolTip="Proximity to edge, then endpoint"),
 };
 
+
+USTRUCT(BlueprintType)
+struct PCGEXTENDEDTOOLKIT_API FPCGExNodeSelectionSettings
+{
+	GENERATED_BODY()
+
+	FPCGExNodeSelectionSettings()
+	{
+	}
+
+	explicit FPCGExNodeSelectionSettings(const double InMaxDistance):
+		MaxDistance(InMaxDistance)
+	{
+	}
+
+	~FPCGExNodeSelectionSettings()
+	{
+	}
+
+	/** Drives how the seed & goal points are selected within each cluster. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	EPCGExClusterClosestSearchMode PickingMethod = EPCGExClusterClosestSearchMode::Node;
+
+	/** Max distance at which a node can be selected. Use <= 0 to ignore distance check. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	double MaxDistance = -1;
+
+	bool WithinDistance(const FVector& NodePosition, const FVector& TargetPosition) const
+	{
+		if (MaxDistance <= 0) { return true; }
+		return FVector::Distance(NodePosition, TargetPosition) < MaxDistance;
+	}
+};
+
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] CLuster Search Orientation Mode"))
 enum class EPCGExClusterSearchOrientationMode : uint8
 {
@@ -246,9 +280,9 @@ namespace PCGExCluster
 		virtual void CaptureEdges(const FPCGContext* InContext, const PCGExData::FPointIO* EdgeIO);
 		virtual void PrepareForTesting(PCGExData::FPointIO* PointIO) override;
 
-		#if !PLATFORM_WINDOWS
+#if !PLATFORM_WINDOWS
 		virtual bool IsClusterFilter() const override { return true; }
-		#endif
+#endif
 	};
 
 	class PCGEXTENDEDTOOLKIT_API FNodeStateHandler : public PCGExDataState::TStateHandler

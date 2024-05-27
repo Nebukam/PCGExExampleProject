@@ -96,14 +96,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteEdgeDirection"))
 	FName EdgeDirectionAttributeName = FName("EdgeDirection");
 
-	/** Edges will inherit point attributes -- NOT IMPLEMENTED*/
+	/** Edges will inherit point attributes*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta = (PCG_Overridable))
 	bool bEndpointsBlending = false;
 
-	/** Balance between start/end point*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bEndpointsBlending", ClampMin=0, ClampMax=1))
-	double EndpointsBlending = 0.5;
-	
+	/** Balance between start/end point ( When enabled, this value will be overriden by EdgePositionLerp, and Solidification, in that order. )*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bEndpointsBlending && !bWriteEdgePosition && SolidificationAxis == EPCGExMinimalAxis::None  )", ClampMin=0, ClampMax=1))
+	double EndpointsWeights = 0.5;
+
 	/** Defines how fused point properties and attributes are merged together. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(EditCondition="bEndpointsBlending"))
 	FPCGExBlendingSettings BlendingSettings = FPCGExBlendingSettings(EPCGExDataBlendingType::Average);
@@ -114,7 +114,7 @@ public:
 
 
 	/** Update Edge position as a lerp between endpoints (according to the direction method selected above) */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification", meta=(PCG_Overridable, InlineEditConditionToggle))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification", meta=(PCG_Overridable))
 	bool bWriteEdgePosition = false;
 
 	/** Position position lerp between start & end points*/
@@ -127,7 +127,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification", meta=(PCG_Overridable, EditCondition="SolidificationAxis != EPCGExMinimalAxis::None"))
 	EPCGExOperandType SolidificationLerpOperand = EPCGExOperandType::Constant;
-	
+
 	/** Solidification Lerp constant.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification", meta=(PCG_Overridable, EditCondition="SolidificationLerpOperand == EPCGExOperandType::Constant && SolidificationAxis != EPCGExMinimalAxis::None", EditConditionHides))
 	double SolidificationLerpConstant = 0.5;
@@ -135,7 +135,7 @@ public:
 	/** Solidification Lerp attribute (read from Edge).*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification", meta=(PCG_Overridable, EditCondition="SolidificationLerpOperand == EPCGExOperandType::Attribute && SolidificationAxis != EPCGExMinimalAxis::None", EditConditionHides))
 	FPCGAttributePropertyInputSelector SolidificationLerpAttribute;
-	
+
 	// Edge radiuses
 
 	/** Whether or not to write the edge extents over the local X axis.*/
@@ -197,11 +197,11 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExWriteEdgeExtrasContext : public FPCGExEdgesP
 
 	bool bSolidify;
 	bool bEndpointsBlending;
-	double EndpointsBlending;
+	double EndpointsWeights;
 
 	PCGEx::FLocalSingleFieldGetter* VtxDirCompGetter = nullptr;
 	PCGEx::FLocalVectorGetter* EdgeDirCompGetter = nullptr;
-	
+
 	PCGEx::FLocalSingleFieldGetter* SolidificationLerpGetter = nullptr;
 	PCGEx::FLocalSingleFieldGetter* SolidificationRadX = nullptr;
 	PCGEx::FLocalSingleFieldGetter* SolidificationRadY = nullptr;

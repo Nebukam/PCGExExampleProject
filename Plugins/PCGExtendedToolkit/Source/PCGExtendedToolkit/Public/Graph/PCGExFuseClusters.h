@@ -9,6 +9,13 @@
 
 #include "PCGExFuseClusters.generated.h"
 
+namespace PCGExGraph
+{
+	struct FEdgeEdgeIntersections;
+	struct FPointEdgeIntersections;
+	struct FCompoundGraph;
+}
+
 namespace PCGExSpacePartition
 {
 	struct TRoot;
@@ -16,6 +23,7 @@ namespace PCGExSpacePartition
 
 namespace PCGExDataBlending
 {
+	class FMetadataBlender;
 	class FCompoundBlender;
 }
 
@@ -48,29 +56,45 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Point/Point Settings"))
 	FPCGExPointPointIntersectionSettings PointPointIntersectionSettings;
 
-	/** Point-Edge intersection */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, InlineEditConditionToggle))
-	bool bDoPointEdgeIntersection;
+	/** Find Point-Edge intersection */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	bool bFindPointEdgeIntersections;
 
-	/** Point-Edge intersection */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Point/Edge Settings", EditCondition="bDoPointEdgeIntersection"))
+	/** Point-Edge intersection settings */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Point/Edge Settings", EditCondition="bFindPointEdgeIntersections"))
 	FPCGExPointEdgeIntersectionSettings PointEdgeIntersectionSettings;
 
-	/** Edge-Edge intersection */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, InlineEditConditionToggle))
-	bool bDoEdgeEdgeIntersection;
+	/** Find Edge-Edge intersection */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	bool bFindEdgeEdgeIntersections;
 
 	/** Edge-Edge intersection */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Edge/Edge Settings", EditCondition="bDoEdgeEdgeIntersection"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Edge/Edge Settings", EditCondition="bFindEdgeEdgeIntersections"))
 	FPCGExEdgeEdgeIntersectionSettings EdgeEdgeIntersectionSettings;
 
 	/** Defines how fused point properties and attributes are merged together for fused points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending")
-	FPCGExBlendingSettings PointsBlendingSettings;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending", meta=(PCG_Overridable))
+	FPCGExBlendingSettings DefaultPointsBlendingSettings;
 
 	/** Defines how fused point properties and attributes are merged together for fused edges. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending")
-	FPCGExBlendingSettings EdgesBlendingSettings;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending", meta=(PCG_Overridable))
+	FPCGExBlendingSettings DefaultEdgesBlendingSettings;
+
+	/**  */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending", meta=(PCG_Overridable))
+	bool bUseCustomPointEdgeBlending = false;
+
+	/** Defines how fused point properties and attributes are merged together for Point/Edge intersections. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending", meta=(PCG_Overridable, EditCondition="bUseCustomPointEdgeBlending"))
+	FPCGExBlendingSettings CustomPointEdgeBlendingSettings;
+
+	/**  */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending", meta=(PCG_Overridable))
+	bool bUseCustomEdgeEdgeBlending = false;
+
+	/** Defines how fused point properties and attributes are merged together for Edge/Edge intersections (Crossings). */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Data Blending", meta=(PCG_Overridable, EditCondition="bUseCustomEdgeEdgeBlending"))
+	FPCGExBlendingSettings CustomEdgeEdgeBlendingSettings;
 
 	/** Graph & Edges output properties */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta = (PCG_Overridable, DisplayName="Graph Output Settings", ShowOnlyInnerProperties))
@@ -83,10 +107,6 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExFuseClustersContext : public FPCGExEdgesProc
 	friend class FPCGExFuseClustersElement;
 
 	virtual ~FPCGExFuseClustersContext() override;
-
-	FPCGExPointPointIntersectionSettings PointPointIntersectionSettings;
-	FPCGExPointEdgeIntersectionSettings PointEdgeIntersectionSettings;
-	FPCGExEdgeEdgeIntersectionSettings EdgeEdgeIntersectionSettings;
 
 	PCGExGraph::FCompoundGraph* CompoundGraph = nullptr;
 	PCGExData::FPointIO* ConsolidatedPoints = nullptr;
@@ -102,6 +122,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExFuseClustersContext : public FPCGExEdgesProc
 	PCGExGraph::FGraphMetadataSettings GraphMetadataSettings;
 	PCGExDataBlending::FCompoundBlender* CompoundPointsBlender = nullptr;
 	PCGExDataBlending::FCompoundBlender* CompoundEdgesBlender = nullptr;
+	PCGExDataBlending::FMetadataBlender* MetadataBlender = nullptr;
 };
 
 class PCGEXTENDEDTOOLKIT_API FPCGExFuseClustersElement : public FPCGExEdgesProcessorElement

@@ -14,6 +14,13 @@
 
 #include "PCGExSettings.generated.h"
 
+UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Fetch Type"))
+enum class EPCGExFetchType : uint8
+{
+	Constant UMETA(DisplayName = "Constant", Tooltip="Constant."),
+	Attribute UMETA(DisplayName = "Attribute", Tooltip="Attribute."),
+};
+
 USTRUCT(BlueprintType)
 struct PCGEXTENDEDTOOLKIT_API FPCGExClampSettings
 {
@@ -128,7 +135,8 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExRemapSettings
 	double GetRemappedValue(const double Value) const
 	{
 		double OutValue = RemapCurveObj->GetFloatValue(PCGExMath::Remap(Value, InMin, InMax, 0, 1)) * Scale;
-		switch (TruncateOutput) {
+		switch (TruncateOutput)
+		{
 		case EPCGExTruncateMode::Round:
 			OutValue = FMath::RoundToInt(OutValue);
 			break;
@@ -140,7 +148,6 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExRemapSettings
 			break;
 		}
 		return OutValue;
-		
 	}
 };
 
@@ -485,7 +492,6 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExEdgeEdgeIntersectionSettings
 		MaxDot = bUseMaxAngle ? PCGExMath::DegreesToDot(MaxAngle) : 1;
 	}
 };
-
 
 namespace PCGExSettings
 {
