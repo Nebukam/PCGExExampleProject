@@ -50,7 +50,7 @@ namespace PCGExFuse
 			Distances.Empty();
 		}
 
-		void Add(const int32 InIndex, const double Distance)
+		FORCEINLINE void Add(const int32 InIndex, const double Distance)
 		{
 			FWriteScopeLock WriteLock(IndicesLock);
 			Fused.Add(InIndex);
@@ -71,6 +71,7 @@ public:
 	//~Begin UPCGSettings interface
 #if WITH_EDITOR
 	PCGEX_NODE_INFOS(FusePoints, "Fuse Points", "Fuse points based on distance.");
+	virtual FLinearColor GetNodeTitleColor() const override { return PCGEx::NodeColorMiscRemove; }
 #endif
 
 protected:
@@ -116,7 +117,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExFusePointsContext : public FPCGExPointsProce
 	PCGExGraph::FGraphMetadataSettings GraphMetadataSettings;
 	PCGExGraph::FCompoundGraph* CompoundGraph = nullptr;
 	PCGExDataBlending::FCompoundBlender* CompoundPointsBlender = nullptr;
-	
+
 	bool bPreserveOrder;
 
 	mutable FRWLock PointsLock;

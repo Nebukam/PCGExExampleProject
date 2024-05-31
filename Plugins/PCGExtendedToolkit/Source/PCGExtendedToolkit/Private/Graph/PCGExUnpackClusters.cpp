@@ -21,24 +21,14 @@ FName UPCGExUnpackClustersSettings::GetMainOutputLabel() const { return PCGExGra
 TArray<FPCGPinProperties> UPCGExUnpackClustersSettings::InputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties;
-	FPCGPinProperties& PinEdgesInput = PinProperties.Emplace_GetRef(PCGExGraph::SourcePackedClustersLabel, EPCGDataType::Point);
-
-#if WITH_EDITOR
-	PinEdgesInput.Tooltip = FTEXT("Packed clusters");
-#endif
-
+	PCGEX_PIN_POINTS(PCGExGraph::SourcePackedClustersLabel, "Packed clusters", false, {})
 	return PinProperties;
 }
 
 TArray<FPCGPinProperties> UPCGExUnpackClustersSettings::OutputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties = Super::OutputPinProperties();
-	FPCGPinProperties& PinEdgesOutput = PinProperties.Emplace_GetRef(PCGExGraph::OutputEdgesLabel, EPCGDataType::Point);
-
-#if WITH_EDITOR
-	PinEdgesOutput.Tooltip = FTEXT("Edges associated with the main output points");
-#endif
-
+	PCGEX_PIN_POINTS(PCGExGraph::OutputEdgesLabel, "Edges associated with the main output points", false, {})
 	return PinProperties;
 }
 
@@ -73,7 +63,7 @@ bool FPCGExUnpackClustersElement::ExecuteInternal(
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FPCGExUnpackClustersElement::Execute);
 
-	PCGEX_CONTEXT(UnpackClusters)
+	PCGEX_CONTEXT_AND_SETTINGS(UnpackClusters)
 
 	if (Context->IsSetup())
 	{
@@ -112,7 +102,7 @@ bool FPCGExUnpackClustersElement::ExecuteInternal(
 			Metadata->DeleteAttribute(PCGExGraph::Tag_PackedClusterPointCount);
 			Metadata->DeleteAttribute(PCGExGraph::Tag_EdgesNum);
 			Metadata->DeleteAttribute(PCGExGraph::Tag_EdgeIndex);
-			NewEdges.Flatten();
+			if (Settings->bFlatten) { NewEdges.Flatten(); }
 
 			PCGExData::FPointIO& NewVtx = Context->OutPoints->Emplace_GetRef(PackedIO, PCGExData::EInit::DuplicateInput);
 			TArray<FPCGPoint> MutableVtxPoints = NewVtx.GetOut()->GetMutablePoints();
@@ -123,7 +113,7 @@ bool FPCGExUnpackClustersElement::ExecuteInternal(
 			Metadata->DeleteAttribute(PCGExGraph::Tag_PackedClusterPointCount);
 			Metadata->DeleteAttribute(PCGExGraph::Tag_EdgeStart);
 			Metadata->DeleteAttribute(PCGExGraph::Tag_EdgeEnd);
-			NewVtx.Flatten();
+			if (Settings->bFlatten) { NewVtx.Flatten(); }
 
 			FString OutPairId;
 			PackedIO.Tags->GetValue(PCGExGraph::TagStr_ClusterPair, OutPairId);

@@ -22,12 +22,7 @@ PCGExData::EInit UPCGExPackClustersSettings::GetEdgeOutputInitMode() const { ret
 TArray<FPCGPinProperties> UPCGExPackClustersSettings::OutputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties;
-	FPCGPinProperties& PinEdgesOutput = PinProperties.Emplace_GetRef(PCGExGraph::OutputPackedClustersLabel, EPCGDataType::Point);
-
-#if WITH_EDITOR
-	PinEdgesOutput.Tooltip = FTEXT("Individually packed clusters");
-#endif
-
+	PCGEX_PIN_POINTS(PCGExGraph::OutputPackedClustersLabel, "Individually packed clusters", false, {})	
 	return PinProperties;
 }
 
@@ -113,6 +108,8 @@ bool FPCGExPackClusterTask::ExecuteTask()
 {
 	const FPCGExPackClustersContext* Context = Manager->GetContext<FPCGExPackClustersContext>();
 
+	PCGEX_SETTINGS(PackClusters)
+
 	int32 NumEdges = 0;
 	TArray<int32> ReducedVtxIndices;
 
@@ -136,7 +133,7 @@ bool FPCGExPackClusterTask::ExecuteTask()
 
 	FString OutPairId;
 	PointIO->Tags->Set(PCGExGraph::TagStr_ClusterPair, InEdges->GetIn()->UID, OutPairId);
-	PointIO->Flatten();
+	if (Settings->bFlatten) { PointIO->Flatten(); }
 
 	InEdges->CleanupKeys();
 

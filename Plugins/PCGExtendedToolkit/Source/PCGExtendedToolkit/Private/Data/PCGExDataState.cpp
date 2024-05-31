@@ -4,12 +4,12 @@
 #include "Data/PCGExDataState.h"
 
 
-PCGExDataFilter::TFilterHandler* UPCGExStateDefinitionBase::CreateHandler() const
+PCGExDataFilter::TFilter* UPCGExDataStateFactoryBase::CreateFilter() const
 {
-	return new PCGExDataState::TStateHandler(this);
+	return new PCGExDataState::TDataState(this);
 }
 
-void UPCGExStateDefinitionBase::BeginDestroy()
+void UPCGExDataStateFactoryBase::BeginDestroy()
 {
 	ValidStateAttributes.Empty();
 	InvalidStateAttributes.Empty();
@@ -22,12 +22,12 @@ void UPCGExStateDefinitionBase::BeginDestroy()
 
 namespace PCGExDataState
 {
-	bool TStateHandler::Test(const int32 PointIndex) const
+	bool TDataState::Test(const int32 PointIndex) const
 	{
 		return false;
 	}
 
-	void TStateHandler::PrepareForWriting(PCGExData::FPointIO* PointIO)
+	void TDataState::PrepareForWriting(PCGExData::FPointIO* PointIO)
 	{
 		const int32 NumPoints = Results.Num();
 
@@ -122,13 +122,26 @@ namespace PCGExDataState
 		TFilterManager::PrepareForTesting();
 	}
 
+	void TStatesManager::PrepareForTesting(const TArrayView<int32>& PointIndices)
+	{
+		if (const int32 NumPoints = PointIO->GetNum(); HighestState.Num() != NumPoints) { HighestState.SetNumUninitialized(NumPoints); }
+		for (const int32 i : PointIndices) { HighestState[i] = -1; }
+
+		TFilterManager::PrepareForTesting(PointIndices);
+	}
+
 	void TStatesManager::Test(const int32 PointIndex)
 	{
 		int32 HState = -1;
 
-		for (PCGExDataFilter::TFilterHandler* Handler : Handlers)
+		if (PointIndex == 2174)
 		{
-			const TStateHandler* StateHandler = static_cast<TStateHandler*>(Handler);
+			HighestState[PointIndex] = -1;
+		}
+
+		for (PCGExDataFilter::TFilter* Handler : Handlers)
+		{
+			const TDataState* StateHandler = static_cast<TDataState*>(Handler);
 			const bool bValue = Handler->Test(PointIndex);
 			Handler->Results[PointIndex] = bValue;
 			if (bValue) { HState = StateHandler->Index; }
@@ -146,7 +159,7 @@ namespace PCGExDataState
 		{
 			if (const int32 HighestStateId = HighestState[i]; HighestStateId != -1)
 			{
-				const UPCGExStateDefinitionBase* State = static_cast<const UPCGExStateDefinitionBase*>(Handlers[HighestStateId]->Definition);
+				const UPCGExDataStateFactoryBase* State = static_cast<const UPCGExDataStateFactoryBase*>(Handlers[HighestStateId]->Factory);
 				StateNameWriter->Values[i] = State->StateName;
 			}
 			else { StateNameWriter->Values[i] = DefaultValue; }
@@ -165,7 +178,7 @@ namespace PCGExDataState
 		{
 			if (const int32 HighestStateId = HighestState[i]; HighestStateId != -1)
 			{
-				const UPCGExStateDefinitionBase* State = static_cast<const UPCGExStateDefinitionBase*>(Handlers[HighestStateId]->Definition);
+				const UPCGExDataStateFactoryBase* State = static_cast<const UPCGExDataStateFactoryBase*>(Handlers[HighestStateId]->Factory);
 				StateValueWriter->Values[i] = State->StateId;
 			}
 			else { StateValueWriter->Values[i] = DefaultValue; }
@@ -177,11 +190,11 @@ namespace PCGExDataState
 
 	void TStatesManager::WriteStateIndividualStates(FPCGExAsyncManager* AsyncManager, const TArray<int32>& InIndices)
 	{
-		for (PCGExDataFilter::TFilterHandler* Handler : Handlers)
+		for (PCGExDataFilter::TFilter* Handler : Handlers)
 		{
 			AsyncManager->Start<PCGExDataStateTask::FWriteIndividualState>(
 				Handler->Index, PointIO,
-				static_cast<TStateHandler*>(Handler), &InIndices);
+				static_cast<TDataState*>(Handler), &InIndices);
 		}
 	}
 
@@ -189,9 +202,9 @@ namespace PCGExDataState
 	{
 		const int32 NumPoints = PointIO->GetNum();
 
-		for (PCGExDataFilter::TFilterHandler* Handler : Handlers)
+		for (PCGExDataFilter::TFilter* Handler : Handlers)
 		{
-			TStateHandler* StateHandler = static_cast<TStateHandler*>(Handler);
+			TDataState* StateHandler = static_cast<TDataState*>(Handler);
 			StateHandler->PrepareForWriting(PointIO);
 
 			if (!StateHandler->OverlappingAttributes.IsEmpty())
@@ -226,17 +239,17 @@ namespace PCGExDataState
 			}
 		};
 
-		for (PCGExDataFilter::TFilterHandler* Handler : Handlers)
+		for (PCGExDataFilter::TFilter* Handler : Handlers)
 		{
-			TStateHandler* StateHandler = static_cast<TStateHandler*>(Handler);
+			TDataState* StateHandler = static_cast<TDataState*>(Handler);
 			if (Handler->Results[PointIndex]) { ForwardValues(StateHandler->InValidStateAttributes, StateHandler->OutValidStateAttributes); }
 			else { ForwardValues(StateHandler->InInvalidStateAttributes, StateHandler->OutInvalidStateAttributes); }
 		}
 	}
 
-	void TStatesManager::PostProcessHandler(PCGExDataFilter::TFilterHandler* Handler)
+	void TStatesManager::PostProcessHandler(PCGExDataFilter::TFilter* Handler)
 	{
-		const TStateHandler* StateHandler = static_cast<TStateHandler*>(Handler);
+		const TDataState* StateHandler = static_cast<TDataState*>(Handler);
 		if (StateHandler->bPartial) { bHasPartials = true; }
 		TFilterManager::PostProcessHandler(Handler);
 	}
@@ -248,7 +261,7 @@ namespace PCGExDataStateTask
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(FWriteIndividualState::ExecuteTask);
 
-		PCGEx::TFAttributeWriter<bool>* StateWriter = new PCGEx::TFAttributeWriter<bool>(static_cast<const UPCGExStateDefinitionBase*>(Handler->Definition)->StateName);
+		PCGEx::TFAttributeWriter<bool>* StateWriter = new PCGEx::TFAttributeWriter<bool>(static_cast<const UPCGExDataStateFactoryBase*>(Handler->Factory)->StateName);
 		StateWriter->BindAndGet(*PointIO);
 
 		for (const int32 i : (*InIndices)) { StateWriter->Values[i] = Handler->Results[i]; }

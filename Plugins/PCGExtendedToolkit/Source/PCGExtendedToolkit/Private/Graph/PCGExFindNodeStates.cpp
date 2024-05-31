@@ -17,12 +17,7 @@ PCGExData::EInit UPCGExFindNodeStatesSettings::GetEdgeOutputInitMode() const { r
 TArray<FPCGPinProperties> UPCGExFindNodeStatesSettings::InputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties = Super::InputPinProperties();
-	FPCGPinProperties& PinStateParams = PinProperties.Emplace_GetRef(PCGExCluster::SourceNodeStateLabel, EPCGDataType::Param);
-
-#if WITH_EDITOR
-	PinStateParams.Tooltip = FTEXT("Node states.");
-#endif
-
+	PCGEX_PIN_PARAMS(PCGExCluster::SourceNodeStateLabel, "Node states.", false, {})
 	return PinProperties;
 }
 
@@ -86,8 +81,8 @@ bool FPCGExFindNodeStatesElement::ExecuteInternal(
 
 		Context->CurrentCluster->GetNodePointIndices(Context->NodeIndices);
 		Context->StatesManager = new PCGExDataState::TStatesManager(Context->CurrentIO);
-		Context->StatesManager->Register<UPCGExNodeStateDefinition>(
-			Context, Context->StateDefinitions, [&](PCGExDataFilter::TFilterHandler* Handler)
+		Context->StatesManager->Register<UPCGExNodeStateFactory>(
+			Context, Context->StateDefinitions, [&](PCGExDataFilter::TFilter* Handler)
 			{
 				PCGExCluster::FNodeStateHandler* NodeStateHandler = static_cast<PCGExCluster::FNodeStateHandler*>(Handler);
 				NodeStateHandler->CaptureCluster(Context, Context->CurrentCluster);
@@ -105,16 +100,16 @@ bool FPCGExFindNodeStatesElement::ExecuteInternal(
 		}
 
 		Context->CurrentIO->CreateInKeys();
-		Context->StatesManager->PrepareForTesting();
+		Context->StatesManager->PrepareForTesting(Context->NodeIndices);
 
 		Context->SetState(PCGExCluster::State_ProcessingCluster);
 	}
 
 	if (Context->IsState(PCGExCluster::State_ProcessingCluster))
 	{
-		auto ProcessNode = [&](const int32 Index) { Context->StatesManager->Test(Context->CurrentCluster->Nodes[Index].PointIndex); };
+		auto ProcessNode = [&](const int32 Index) { Context->StatesManager->Test(Context->NodeIndices[Index]); };
 
-		if (!Context->Process(ProcessNode, Context->CurrentCluster->Nodes.Num())) { return false; }
+		if (!Context->Process(ProcessNode, Context->NodeIndices.Num())) { return false; }
 
 		Context->SetState(PCGExGraph::State_WritingMainState);
 	}
@@ -138,7 +133,7 @@ bool FPCGExFindNodeStatesElement::ExecuteInternal(
 		}
 		else
 		{
-			Context->SetState(PCGExGraph::State_WritingStatesAttributes);
+			Context->SetAsyncState(PCGExGraph::State_WritingStatesAttributes);
 		}
 	}
 
@@ -157,7 +152,7 @@ bool FPCGExFindNodeStatesElement::ExecuteInternal(
 		};
 
 		if (!Context->ProcessCurrentPoints(Initialize, ProcessPoint)) { return false; }
-		Context->SetState(PCGExMT::State_ReadyForNextPoints);
+		Context->SetState(PCGExGraph::State_ReadyForNextEdges);
 	}
 
 	if (Context->IsDone())
