@@ -8,8 +8,14 @@
 #include "PCGExPathfinding.h"
 #include "PCGExPointsProcessor.h"
 #include "Graph/PCGExEdgesProcessor.h"
+#include "Heuristics/PCGExHeuristics.h"
 
 #include "PCGExPathfindingGrowPaths.generated.h"
+
+namespace PCGExHeuristics
+{
+	class THeuristicsHandler;
+}
 
 struct FPCGExPathfindingGrowPathsContext;
 class UPCGExPathfindingGrowPathsSettings;
@@ -113,6 +119,7 @@ public:
 	//~Begin UPCGSettings interface
 #if WITH_EDITOR
 	PCGEX_NODE_INFOS(PathfindingGrowPaths, "Pathfinding : Grow Paths", "Grow paths from seeds.");
+	virtual FLinearColor GetNodeTitleColor() const override { return PCGEx::NodeColorPathfinding; }
 #endif
 
 	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
@@ -204,7 +211,7 @@ public:
 	/**  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Growth|Limits", meta = (PCG_Overridable))
 	bool bUseGrowthStop = false;
-	
+
 	/** An attribute read on the Vtx as a boolean. If true and this node is used in a path, the path stops there. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Growth|Limits", meta = (PCG_Overridable, EditCondition="bUseGrowthStop"))
 	FPCGAttributePropertyInputSelector GrowthStopAttribute;
@@ -216,7 +223,7 @@ public:
 	/**  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Growth|Limits", meta = (PCG_Overridable))
 	bool bUseNoGrowth = false;
-	
+
 	/** An attribute read on the Vtx as a boolean. If true, this point will never be grown on, but may be still used as seed. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Growth|Limits", meta = (PCG_Overridable, EditCondition="bUseNoGrowth"))
 	FPCGAttributePropertyInputSelector NoGrowthAttribute;
@@ -228,25 +235,6 @@ public:
 	/** Drive how a seed selects a node. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Heuristics", meta=(PCG_Overridable))
 	FPCGExNodeSelectionSettings SeedPicking = FPCGExNodeSelectionSettings(200);
-
-	/** Controls how heuristic are calculated for next growth. (Lower score is better)*/
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Settings|Heuristics", Instanced, meta = (PCG_Overridable, NoResetToDefault, ShowOnlyInnerProperties))
-	TObjectPtr<UPCGExHeuristicOperation> Heuristics;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Heuristics", meta=(PCG_Overridable))
-	FPCGExHeuristicModifiersSettings HeuristicsModifiers;
-
-	/** Add weight to points that are already part of the growing path */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Extra Weighting")
-	bool bWeightUpVisited = true;
-
-	/** Weight to add to points that are already part of the plotted path. This is a multplier of the Reference Weight.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Extra Weighting", meta=(EditCondition="bWeightUpVisited"))
-	double VisitedPointsWeightFactor = 1;
-
-	/** Weight to add to edges that are already part of the plotted path. This is a multplier of the Reference Weight.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Extra Weighting", meta=(EditCondition="bWeightUpVisited"))
-	double VisitedEdgesWeightFactor = 1;
 
 	/** Visited weight threshold over which the growth is stopped if that's the only available option. -1 ignores.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Extra Weighting", meta=(EditCondition="bWeightUpVisited"))
@@ -263,7 +251,7 @@ public:
 	/** Which Seed attributes to forward on paths. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging & Forwarding")
 	FPCGExForwardSettings SeedForwardAttributes;
-	
+
 	/** Output various statistics. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Advanced")
 	FPCGExPathStatistics Statistics;
@@ -283,27 +271,22 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPathfindingGrowPathsContext : public FPCGExE
 	PCGExData::FPointIO* SeedsPoints = nullptr;
 	PCGExData::FPointIOCollection* OutputPaths = nullptr;
 
-	UPCGExHeuristicOperation* Heuristics = nullptr;
-	FPCGExHeuristicModifiersSettings* HeuristicsModifiers = nullptr;
+	PCGExHeuristics::THeuristicsHandler* HeuristicsHandler = nullptr;
 
 	PCGEx::FLocalSingleFieldGetter* NumBranchesGetter = nullptr;
 	PCGEx::FLocalSingleFieldGetter* NumIterationsGetter = nullptr;
 	PCGEx::FLocalVectorGetter* GrowthDirectionGetter = nullptr;
 	PCGEx::FLocalSingleFieldGetter* GrowthMaxDistanceGetter = nullptr;
-	
+
 
 	PCGEx::FLocalBoolGetter* GrowthStopGetter = nullptr;
 	PCGEx::FLocalBoolGetter* NoGrowthGetter = nullptr;
 
 	int32 CurrentPlotIndex = -1;
-	bool bWeightUpVisited = true;
-	double VisitedPointsWeightFactor = 1;
-	double VisitedEdgesWeightFactor = 1;
-	PCGExPathfinding::FExtraWeights* GlobalExtraWeights = nullptr;
 
 	TArray<PCGExGrow::FGrowth*> Growths;
 	TArray<PCGExGrow::FGrowth*> QueuedGrowths;
-	
+
 	PCGEx::FLocalToStringGetter* TagValueGetter = nullptr;
 	PCGExDataBlending::FDataForwardHandler* SeedForwardHandler = nullptr;
 };
