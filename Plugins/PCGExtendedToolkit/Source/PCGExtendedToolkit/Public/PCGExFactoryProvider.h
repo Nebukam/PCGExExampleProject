@@ -5,12 +5,29 @@
 
 #include "CoreMinimal.h"
 #include "PCGEx.h"
+#include "PCGExEditorSettings.h"
 #include "PCGExPointsProcessor.h"
 #include "UObject/Object.h"
 
 #include "PCGExFactoryProvider.generated.h"
 
 ///
+
+namespace PCGExFactories
+{
+	enum class EType : uint8
+	{
+		Default = 0,
+		Filter,
+		ClusterFilter,
+		NodeState,
+		SocketState,
+		Sampler,
+		Heuristics
+	};
+
+	static inline TSet<EType> ClusterFilters = {EType::Filter, EType::ClusterFilter};
+}
 
 /**
  * 
@@ -31,6 +48,10 @@ UCLASS(Abstract, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data"
 class PCGEXTENDEDTOOLKIT_API UPCGExParamFactoryBase : public UPCGExParamDataBase
 {
 	GENERATED_BODY()
+
+public:
+	FORCEINLINE virtual PCGExFactories::EType GetFactoryType() const;
+	
 };
 
 UCLASS(Abstract, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Filter")
@@ -46,7 +67,7 @@ public:
 		FactoryProvider, "Factory : Proviader", "Creates an abstract factory provider.",
 		FName(GetDisplayName()))
 	virtual EPCGSettingsType GetType() const override { return EPCGSettingsType::Param; }
-	virtual FLinearColor GetNodeTitleColor() const override { return PCGEx::NodeColorFilter; }
+	virtual FLinearColor GetNodeTitleColor() const override { return GetDefault<UPCGExEditorSettings>()->NodeColorFilter; }
 #endif
 
 	virtual TArray<FPCGPinProperties> InputPinProperties() const override;

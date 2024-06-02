@@ -19,7 +19,7 @@ class PCGEXTENDEDTOOLKIT_API UPCGExStateFactoryProviderSettings : public UPCGExF
 public:
 	//~Begin UPCGSettings interface
 #if WITH_EDITOR
-	virtual FLinearColor GetNodeTitleColor() const override { return PCGEx::NodeColorFilterHub; }
+	virtual FLinearColor GetNodeTitleColor() const override { return GetDefault<UPCGExEditorSettings>()->NodeColorFilterHub; }
 
 #endif
 	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
@@ -46,7 +46,7 @@ protected:
 	bool ValidateStateName(const FPCGContext* Context) const;
 
 	template <typename T>
-	T* CreateStateDefinition(const FPCGContext* Context) const
+	T* CreateStateFactory(const FPCGContext* Context) const
 	{
 		PCGEX_SETTINGS(StateFactoryProvider)
 

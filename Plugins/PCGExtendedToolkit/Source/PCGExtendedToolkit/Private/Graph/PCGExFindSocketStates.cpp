@@ -15,7 +15,7 @@ PCGExData::EInit UPCGExFindSocketStatesSettings::GetMainOutputInitMode() const {
 TArray<FPCGPinProperties> UPCGExFindSocketStatesSettings::InputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties = Super::InputPinProperties();
-	PCGEX_PIN_PARAMS(PCGExGraph::SourceSocketStateLabel, "Socket states.", false, {})	
+	PCGEX_PIN_PARAMS(PCGExGraph::SourceSocketStateLabel, "Socket states.", Required, {})	
 	return PinProperties;
 }
 
@@ -43,9 +43,9 @@ bool FPCGExFindSocketStatesElement::Boot(FPCGContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(FindSocketStates)
 
-	return PCGExDataState::GetInputStates(
+	return PCGExDataState::GetInputStateFactories(
 		Context, PCGExGraph::SourceSocketStateLabel,
-		Context->StateDefinitions, Settings->bAllowStateOverlap);
+		Context->StateDefinitions, {PCGExFactories::EType::SocketState}, Settings->bAllowStateOverlap);
 }
 
 bool FPCGExFindSocketStatesElement::ExecuteInternal(

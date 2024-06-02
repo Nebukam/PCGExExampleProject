@@ -55,14 +55,14 @@ namespace PCGExDataState
 
 		TSet<FString> OverlappingAttributes;
 
-		explicit TDataState(const UPCGExDataStateFactoryBase* InDefinition)
-			: TFilter(InDefinition), StateDefinition(InDefinition)
+		explicit TDataState(const UPCGExDataStateFactoryBase* InFactory)
+			: TFilter(InFactory), StateFactory(InFactory)
 		{
 		}
 
-		const UPCGExDataStateFactoryBase* StateDefinition;
+		const UPCGExDataStateFactoryBase* StateFactory;
 
-		virtual bool Test(const int32 PointIndex) const override;
+		FORCEINLINE virtual bool Test(const int32 PointIndex) const override;
 		virtual void PrepareForWriting(PCGExData::FPointIO* PointIO);
 
 		virtual ~TDataState() override
@@ -110,22 +110,28 @@ namespace PCGExDataState
 	};
 
 	template <typename T_DEF>
-	static bool GetInputStates(FPCGContext* InContext, const FName InLabel, TArray<TObjectPtr<T_DEF>>& OutStates, const bool bAllowDuplicateNames)
+	static bool GetInputStateFactories(FPCGContext* InContext, const FName InLabel, TArray<T_DEF*>& OutStates, const TSet<PCGExFactories::EType>& Types, const bool bAllowDuplicateNames)
 	{
 		const TArray<FPCGTaggedData>& Inputs = InContext->InputData.GetInputsByPin(InLabel);
 
 		TSet<FName> UniqueStatesNames;
-		for (const FPCGTaggedData& InputState : Inputs)
+		for (const FPCGTaggedData& TaggedData : Inputs)
 		{
-			if (const T_DEF* State = Cast<T_DEF>(InputState.Data))
+			if (const T_DEF* State = Cast<T_DEF>(TaggedData.Data))
 			{
+				if (!Types.Contains(State->GetFactoryType()))
+				{
+					PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("State '{0}' is not supported."), FText::FromName(State->StateName)));
+					continue;
+				}
+
 				if (UniqueStatesNames.Contains(State->StateName) && !bAllowDuplicateNames)
 				{
 					PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("State '{0}' has the same name as another state, it will be ignored."), FText::FromName(State->StateName)));
 					continue;
 				}
 
-				if (State->Filters.IsEmpty())
+				if (State->FilterFactories.IsEmpty())
 				{
 					PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("State '{0}' has no conditions and will be ignored."), FText::FromName(State->StateName)));
 					continue;
@@ -133,6 +139,10 @@ namespace PCGExDataState
 
 				UniqueStatesNames.Add(State->StateName);
 				OutStates.Add(const_cast<T_DEF*>(State));
+			}
+			else
+			{
+				PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("State '{0}' is not supported."), FText::FromString(TaggedData.Data->GetClass()->GetName())));
 			}
 		}
 

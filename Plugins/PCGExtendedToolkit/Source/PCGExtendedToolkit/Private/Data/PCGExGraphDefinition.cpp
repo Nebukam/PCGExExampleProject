@@ -303,6 +303,11 @@ void UPCGExGraphDefinition::Cleanup() const
 
 #pragma endregion
 
+PCGExFactories::EType UPCGExSocketStateFactory::GetFactoryType() const
+{
+	return PCGExFactories::EType::SocketState;
+}
+
 PCGExDataFilter::TFilter* UPCGExSocketStateFactory::CreateFilter() const
 {
 	return new PCGExGraph::FSocketStateHandler(this);
@@ -310,7 +315,7 @@ PCGExDataFilter::TFilter* UPCGExSocketStateFactory::CreateFilter() const
 
 void UPCGExSocketStateFactory::BeginDestroy()
 {
-	Filters.Empty();
+	FilterFactories.Empty();
 	Super::BeginDestroy();
 }
 
@@ -321,7 +326,7 @@ namespace PCGExGraph
 	FSocketStateHandler::FSocketStateHandler(const UPCGExSocketStateFactory* InDefinition)
 		: TDataState(InDefinition), SocketStateDefinition(InDefinition)
 	{
-		const int32 NumTests = InDefinition->Filters.Num();
+		const int32 NumTests = InDefinition->FilterFactories.Num();
 		EdgeTypeAttributes.SetNumUninitialized(NumTests);
 		EdgeTypeReaders.SetNumUninitialized(NumTests);
 		for (int i = 0; i < NumTests; i++)
@@ -338,14 +343,14 @@ namespace PCGExGraph
 
 	void FSocketStateHandler::CaptureGraph(const UPCGExGraphDefinition* Graph, const PCGExData::FPointIO* InPointIO)
 	{
-		const int32 NumConditions = SocketStateDefinition->Filters.Num();
+		const int32 NumConditions = SocketStateDefinition->FilterFactories.Num();
 		int32 NumEnabledConditions = 0;
 		UPCGMetadata* Metadata = InPointIO->GetIn()->Metadata;
 		for (int i = 0; i < NumConditions; i++)
 		{
 			if (EdgeTypeAttributes[i]) { continue; } // Spot already taken by another graph
 
-			const FPCGExSocketTestDescriptor& Condition = SocketStateDefinition->Filters[i];
+			const FPCGExSocketTestDescriptor& Condition = SocketStateDefinition->FilterFactories[i];
 			if (!Condition.bEnabled) { continue; }
 
 			NumEnabledConditions++;
@@ -381,11 +386,11 @@ namespace PCGExGraph
 
 	bool FSocketStateHandler::Test(const int32 PointIndex) const
 	{
-		for (int i = 0; i < SocketStateDefinition->Filters.Num(); i++)
+		for (int i = 0; i < SocketStateDefinition->FilterFactories.Num(); i++)
 		{
 			PCGEx::TFAttributeReader<int32>* Reader = EdgeTypeReaders[i];
 			if (!Reader) { continue; }
-			if (!SocketStateDefinition->Filters[i].MeetCondition(Reader->Values[PointIndex])) { return false; }
+			if (!SocketStateDefinition->FilterFactories[i].MeetCondition(Reader->Values[PointIndex])) { return false; }
 		}
 
 		return true;

@@ -17,7 +17,7 @@ PCGExData::EInit UPCGExFindNodeStatesSettings::GetEdgeOutputInitMode() const { r
 TArray<FPCGPinProperties> UPCGExFindNodeStatesSettings::InputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties = Super::InputPinProperties();
-	PCGEX_PIN_PARAMS(PCGExCluster::SourceNodeStateLabel, "Node states.", false, {})
+	PCGEX_PIN_PARAMS(PCGExCluster::SourceNodeStateLabel, "Node states.", Required, {})
 	return PinProperties;
 }
 
@@ -25,7 +25,7 @@ FPCGExFindNodeStatesContext::~FPCGExFindNodeStatesContext()
 {
 	PCGEX_TERMINATE_ASYNC
 	PCGEX_DELETE(StatesManager)
-	StateDefinitions.Empty();
+	StateFactories.Empty();
 	NodeIndices.Empty();
 }
 
@@ -38,9 +38,9 @@ bool FPCGExFindNodeStatesElement::Boot(FPCGContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(FindNodeStates)
 
-	return PCGExDataState::GetInputStates(
+	return PCGExDataState::GetInputStateFactories(
 		Context, PCGExCluster::SourceNodeStateLabel,
-		Context->StateDefinitions, Settings->bAllowStateOverlap);
+		Context->StateFactories, {PCGExFactories::EType::NodeState}, Settings->bAllowStateOverlap);
 }
 
 bool FPCGExFindNodeStatesElement::ExecuteInternal(
@@ -82,7 +82,7 @@ bool FPCGExFindNodeStatesElement::ExecuteInternal(
 		Context->CurrentCluster->GetNodePointIndices(Context->NodeIndices);
 		Context->StatesManager = new PCGExDataState::TStatesManager(Context->CurrentIO);
 		Context->StatesManager->Register<UPCGExNodeStateFactory>(
-			Context, Context->StateDefinitions, [&](PCGExDataFilter::TFilter* Handler)
+			Context, Context->StateFactories, [&](PCGExDataFilter::TFilter* Handler)
 			{
 				PCGExCluster::FNodeStateHandler* NodeStateHandler = static_cast<PCGExCluster::FNodeStateHandler*>(Handler);
 				NodeStateHandler->CaptureCluster(Context, Context->CurrentCluster);

@@ -144,6 +144,8 @@ namespace PCGExNodeAdjacency
 		PCGEx::FLocalSingleFieldGetter* OperandA = nullptr;
 		PCGEx::FLocalSingleFieldGetter* OperandB = nullptr;
 
+		virtual PCGExDataFilter::EType GetFilterType() const override;
+		
 		virtual void Capture(const FPCGContext* InContext, const PCGExData::FPointIO* PointIO) override;
 		virtual void CaptureEdges(const FPCGContext* InContext, const PCGExData::FPointIO* EdgeIO) override;
 
@@ -172,7 +174,7 @@ public:
 	PCGEX_NODE_INFOS_CUSTOM_SUBTITLE(
 		NodeAdjacencyFilter, "Cluster Filter : Adjacency", "Numeric comparison of adjacent values, testing either adjacent nodes or connected edges.",
 		FName(GetDisplayName()))
-	virtual FLinearColor GetNodeTitleColor() const override { return PCGEx::NodeColorClusterFilter; }
+	virtual FLinearColor GetNodeTitleColor() const override { return GetDefault<UPCGExEditorSettings>()->NodeColorClusterFilter; }
 #endif
 
 public:

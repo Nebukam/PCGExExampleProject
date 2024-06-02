@@ -31,8 +31,8 @@ UPCGExParamFactoryBase* UPCGExCreateCustomGraphSocketStateSettings::CreateFactor
 
 	if (ValidDescriptors.IsEmpty()) { return nullptr; }
 
-	UPCGExSocketStateFactory* OutState = CreateStateDefinition<UPCGExSocketStateFactory>(Context);
-	OutState->Filters.Append(ValidDescriptors);
+	UPCGExSocketStateFactory* OutState = CreateStateFactory<UPCGExSocketStateFactory>(Context);
+	OutState->FilterFactories.Append(ValidDescriptors);
 
 	return OutState;
 }

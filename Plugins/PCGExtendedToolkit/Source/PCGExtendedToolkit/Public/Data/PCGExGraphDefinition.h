@@ -623,7 +623,8 @@ class PCGEXTENDEDTOOLKIT_API UPCGExSocketStateFactory : public UPCGExDataStateFa
 	GENERATED_BODY()
 
 public:
-	TArray<FPCGExSocketTestDescriptor> Filters;
+	TArray<FPCGExSocketTestDescriptor> FilterFactories;
+	virtual PCGExFactories::EType GetFactoryType() const override;
 	virtual PCGExDataFilter::TFilter* CreateFilter() const override;
 	virtual void BeginDestroy() override;
 };

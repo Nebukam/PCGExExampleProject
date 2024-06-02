@@ -23,6 +23,16 @@ enum class EPCGExOperandType : uint8
 	Constant UMETA(DisplayName = "Constant", ToolTip="Use a constant, static value."),
 };
 
+namespace PCGExDataFilter
+{
+	enum class EType : uint8
+	{
+		Default = 0,
+		Cluster
+	};
+
+}
+
 /**
  * 
  */
@@ -32,6 +42,8 @@ class PCGEXTENDEDTOOLKIT_API UPCGExFilterFactoryBase : public UPCGExParamFactory
 	GENERATED_BODY()
 
 public:
+	FORCEINLINE virtual PCGExFactories::EType GetFactoryType() const override;
+
 	int32 Priority = 0;
 	virtual PCGExDataFilter::TFilter* CreateFilter() const;
 };
@@ -59,8 +71,10 @@ namespace PCGExDataFilter
 		int32 Index = 0;
 		bool bValid = true;
 
+		FORCEINLINE virtual EType GetFilterType() const;
+
 		virtual void Capture(const FPCGContext* InContext, const PCGExData::FPointIO* PointIO);
-		virtual bool Test(const int32 PointIndex) const;
+		FORCEINLINE virtual bool Test(const int32 PointIndex) const;
 		virtual void PrepareForTesting(PCGExData::FPointIO* PointIO);
 		virtual void PrepareForTesting(PCGExData::FPointIO* PointIO, const TArrayView<int32>& PointIndices);
 
@@ -81,17 +95,17 @@ namespace PCGExDataFilter
 		PCGExData::FPointIO* PointIO = nullptr;
 
 		template <typename T_DEF>
-		void Register(const FPCGContext* InContext, const TArray<TObjectPtr<T_DEF>>& InDefinitions, PCGExData::FPointIO* InPointIO)
+		void Register(const FPCGContext* InContext, const TArray<T_DEF*>& InDefinitions, PCGExData::FPointIO* InPointIO)
 		{
 			Register(InContext, InDefinitions, [&](TFilter* Handler) { Handler->Capture(InContext, InPointIO); });
 		}
 
 		template <typename T_DEF, class CaptureFunc>
-		void Register(const FPCGContext* InContext, const TArray<TObjectPtr<T_DEF>>& InDefinitions, CaptureFunc&& InCaptureFn)
+		void Register(const FPCGContext* InContext, const TArray<T_DEF*>& InFactories, CaptureFunc&& InCaptureFn)
 		{
-			for (T_DEF* Def : InDefinitions)
+			for (T_DEF* Factory : InFactories)
 			{
-				TFilter* Handler = Def->CreateFilter();
+				TFilter* Handler = Factory->CreateFilter();
 				InCaptureFn(Handler);
 
 				if (!Handler->bValid)
@@ -132,10 +146,10 @@ namespace PCGExDataFilter
 		virtual void PostProcessHandler(TFilter* Handler);
 	};
 
-	class PCGEXTENDEDTOOLKIT_API TDirectFilterManager : public TFilterManager
+	class PCGEXTENDEDTOOLKIT_API TEarlyExitFilterManager : public TFilterManager
 	{
 	public:
-		explicit TDirectFilterManager(PCGExData::FPointIO* InPointIO);
+		explicit TEarlyExitFilterManager(PCGExData::FPointIO* InPointIO);
 
 		TArray<bool> Results;
 
@@ -144,24 +158,34 @@ namespace PCGExDataFilter
 	};
 
 	template <typename T_DEF>
-	static bool GetInputFilters(FPCGContext* InContext, const FName InLabel, TArray<TObjectPtr<T_DEF>>& OutFilters)
+	static bool GetInputFactories(FPCGContext* InContext, const FName InLabel, TArray<T_DEF*>& OutFactories, const TSet<PCGExFactories::EType>& Types, const bool bThrowError = true)
 	{
 		const TArray<FPCGTaggedData>& Inputs = InContext->InputData.GetInputsByPin(InLabel);
 
 		TSet<FName> UniqueStatesNames;
-		for (const FPCGTaggedData& InputState : Inputs)
+		for (const FPCGTaggedData& TaggedData : Inputs)
 		{
-			if (const T_DEF* State = Cast<T_DEF>(InputState.Data))
+			if (const T_DEF* State = Cast<T_DEF>(TaggedData.Data))
 			{
-				OutFilters.AddUnique(const_cast<T_DEF*>(State));
+				if (!Types.Contains(State->GetFactoryType()))
+				{
+					PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("Input '{0}' is not supported."), FText::FromString(State->GetClass()->GetName())));
+					continue;
+				}
+
+				OutFactories.AddUnique(const_cast<T_DEF*>(State));
+			}
+			else
+			{
+				PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("Input '{0}' is not supported."), FText::FromString(TaggedData.Data->GetClass()->GetName())));
 			}
 		}
 
 		UniqueStatesNames.Empty();
 
-		if (OutFilters.IsEmpty())
+		if (OutFactories.IsEmpty())
 		{
-			PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Missing valid filters."));
+			if (bThrowError) { PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Missing valid filters.")); }
 			return false;
 		}
 
