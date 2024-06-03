@@ -187,6 +187,60 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPointPropertyBlendingOverrides
 };
 
 USTRUCT(BlueprintType)
+struct PCGEXTENDEDTOOLKIT_API FPCGExPropertiesBlendingSettings
+{
+	GENERATED_BODY()
+
+	FPCGExPropertiesBlendingSettings()
+	{
+	}
+
+	explicit FPCGExPropertiesBlendingSettings(const EPCGExDataBlendingType InDefaultBlending):
+		DefaultBlending(InDefaultBlending)
+	{
+#define PCGEX_SET_DEFAULT_POINTPROPERTY(_TYPE, _NAME, _TYPENAME) _NAME##Blending = InDefaultBlending;
+		PCGEX_FOREACH_BLEND_POINTPROPERTY(PCGEX_SET_DEFAULT_POINTPROPERTY)
+#undef PCGEX_SET_DEFAULT_POINTPROPERTY
+	}
+
+	EPCGExDataBlendingType DefaultBlending = EPCGExDataBlendingType::Average;
+
+	#pragma region Property overrides
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Density", EditCondition="bOverrideDensity"))
+	EPCGExDataBlendingType DensityBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="BoundsMin", EditCondition="bOverrideBoundsMin"))
+	EPCGExDataBlendingType BoundsMinBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="BoundsMax", EditCondition="bOverrideBoundsMax"))
+	EPCGExDataBlendingType BoundsMaxBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Color", EditCondition="bOverrideColor"))
+	EPCGExDataBlendingType ColorBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Position", EditCondition="bOverridePosition"))
+	EPCGExDataBlendingType PositionBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Rotation", EditCondition="bOverrideRotation"))
+	EPCGExDataBlendingType RotationBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Scale", EditCondition="bOverrideScale"))
+	EPCGExDataBlendingType ScaleBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Steepness", EditCondition="bOverrideSteepness"))
+	EPCGExDataBlendingType SteepnessBlending = EPCGExDataBlendingType::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (DisplayName="Seed", EditCondition="bOverrideSeed"))
+	EPCGExDataBlendingType SeedBlending = EPCGExDataBlendingType::None;
+
+#pragma endregion
+
+};
+
+
+
+USTRUCT(BlueprintType)
 struct PCGEXTENDEDTOOLKIT_API FPCGExBlendingSettings
 {
 	GENERATED_BODY()
@@ -199,6 +253,14 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExBlendingSettings
 		DefaultBlending(InDefaultBlending)
 	{
 #define PCGEX_SET_DEFAULT_POINTPROPERTY(_TYPE, _NAME, _TYPENAME) PropertiesOverrides._NAME##Blending = InDefaultBlending;
+		PCGEX_FOREACH_BLEND_POINTPROPERTY(PCGEX_SET_DEFAULT_POINTPROPERTY)
+#undef PCGEX_SET_DEFAULT_POINTPROPERTY
+	}
+
+	explicit FPCGExBlendingSettings(const FPCGExPropertiesBlendingSettings& InPropertiesBlendingSettings):
+		DefaultBlending(InPropertiesBlendingSettings.DefaultBlending)
+	{
+#define PCGEX_SET_DEFAULT_POINTPROPERTY(_TYPE, _NAME, _TYPENAME) PropertiesOverrides.bOverride##_NAME = InPropertiesBlendingSettings._NAME##Blending != EPCGExDataBlendingType::None; PropertiesOverrides._NAME##Blending = InPropertiesBlendingSettings._NAME##Blending;
 		PCGEX_FOREACH_BLEND_POINTPROPERTY(PCGEX_SET_DEFAULT_POINTPROPERTY)
 #undef PCGEX_SET_DEFAULT_POINTPROPERTY
 	}
@@ -245,7 +307,6 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExBlendingSettings
 		}
 	}
 };
-
 
 namespace PCGExDataBlending
 {

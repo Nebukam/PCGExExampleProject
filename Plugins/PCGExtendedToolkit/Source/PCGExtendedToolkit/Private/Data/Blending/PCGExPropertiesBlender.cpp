@@ -23,7 +23,7 @@ namespace PCGExDataBlending
 #define PCGEX_BLEND_FUNCASSIGN(_TYPE, _NAME, _FUNC)\
 bReset##_NAME = false;\
 _NAME##Blending = BlendingOverrides.bOverride##_NAME ? BlendingOverrides._NAME##Blending : DefaultBlending;\
-if(_NAME##Blending == EPCGExDataBlendingType::Average || _NAME##Blending == EPCGExDataBlendingType::Sum || _NAME##Blending == EPCGExDataBlendingType::WeightedSum|| _NAME##Blending == EPCGExDataBlendingType::Weight){bReset##_NAME=true; bRequiresPrepare = true;}
+if(ResetBlend.Contains(_NAME##Blending)){bReset##_NAME=true; bRequiresPrepare = true;}
 
 		PCGEX_FOREACH_BLEND_POINTPROPERTY(PCGEX_BLEND_FUNCASSIGN)
 #undef PCGEX_BLEND_FUNCASSIGN
@@ -99,6 +99,14 @@ case EPCGExDataBlendingType::Lerp:	Target##_NAME = PCGExMath::Lerp(A._ACCESSOR, 
 
 		if (SeedBlending == EPCGExDataBlendingType::Average) { Target.Seed = PCGExMath::Div(Target.Seed, Count); }
 		else if (SeedBlending == EPCGExDataBlendingType::Weight) { Target.Seed = PCGExMath::Div(Target.Seed, TotalWeight); }
+	}
+
+	void FPropertiesBlender::CopyBlendedProperties(FPCGPoint& Target, const FPCGPoint& Source) const
+	{
+#define PCGEX_BLEND_COPYTO(_TYPE, _NAME, _FUNC, _ACCESSOR)\
+if (_NAME##Blending != EPCGExDataBlendingType::None){ Target._ACCESSOR = Source._ACCESSOR;}
+		PCGEX_FOREACH_BLENDINIT_POINTPROPERTY(PCGEX_BLEND_COPYTO)
+#undef PCGEX_BLEND_COPYTO
 	}
 
 	void FPropertiesBlender::BlendOnce(const FPCGPoint& A, const FPCGPoint& B, FPCGPoint& Target, const double Weight) const

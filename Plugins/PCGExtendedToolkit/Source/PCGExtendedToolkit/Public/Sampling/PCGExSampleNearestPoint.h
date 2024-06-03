@@ -21,6 +21,20 @@ MACRO(SignedDistance, double)\
 MACRO(Angle, double)\
 MACRO(NumSamples, int32)
 
+namespace PCGExDataBlending
+{
+	struct FPropertiesBlender;
+}
+
+class UPCGExFilterFactoryBase;
+
+namespace PCGExDataFilter
+{
+	class TEarlyExitFilterManager;
+}
+
+class UPCGExNodeStateFactory;
+
 namespace PCGExNearestPoint
 {
 	struct PCGEXTENDEDTOOLKIT_API FTargetInfos
@@ -121,19 +135,19 @@ public:
 	double RangeMax = 300;
 
 	/** Use a per-point minimum range*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, InlineEditConditionToggle))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
 	bool bUseLocalRangeMin = false;
 
 	/** Attribute or property to read the minimum range from. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, EditCondition="bUseLocalRangeMin", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, EditCondition="bUseLocalRangeMin"))
 	FPCGAttributePropertyInputSelector LocalRangeMin;
 
 	/** Use a per-point maximum range*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, InlineEditConditionToggle))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
 	bool bUseLocalRangeMax = false;
 
 	/** Attribute or property to read the maximum range from. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, EditCondition="bUseLocalRangeMax", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, EditCondition="bUseLocalRangeMax"))
 	FPCGAttributePropertyInputSelector LocalRangeMax;
 
 	/** Distance method to be used for source & target points. */
@@ -141,17 +155,25 @@ public:
 	FPCGExDistanceSettings DistanceSettings;
 
 	/** Weight method used for blending */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Weighting", meta=(PCG_Overridable))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
 	EPCGExRangeType WeightMethod = EPCGExRangeType::FullRange;
 
 	/** Curve that balances weight over distance */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Weighting", meta=(PCG_Overridable))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
 	TSoftObjectPtr<UCurveFloat> WeightOverDistance;
 
 	/** Attributes to sample from the targets */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Attributes", meta=(PCG_Overridable))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Blending", meta=(PCG_Overridable))
 	TMap<FName, EPCGExDataBlendingType> TargetAttributes;
 
+	/** Write the sampled distance. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Blending", meta=(PCG_Overridable, InlineEditConditionToggle))
+	bool bBlendPointProperties = false;
+	
+	/** The constant to use as Up vector for the look at transform.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Blending", meta=(PCG_Overridable, EditCondition="bBlendPointProperties"))
+	FPCGExPropertiesBlendingSettings PointPropertiesBlendingSettings = FPCGExPropertiesBlendingSettings(EPCGExDataBlendingType::None);
+	
 	/** Write whether the sampling was sucessful or not to a boolean attribute. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteSuccess = false;
@@ -193,7 +215,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, DisplayName=" └─ Up Vector", EditCondition="bWriteLookAtTransform && LookAtUpSelection==EPCGExSampleSource::Constant", EditConditionHides))
 	FVector LookAtUpConstant = FVector::UpVector;
 
-
 	/** Write the sampled distance. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteDistance = false;
@@ -233,10 +254,11 @@ public:
 	/** Write the sampled distance. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteNumSamples = false;
-
+	
 	/** Name of the 'int32' attribute to write the number of sampled neighbors to.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteNumSamples"))
 	FName NumSamplesAttributeName = FName("NumSamples");
+
 };
 
 struct PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestPointContext : public FPCGExPointsProcessorContext
@@ -247,20 +269,18 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestPointContext : public FPCGExPoi
 
 	PCGExData::FPointIO* Targets = nullptr;
 
-	EPCGExSampleMethod SampleMethod = EPCGExSampleMethod::WithinRange;
-	EPCGExRangeType WeightMethod = EPCGExRangeType::FullRange;
+	TArray<UPCGExFilterFactoryBase*> PointFilterFactories;
+	PCGExDataFilter::TEarlyExitFilterManager* PointFilterManager = nullptr;
 
+	TArray<UPCGExFilterFactoryBase*> ValueFilterFactories;
+	PCGExDataFilter::TEarlyExitFilterManager* ValueFilterManager = nullptr;
+	
 	TArray<PCGExDataBlending::FDataBlendingOperationBase*> BlendOps;
-
-	double RangeMin = 0;
-	double RangeMax = 1000;
-
-	bool bUseLocalRangeMin = false;
-	bool bUseLocalRangeMax = false;
-
-	PCGEx::FLocalSingleFieldGetter RangeMinGetter;
-	PCGEx::FLocalSingleFieldGetter RangeMaxGetter;
-	PCGEx::FLocalVectorGetter LookAtUpGetter;
+	PCGExDataBlending::FPropertiesBlender* PropertiesBlender = nullptr;
+	
+	PCGEx::FLocalSingleFieldGetter* RangeMinGetter;
+	PCGEx::FLocalSingleFieldGetter* RangeMaxGetter;
+	PCGEx::FLocalVectorGetter* LookAtUpGetter;
 
 	FVector SafeUpVector = FVector::UpVector;
 
@@ -268,11 +288,6 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestPointContext : public FPCGExPoi
 
 	PCGEX_FOREACH_FIELD_NEARESTPOINT(PCGEX_OUTPUT_DECL)
 
-	FPCGExDistanceSettings DistanceSettings;
-
-	EPCGExAxis SignAxis;
-	EPCGExAxis AngleAxis;
-	EPCGExAngleRange AngleRange;
 };
 
 class PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestPointElement : public FPCGExPointsProcessorElementBase

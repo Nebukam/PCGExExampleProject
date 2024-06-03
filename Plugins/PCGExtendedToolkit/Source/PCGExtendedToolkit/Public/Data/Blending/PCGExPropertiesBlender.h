@@ -10,6 +10,13 @@
 
 namespace PCGExDataBlending
 {
+	static TSet<EPCGExDataBlendingType> ResetBlend = {
+		EPCGExDataBlendingType::Average,
+		EPCGExDataBlendingType::Weight,
+		EPCGExDataBlendingType::WeightedSum,
+		EPCGExDataBlendingType::Sum,
+	};
+
 	struct PCGEXTENDEDTOOLKIT_API FPropertiesBlender
 	{
 #define PCGEX_BLEND_FUNCREF(_TYPE, _NAME, ...) bool bReset##_NAME = false; EPCGExDataBlendingType _NAME##Blending = EPCGExDataBlendingType::Weight;
@@ -33,6 +40,12 @@ namespace PCGExDataBlending
 			DefaultBlending(Other.DefaultBlending),
 			bRequiresPrepare(Other.bRequiresPrepare)
 		{
+			
+		}
+
+		explicit FPropertiesBlender(const FPCGExPropertiesBlendingSettings& LeanSettings):
+			FPropertiesBlender(FPCGExBlendingSettings(LeanSettings))
+		{
 		}
 
 		void Init(const FPCGExBlendingSettings& BlendingSettings);
@@ -49,5 +62,7 @@ namespace PCGExDataBlending
 		void CompleteRangeBlending(const TArrayView<FPCGPoint>& Targets, const TArrayView<int32>& Counts, const TArrayView<double>& TotalWeights) const;
 
 		void BlendRangeFromTo(const FPCGPoint& From, const FPCGPoint& To, const TArrayView<FPCGPoint>& Targets, const TArrayView<double>& Weights) const;
+
+		void CopyBlendedProperties(FPCGPoint& Target, const FPCGPoint& Source) const;
 	};
 }
