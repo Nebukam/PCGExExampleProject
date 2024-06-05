@@ -210,7 +210,7 @@ public:
 	/** Cache the results of this node. Can yield unexpected result in certain cases.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Performance")
 	bool bCacheResult = false;
-	
+
 	/** Flatten the output of this node.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Performance")
 	bool bFlattenOutput = false;
@@ -246,6 +246,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPointsProcessorContext : public FPCGContext
 	bool IsSetup() const { return IsState(PCGExMT::State_Setup); }
 	bool IsDone() const { return IsState(PCGExMT::State_Done); }
 	virtual void Done();
+	virtual void ExecutionComplete();
 
 	FPCGExAsyncManager* GetAsyncManager();
 	void SetAsyncState(const PCGExMT::AsyncState WaitState) { SetState(WaitState, false); }
@@ -278,19 +279,22 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPointsProcessorContext : public FPCGContext
 		return AsyncLoop.Advance(LoopBody);
 	}
 
-	template <class LoopBodyFunc>
-	void ParallelProcess(LoopBodyFunc&& LoopBody, const int32 NumIterations)
+	template <typename ChunkTask>
+	void StartAsyncLoop(PCGExData::FPointIO* PointIO, const int32 NumIterations, const int32 ChunkSizeOverride = -1)
 	{
-		ParallelProcess(
-			[&]()
-			{
-			}, LoopBody, NumIterations);
+		GetAsyncManager()->Start<FPCGExParallelLoopTask<ChunkTask>>(-1, PointIO, NumIterations, ChunkSizeOverride <= 0 ? ChunkSize : ChunkSizeOverride);
 	}
 
-	template <class InitializeFunc, class LoopBodyFunc>
-	void ParallelProcess(InitializeFunc&& Initialize, LoopBodyFunc&& LoopBody, const int32 NumIterations)
+	template <typename MainTask, typename ChunkTask>
+	void StartAsyncLoop(PCGExData::FPointIO* PointIO, const int32 NumIterations, const int32 ChunkSizeOverride = -1)
 	{
-		GetAsyncManager()->Start<FPCGExParallelLoopTask>(-1, nullptr, Initialize, LoopBody, NumIterations, ChunkSize);
+		GetAsyncManager()->Start<MainTask<ChunkTask>>(-1, PointIO, NumIterations, ChunkSizeOverride <= 0 ? ChunkSize : ChunkSizeOverride);
+	}
+
+	template <typename FullTask>
+	void StartAsyncLoopEx(PCGExData::FPointIO* PointIO, const int32 NumIterations, const int32 ChunkSizeOverride = -1)
+	{
+		GetAsyncManager()->Start<FullTask>(-1, PointIO, NumIterations, ChunkSizeOverride <= 0 ? ChunkSize : ChunkSizeOverride);
 	}
 
 	FPCGTaggedData* Output(UPCGData* OutData, const FName OutputLabel);
