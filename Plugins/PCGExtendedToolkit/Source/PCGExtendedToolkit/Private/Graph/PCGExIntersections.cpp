@@ -41,6 +41,16 @@ namespace PCGExGraph
 	FCompoundNode* FCompoundGraph::GetOrCreateNode(const FPCGPoint& Point, const int32 IOIndex, const int32 PointIndex)
 	{
 		const FVector Origin = Point.Transform.GetLocation();
+
+		if (!bFusePoints)
+		{
+			FWriteScopeLock WriteLock(OctreeLock);
+			FCompoundNode* NewNode = new FCompoundNode(Point, Origin, Nodes.Num());
+			Nodes.Add(NewNode);
+			PointsCompounds->New()->Add(IOIndex, PointIndex);
+			return NewNode;
+		}
+
 		int32 Index = -1;
 		if (FuseSettings.bComponentWiseTolerance)
 		{
@@ -101,6 +111,15 @@ namespace PCGExGraph
 	FCompoundNode* FCompoundGraph::GetOrCreateNodeUnsafe(const FPCGPoint& Point, const int32 IOIndex, const int32 PointIndex)
 	{
 		const FVector Origin = Point.Transform.GetLocation();
+
+		if (!bFusePoints)
+		{
+			FCompoundNode* NewNode = new FCompoundNode(Point, Origin, Nodes.Num());
+			Nodes.Add(NewNode);
+			PointsCompounds->New()->Add(IOIndex, PointIndex);
+			return NewNode;
+		}
+
 		int32 Index = -1;
 		if (FuseSettings.bComponentWiseTolerance)
 		{
@@ -305,7 +324,7 @@ namespace PCGExGraph
 			{
 				NodeIndex = Split.NodeIndex;
 
-				Graph->InsertEdge(PrevIndex, NodeIndex, NewEdge);
+				Graph->InsertEdge(PrevIndex, NodeIndex, NewEdge, SplitEdge.IOIndex); //TODO: IOIndex required
 				PrevIndex = NodeIndex;
 
 				FGraphNodeMetadata* NodeMetadata = FGraphNodeMetadata::GetOrCreate(NodeIndex, Graph->NodeMetadata);
@@ -320,7 +339,7 @@ namespace PCGExGraph
 				}
 			}
 
-			Graph->InsertEdge(NodeIndex, LastIndex, NewEdge); // Insert last edge
+			Graph->InsertEdge(NodeIndex, LastIndex, NewEdge, SplitEdge.IOIndex); // Insert last edge
 		}
 	}
 
@@ -460,7 +479,7 @@ namespace PCGExGraph
 			for (const FEECrossing* Crossing : EdgeProxy.Intersections)
 			{
 				NodeIndex = Crossing->NodeIndex;
-				Graph->InsertEdge(PrevIndex, NodeIndex, NewEdge);
+				Graph->InsertEdge(PrevIndex, NodeIndex, NewEdge, SplitEdge.IOIndex); //TODO: this is the wrong edge IOIndex
 				PrevIndex = NodeIndex;
 
 				FGraphNodeMetadata* NodeMetadata = FGraphNodeMetadata::GetOrCreate(NodeIndex, Graph->NodeMetadata);
@@ -470,7 +489,7 @@ namespace PCGExGraph
 				EdgeMetadata->Type = EPCGExIntersectionType::EdgeEdge;
 			}
 
-			Graph->InsertEdge(NodeIndex, LastIndex, NewEdge); // Insert last edge
+			Graph->InsertEdge(NodeIndex, LastIndex, NewEdge, SplitEdge.IOIndex); // Insert last edge
 		}
 	}
 

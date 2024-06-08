@@ -7,12 +7,9 @@ public class PCGExtendedToolkit : ModuleRules
 	public PCGExtendedToolkit(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		if (Target.Platform == UnrealTargetPlatform.Win64)
-		{
-			bUseRTTI = true;
-		}
-		
+
+		// if (Target.Platform == UnrealTargetPlatform.Win64) { bUseRTTI = true; }
+
 		PublicIncludePaths.AddRange(
 			new string[]
 			{
@@ -43,8 +40,7 @@ public class PCGExtendedToolkit : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Settings",
-				"Voronoi"
+				"Settings"
 			}
 		);
 

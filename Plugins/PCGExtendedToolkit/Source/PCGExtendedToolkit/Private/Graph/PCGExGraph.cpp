@@ -4,6 +4,7 @@
 #include "Graph/PCGExGraph.h"
 
 #include "PCGExPointsProcessor.h"
+#include "Geometry/PCGExGeoMesh.h"
 #include "Graph/PCGExCluster.h"
 
 namespace PCGExGraph
@@ -31,7 +32,7 @@ namespace PCGExGraph
 		return -1;
 	}
 
-	bool FGraph::InsertEdge(const int32 A, const int32 B, FIndexedEdge& OutEdge)
+	bool FGraph::InsertEdge(const int32 A, const int32 B, FIndexedEdge& OutEdge, const int32 IOIndex)
 	{
 		const uint64 Hash = PCGEx::H64U(A, B);
 
@@ -44,7 +45,7 @@ namespace PCGExGraph
 
 		UniqueEdges.Add(Hash);
 
-		OutEdge = Edges.Emplace_GetRef(Edges.Num(), A, B);
+		OutEdge = Edges.Emplace_GetRef(Edges.Num(), A, B, -1, IOIndex);
 
 		Nodes[A].Add(OutEdge.EdgeIndex);
 		Nodes[B].Add(OutEdge.EdgeIndex);
@@ -387,6 +388,30 @@ Writer->BindAndGet(*PointIO);\
 
 		PointIO->Tags->Set(PCGExGraph::TagStr_ClusterPair, Builder->PairIdStr);
 		PCGEX_DELETE(NumClusterIdWriter)
+
+		return true;
+	}
+
+	bool FCopyGraphToPoint::ExecuteTask()
+	{
+		if (!GraphBuilder->bCompiledSuccessfully) { return false; }
+
+		PCGExData::FPointIO& VtxDupe = VtxCollection->Emplace_GetRef(GraphBuilder->PointIO->GetOut(), PCGExData::EInit::DuplicateInput);
+		VtxDupe.IOIndex = TaskIndex;
+
+		FString OutId;
+		VtxDupe.Tags->Set(PCGExGraph::TagStr_ClusterPair, VtxDupe.GetOut()->UID, OutId);
+
+		Manager->Start<PCGExGeoTasks::FTransformPointIO>(TaskIndex, PointIO, &VtxDupe, TransformSettings);
+
+		for (const PCGExData::FPointIO* Edges : GraphBuilder->EdgesIO->Pairs)
+		{
+			PCGExData::FPointIO& EdgeDupe = EdgeCollection->Emplace_GetRef(Edges->GetOut(), PCGExData::EInit::DuplicateInput);
+			EdgeDupe.IOIndex = TaskIndex;
+			EdgeDupe.Tags->Set(PCGExGraph::TagStr_ClusterPair, OutId);
+
+			Manager->Start<PCGExGeoTasks::FTransformPointIO>(TaskIndex, PointIO, &EdgeDupe, TransformSettings);
+		}
 
 		return true;
 	}
