@@ -55,10 +55,23 @@ namespace PCGExData
 		FTags* Tags = nullptr;
 		int32 IOIndex = 0;
 
+		FPointIO():
+			In(nullptr)
+		{
+			PCGEX_LOG_CTR(FPointIO)
+		}
+
 		explicit FPointIO(const UPCGPointData* InData):
 			In(InData)
 		{
 			PCGEX_LOG_CTR(FPointIO)
+		}
+
+		explicit FPointIO(const FPointIO* InPointIO):
+			In(InPointIO->GetIn())
+		{
+			PCGEX_LOG_CTR(FPointIO)
+			Tags = new FTags(*InPointIO->Tags);
 		}
 
 		void SetInfos(const int32 InIndex,
@@ -237,6 +250,7 @@ namespace PCGExData
 		FPointIO* Emplace_GetRef(const UPCGPointData* In, const EInit InitOut = EInit::NoOutput, const TSet<FString>* Tags = nullptr);
 		FPointIO* Emplace_GetRef(EInit InitOut = EInit::NewOutput);
 		FPointIO* Emplace_GetRef(const FPointIO* PointIO, const EInit InitOut = EInit::NoOutput);
+		FPointIO* AddUnsafe(FPointIO* PointIO);
 
 
 		template <typename T>
@@ -253,7 +267,7 @@ namespace PCGExData
 		FPointIO* Emplace_GetRef(EInit InitOut = EInit::NewOutput)
 		{
 			FWriteScopeLock WriteLock(PairsLock);
-			FPointIO* NewIO = new FPointIO(nullptr);
+			FPointIO* NewIO = new FPointIO();
 			NewIO->SetInfos(Pairs.Add(NewIO), DefaultOutputLabel);
 			NewIO->InitializeOutput<T>(InitOut);
 			return NewIO;
@@ -357,14 +371,14 @@ namespace PCGExData
 		}
 	}
 
-	static PCGExData::FPointIO* TryGetSingleInput(const FPCGContext* InContext, const FName InputPinLabel, const bool bThrowError)
+	static FPointIO* TryGetSingleInput(const FPCGContext* InContext, const FName InputPinLabel, const bool bThrowError)
 	{
-		PCGExData::FPointIO* SingleIO = nullptr;
-		const PCGExData::FPointIOCollection* Collection = new PCGExData::FPointIOCollection(InContext, InputPinLabel);
+		FPointIO* SingleIO = nullptr;
+		const FPointIOCollection* Collection = new FPointIOCollection(InContext, InputPinLabel);
 		if (!Collection->Pairs.IsEmpty())
 		{
-			const PCGExData::FPointIO* Data = Collection->Pairs[0];
-			SingleIO = new PCGExData::FPointIO(Data->GetIn());
+			const FPointIO* Data = Collection->Pairs[0];
+			SingleIO = new FPointIO(Data->GetIn());
 
 			TSet<FString> TagDump;
 			Data->Tags->Dump(TagDump);

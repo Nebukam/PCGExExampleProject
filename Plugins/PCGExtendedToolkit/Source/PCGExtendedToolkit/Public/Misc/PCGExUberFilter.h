@@ -11,6 +11,13 @@
 
 #include "PCGExUberFilter.generated.h"
 
+UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Uber Filter Mode"))
+enum class EPCGExUberFilterMode : uint8
+{
+	Partition UMETA(DisplayName = "Partition points", ToolTip="Create inside/outside dataset from the filter results."),
+	Write UMETA(DisplayName = "Write result", ToolTip="Simply write filter result to an attribute but doesn't change point structure."),
+};
+
 UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Misc")
 class PCGEXTENDEDTOOLKIT_API UPCGExUberFilterSettings : public UPCGExPointsProcessorSettings
 {
@@ -31,19 +38,26 @@ public:
 #endif
 
 protected:
+	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
 	virtual TArray<FPCGPinProperties> OutputPinProperties() const override;
 	virtual FPCGElementPtr CreateElement() const override;
 	//~End UPCGSettings
 
 	//~Begin UPCGExPointsProcessorSettings
 public:
-	virtual FName GetPointFilterLabel() const override;
-	virtual bool RequiresPointFilters() const override;
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
 	//~End UPCGExPointsProcessorSettings
 
 public:
-	/** Swap Inside & Outside data */
+	/** Write result to point instead of split outputs */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	EPCGExUberFilterMode Mode = EPCGExUberFilterMode::Partition;
+
+	/** Name of the attribute to write result to */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="Mode==EPCGExUberFilterMode::Write", EditConditionHides))
+	FName ResultAttributeName = FName("PassFilter");
+
+	/** Invert the filter result */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	bool bSwap = false;
 
@@ -79,20 +93,26 @@ namespace PCGExUberFilter
 		int32 NumInside = 0;
 		int32 NumOutside = 0;
 
-		PCGExData::FPointIOCollection* InCollection = nullptr;
-		PCGExData::FPointIOCollection* OutCollection = nullptr;
+		PCGExPointFilter::TManager* FilterManager = nullptr;
+		FPCGExUberFilterContext* LocalTypedContext = nullptr;
+
+		PCGExMT::FTaskGroup* TestTaskGroup = nullptr;
+
+		PCGEx::TFAttributeWriter<bool>* Results = nullptr;
 
 	public:
+		PCGExData::FPointIO* Inside = nullptr;
+		PCGExData::FPointIO* Outside = nullptr;
+
 		explicit FProcessor(PCGExData::FPointIO* InPoints):
 			FPointsProcessor(InPoints)
 		{
 		}
 
-		virtual ~FProcessor() override
-		{
-		}
+		virtual ~FProcessor() override;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
 		virtual void CompleteWork() override;
+		virtual void Output() override;
 	};
 }

@@ -25,7 +25,7 @@ PCGExData::EInit UPCGExFindContoursSettings::GetMainOutputInitMode() const { ret
 
 bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, const int32 SeedIndex, PCGExFindContours::FProcessor* ClusterProcessor)
 {
-	PCGEX_SETTINGS_LOCAL(FindContours)
+	const UPCGExFindContoursSettings* Settings = ClusterProcessor->LocalSettings;
 
 	PCGExCluster::FCluster* Cluster = ClusterProcessor->Cluster;
 
@@ -89,6 +89,7 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 	TArray<int32> Path;
 	Path.Add(PrevIndex);
 	TSet<int32> Exclusions = {PrevIndex, NextIndex};
+	TSet<uint64> SignedEdges;
 
 	bool bIsConvex = true;
 	int32 Sign = 0;
@@ -98,8 +99,16 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 	bool bGracefullyClosed = false;
 	while (NextIndex != -1)
 	{
+		double BestAngle = -1;
+		int32 NextBest = -1;
+
+		bool bEdgeAlreadyExists;
+		SignedEdges.Add(PCGEx::H64(PrevIndex, NextIndex), &bEdgeAlreadyExists);
+		if (bEdgeAlreadyExists) { break; }
+
 		Path.Add(NextIndex);
 		PCGExCluster::FExpandedNode* Current = *(ExpandedNodes->GetData() + NextIndex);
+
 		PathBox += Current->Node->Position;
 
 		//if (Current->Neighbors.Num() <= 1) { break; }
@@ -108,21 +117,15 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 		const FVector Origin = Positions[(Cluster->Nodes->GetData() + NextIndex)->PointIndex];
 		const FVector GuideDir = (Origin - Positions[(Cluster->Nodes->GetData() + PrevIndex)->PointIndex]).GetSafeNormal();
 
-		double BestAngle = -1;
-		int32 NextBest = -1;
-
 		if (Current->Neighbors.Num() > 1) { Exclusions.Add(PrevIndex); }
 
+		bool bHasAdjacencyToStart = false;
 		for (const PCGExCluster::FExpandedNeighbor& N : Current->Neighbors)
 		{
 			const int32 NeighborIndex = N.Node->NodeIndex;
+
+			if (NeighborIndex == StartNodeIndex) { bHasAdjacencyToStart = true; }
 			if (Exclusions.Contains(NeighborIndex)) { continue; }
-			if (NeighborIndex == StartNodeIndex)
-			{
-				bGracefullyClosed = true;
-				NextBest = -1;
-				break;
-			}
 
 			const FVector OtherDir = (Origin - Positions[(Cluster->Nodes->GetData() + NeighborIndex)->PointIndex]).GetSafeNormal();
 			const double Angle = PCGExMath::GetDegreesBetweenVectors(OtherDir, GuideDir);
@@ -135,6 +138,12 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 		}
 
 		Exclusions.Empty();
+
+		if (NextBest == StartNodeIndex)
+		{
+			bGracefullyClosed = true;
+			NextBest = -1;
+		}
 
 		if (NextBest != -1)
 		{
@@ -154,9 +163,12 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 		}
 		else
 		{
+			if (bHasAdjacencyToStart) { bGracefullyClosed = true; }
 			NextIndex = -1;
 		}
 	}
+
+	SignedEdges.Empty();
 
 	if ((Settings->bKeepOnlyGracefulContours && !bGracefullyClosed) ||
 		(bIsConvex && Settings->OutputType == EPCGExContourShapeTypeOutput::ConcaveOnly))
@@ -178,6 +190,8 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 	PCGExGraph::CleanupClusterTags(PathIO, true);
 	PCGExGraph::CleanupVtxData(PathIO);
 
+	PCGExData::FFacade* PathDataFacade = new PCGExData::FFacade(PathIO);
+
 	TArray<FPCGPoint>& MutablePoints = PathIO->GetOut()->GetMutablePoints();
 	const TArray<FPCGPoint>& OriginPoints = PathIO->GetIn()->GetPoints();
 	MutablePoints.SetNumUninitialized(Path.Num());
@@ -187,7 +201,7 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 
 	const FPCGExFindContoursContext* TypedContext = static_cast<FPCGExFindContoursContext*>(ClusterProcessor->Context);
 	TypedContext->SeedAttributesToPathTags.Tag(SeedIndex, PathIO);
-	TypedContext->SeedForwardHandler->Forward(SeedIndex, PathIO);
+	TypedContext->SeedForwardHandler->Forward(SeedIndex, PathDataFacade);
 
 	if (Settings->bFlagDeadEnds)
 	{
@@ -203,6 +217,9 @@ bool FPCGExFindContoursContext::TryFindContours(PCGExData::FPointIO* PathIO, con
 		if (Settings->bTagConcave && !bIsConvex) { PathIO->Tags->RawTags.Add(Settings->ConcaveTag); }
 		if (Settings->bTagConvex && bIsConvex) { PathIO->Tags->RawTags.Add(Settings->ConvexTag); }
 	}
+
+	PathDataFacade->Write(ClusterProcessor->AsyncManagerPtr, true);
+	PCGEX_DELETE(PathDataFacade)
 
 	return true;
 }
@@ -243,7 +260,7 @@ bool FPCGExFindContoursElement::Boot(FPCGContext* InContext) const
 
 	PCGEX_FWD(SeedAttributesToPathTags)
 	if (!Context->SeedAttributesToPathTags.Init(Context, Context->SeedsDataFacade)) { return false; }
-	Context->SeedForwardHandler = new PCGExData::FDataForwardHandler(Settings->SeedForwardAttributes, SeedsPoints);
+	Context->SeedForwardHandler = Settings->SeedForwarding.GetHandler(Context->SeedsDataFacade);
 
 	Context->Paths = new PCGExData::FPointIOCollection();
 	Context->Paths->DefaultOutputLabel = PCGExGraph::OutputPathsLabel;
@@ -319,6 +336,8 @@ namespace PCGExFindContours
 	bool FProcessor::Process(PCGExMT::FTaskManager* AsyncManager)
 	{
 		PCGEX_TYPED_CONTEXT_AND_SETTINGS(FindContours)
+
+		LocalSettings = Settings;
 
 		if (!FClusterProcessor::Process(AsyncManager)) { return false; }
 

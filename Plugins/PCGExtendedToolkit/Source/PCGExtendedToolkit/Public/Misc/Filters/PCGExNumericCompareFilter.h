@@ -33,13 +33,13 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExNumericCompareFilterConfig
 
 	/** Type of OperandB */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
-	EPCGExFetchType CompareAgainst = EPCGExFetchType::Attribute;
+	EPCGExFetchType CompareAgainst = EPCGExFetchType::Constant;
 
 	/** Operand B for testing -- Will be translated to `double` under the hood. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="CompareAgainst==EPCGExFetchType::Attribute", EditConditionHides))
 	FPCGAttributePropertyInputSelector OperandB;
 
-	/** Operand B for testing -- Will be translated to `double` under the hood. */
+	/** Operand B for testing */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="CompareAgainst==EPCGExFetchType::Constant", EditConditionHides))
 	double OperandBConstant = 0;
 
@@ -79,7 +79,12 @@ namespace PCGExPointsFilter
 		PCGExData::FCache<double>* OperandB = nullptr;
 
 		virtual bool Init(const FPCGContext* InContext, PCGExData::FFacade* InPointDataFacade) override;
-		virtual bool Test(const int32 PointIndex) const override;
+		FORCEINLINE virtual bool Test(const int32 PointIndex) const override
+		{
+			const double A = OperandA->Values[PointIndex];
+			const double B = OperandB ? OperandB->Values[PointIndex] : TypedFilterFactory->Config.OperandBConstant;
+			return PCGExCompare::Compare(TypedFilterFactory->Config.Comparison, A, B, TypedFilterFactory->Config.Tolerance);
+		}
 
 		virtual ~TNumericComparisonFilter() override
 		{

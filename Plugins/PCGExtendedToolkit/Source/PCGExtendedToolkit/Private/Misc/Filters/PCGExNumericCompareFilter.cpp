@@ -34,13 +34,6 @@ bool PCGExPointsFilter::TNumericComparisonFilter::Init(const FPCGContext* InCont
 	return true;
 }
 
-bool PCGExPointsFilter::TNumericComparisonFilter::Test(const int32 PointIndex) const
-{
-	const double A = OperandA->Values[PointIndex];
-	const double B = OperandB ? OperandB->Values[PointIndex] : TypedFilterFactory->Config.OperandBConstant;
-	return PCGExCompare::Compare(TypedFilterFactory->Config.Comparison, A, B, TypedFilterFactory->Config.Tolerance);
-}
-
 namespace PCGExCompareFilter
 {
 }

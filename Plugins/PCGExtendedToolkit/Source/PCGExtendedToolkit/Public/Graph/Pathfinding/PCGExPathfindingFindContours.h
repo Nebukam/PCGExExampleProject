@@ -4,6 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/PCGExDataForward.h"
 #include "Geometry/PCGExGeo.h"
 #include "Graph/PCGExEdgesProcessor.h"
 
@@ -54,16 +55,16 @@ public:
 	/** Ensure the node doesn't output duplicate path. Can be expensive. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bDedupePaths = true;
-	
+
 	/**  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	EPCGExContourShapeTypeOutput OutputType = EPCGExContourShapeTypeOutput::Both;
-	
+
 	/** Drive how a seed selects a node. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	FPCGExNodeSelectionDetails SeedPicking;
 
-	
+
 	/** Whether or not to duplicate dead end points. Useful if you plan on offsetting the generated contours. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bDuplicateDeadEndPoints = false;
@@ -78,7 +79,7 @@ public:
 
 	/** Which Seed attributes to forward on paths. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging & Forwarding")
-	FPCGExForwardDetails SeedForwardAttributes;
+	FPCGExForwardDetails SeedForwarding;
 
 	/** . */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging & Forwarding", meta=(InlineEditConditionToggle))
@@ -105,7 +106,7 @@ public:
 	FName DeadEndAttributeName = TEXT("IsDeadEnd");
 
 	/** Whether or not to search for closest node using an octree. Depending on your dataset, enabling this may be either much faster, or much slower. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Performance")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Performance", meta=(PCG_NotOverridable, AdvancedDisplay))
 	bool bUseOctreeSearch = false;
 
 private:
@@ -155,8 +156,10 @@ namespace PCGExFindContours
 		mutable FRWLock UniquePathsLock;
 		TSet<uint32> UniquePathsBounds;
 		TSet<uint64> UniquePathsStartPairs;
-		
+
 	protected:
+		const UPCGExFindContoursSettings* LocalSettings = nullptr;
+
 		TArray<FVector>* ProjectedPositions = nullptr;
 
 		bool bBuildExpandedNodes = false;
@@ -167,7 +170,6 @@ namespace PCGExFindContours
 		FProcessor(PCGExData::FPointIO* InVtx, PCGExData::FPointIO* InEdges):
 			FClusterProcessor(InVtx, InEdges)
 		{
-			
 		}
 
 		virtual ~FProcessor() override;
