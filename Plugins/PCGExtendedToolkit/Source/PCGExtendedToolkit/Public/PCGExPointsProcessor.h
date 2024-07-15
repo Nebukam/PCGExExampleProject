@@ -117,7 +117,7 @@ public:
 
 	/** Async work priority for this node.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Performance", meta=(PCG_NotOverridable, AdvancedDisplay, EditCondition="bDoAsyncProcessing"))
-	EPCGExAsyncPriority WorkPriority = GetDefault<UPCGExGlobalSettings>()->DefaultWorkPriority;
+	EPCGExAsyncPriority WorkPriority = EPCGExAsyncPriority::Default;
 
 	/** Chunk size for parallel processing. <1 switches to preferred node value.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Performance", meta=(PCG_NotOverridable, AdvancedDisplay, EditCondition="bDoAsyncProcessing", ClampMin=-1, ClampMax=8196))
@@ -152,7 +152,11 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPointsProcessorContext : public FPCGExContex
 	virtual bool AdvancePointsIO(const bool bCleanupKeys = true);
 	virtual bool ExecuteAutomation();
 
-	void SetAsyncState(const PCGExMT::AsyncState WaitState) { SetState(WaitState, false); }
+	void SetAsyncState(const PCGExMT::AsyncState WaitState)
+	{
+		bIsPaused = true;
+		SetState(WaitState, false);
+	}
 
 	void SetState(PCGExMT::AsyncState OperationId, bool bResetAsyncWork = true)
 	{
@@ -165,7 +169,11 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExPointsProcessorContext : public FPCGExContex
 
 	bool IsSetup() const { return IsState(PCGExMT::State_Setup); }
 	bool IsDone() const { return IsState(PCGExMT::State_Done); }
-	void Done() { SetState(PCGExMT::State_Done); }
+	void Done()
+	{
+		bUseLock = false;
+		SetState(PCGExMT::State_Done);
+	}
 
 	bool TryComplete(const bool bForce = false);
 
