@@ -12,20 +12,20 @@ bool PCGExPointsFilter::TBitmaskFilter::Init(const FPCGContext* InContext, PCGEx
 {
 	if (!TFilter::Init(InContext, InPointDataFacade)) { return false; }
 
-	FlagsReader = PointDataFacade->GetOrCreateReader<int64>(TypedFilterFactory->Config.FlagsAttribute);
+	FlagsReader = PointDataFacade->GetScopedReader<int64>(TypedFilterFactory->Config.FlagsAttribute);
 
 	if (!FlagsReader)
 	{
-		PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Value attribute: {0}."), FText::FromName(TypedFilterFactory->Config.FlagsAttribute)));
+		PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Value attribute: \"{0}\"."), FText::FromName(TypedFilterFactory->Config.FlagsAttribute)));
 		return false;
 	}
 
 	if (TypedFilterFactory->Config.MaskType == EPCGExFetchType::Attribute)
 	{
-		MaskReader = PointDataFacade->GetOrCreateReader<int64>(TypedFilterFactory->Config.BitmaskAttribute);
+		MaskReader = PointDataFacade->GetScopedReader<int64>(TypedFilterFactory->Config.BitmaskAttribute);
 		if (!MaskReader)
 		{
-			PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Mask attribute: {0}."), FText::FromName(TypedFilterFactory->Config.BitmaskAttribute)));
+			PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Mask attribute: \"{0}\"."), FText::FromName(TypedFilterFactory->Config.BitmaskAttribute)));
 			return false;
 		}
 	}

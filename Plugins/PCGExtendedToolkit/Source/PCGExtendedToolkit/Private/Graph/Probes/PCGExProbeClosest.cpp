@@ -22,11 +22,11 @@ bool UPCGExProbeClosest::PrepareForPoints(const PCGExData::FPointIO* InPointIO)
 	}
 	else
 	{
-		MaxConnectionsCache = PrimaryDataFacade->GetOrCreateGetter<int32>(Config.MaxConnectionsAttribute);
+		MaxConnectionsCache = PrimaryDataFacade->GetScopedBroadcaster<int32>(Config.MaxConnectionsAttribute);
 
 		if (!MaxConnectionsCache)
 		{
-			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Max Connections attribute: {0}")), FText::FromName(Config.MaxConnectionsAttribute.GetName())));
+			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Max Connections attribute: \"{0}\"")), FText::FromName(Config.MaxConnectionsAttribute.GetName())));
 			return false;
 		}
 	}

@@ -21,11 +21,11 @@ bool UPCGExProbeOperation::PrepareForPoints(const PCGExData::FPointIO* InPointIO
 	}
 	else
 	{
-		SearchRadiusCache = PrimaryDataFacade->GetOrCreateGetter<double>(BaseConfig->SearchRadiusAttribute);
+		SearchRadiusCache = PrimaryDataFacade->GetScopedBroadcaster<double>(BaseConfig->SearchRadiusAttribute);
 
 		if (!SearchRadiusCache)
 		{
-			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Radius attribute: {0}")), FText::FromName(BaseConfig->SearchRadiusAttribute.GetName())));
+			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Radius attribute: \"{0}\"")), FText::FromName(BaseConfig->SearchRadiusAttribute.GetName())));
 			return false;
 		}
 	}

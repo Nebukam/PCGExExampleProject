@@ -314,8 +314,8 @@ namespace PCGExCluster
 
 		Bounds = FBox(ForceInit);
 
-		NumRawVtx = SubGraph->VtxIO->GetOutNum();
-		NumRawEdges = SubGraph->EdgesIO->GetOutNum();
+		NumRawVtx = SubGraph->VtxIO->GetNum(PCGExData::ESource::Out);
+		NumRawEdges = SubGraph->EdgesIO->GetNum(PCGExData::ESource::Out);
 
 		const TArray<FPCGPoint>& VtxPoints = SubGraph->VtxIO->GetOutIn()->GetPoints();
 		Nodes->Reserve(SubGraph->Nodes.Num());
@@ -977,12 +977,12 @@ namespace PCGExClusterTask
 
 		for (const PCGExCluster::FNode& Node : (*Cluster->Nodes))
 		{
-			if (Node.IsSimple() && !(*Breakpoints)[Node.NodeIndex]) { continue; }
+			if (Node.IsSimple() && !*(Breakpoints->GetData() + Node.NodeIndex)) { continue; }
 
 			const bool bIsValidStartNode =
 				bDeadEndsOnly ?
-					Node.IsDeadEnd() && !(*Breakpoints)[Node.NodeIndex] :
-					(Node.IsDeadEnd() || (*Breakpoints)[Node.NodeIndex] || Node.IsComplex());
+					Node.IsDeadEnd() && !*(Breakpoints->GetData() + Node.NodeIndex) :
+					(Node.IsDeadEnd() || *(Breakpoints->GetData() + Node.NodeIndex) || Node.IsComplex());
 
 			if (!bIsValidStartNode) { continue; }
 

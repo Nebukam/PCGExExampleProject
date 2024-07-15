@@ -23,11 +23,11 @@ void UPCGExHeuristicAttribute::PrepareForCluster(const PCGExCluster::FCluster* I
 	InPoints->CreateInKeys();
 	CachedScores.SetNumZeroed(NumPoints);
 
-	PCGExData::FCache<double>* ModifiersCache = DataFacade->GetOrCreateGetter<double>(Attribute, true);
+	PCGExData::FCache<double>* ModifiersCache = DataFacade->GetBroadcaster<double>(Attribute, true);
 
 	if (!ModifiersCache)
 	{
-		PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FTEXT("Invalid Heuristic attribute: {0}."), FText::FromName(Attribute.GetName())));
+		PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FTEXT("Invalid Heuristic attribute: \"{0}\"."), FText::FromName(Attribute.GetName())));
 		return;
 	}
 

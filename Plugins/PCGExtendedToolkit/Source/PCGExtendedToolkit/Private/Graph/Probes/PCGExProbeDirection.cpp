@@ -23,11 +23,11 @@ bool UPCGExProbeDirection::PrepareForPoints(const PCGExData::FPointIO* InPointIO
 	}
 	else
 	{
-		DirectionCache = PrimaryDataFacade->GetOrCreateGetter<FVector>(Config.DirectionAttribute);
+		DirectionCache = PrimaryDataFacade->GetScopedBroadcaster<FVector>(Config.DirectionAttribute);
 
 		if (!DirectionCache)
 		{
-			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Direction attribute: {0}")), FText::FromName(Config.DirectionAttribute.GetName())));
+			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Direction attribute: \"{0}\"")), FText::FromName(Config.DirectionAttribute.GetName())));
 			return false;
 		}
 	}

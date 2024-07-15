@@ -95,17 +95,17 @@ namespace PCGExWriteEdgeProperties
 			// Create edge-scope getters
 #define PCGEX_CREATE_LOCAL_AXIS_GETTER(_AXIS)\
 			if (Settings->bWriteRadius##_AXIS && Settings->Radius##_AXIS##Type == EPCGExFetchType::Attribute){\
-				SolidificationRad##_AXIS = Settings->Radius##_AXIS##Source == EPCGExGraphValueSource::Edge ? EdgeDataFacade->GetOrCreateGetter<double>(Settings->Radius##_AXIS##SourceAttribute) : VtxDataFacade->GetOrCreateGetter<double>(Settings->Radius##_AXIS##SourceAttribute);\
-				if (!SolidificationRad##_AXIS){ PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some edges don't have the specified Radius Attribute {0}."), FText::FromName(Settings->Radius##_AXIS##SourceAttribute.GetName()))); return false; }}
+				SolidificationRad##_AXIS = Settings->Radius##_AXIS##Source == EPCGExGraphValueSource::Edge ? EdgeDataFacade->GetBroadcaster<double>(Settings->Radius##_AXIS##SourceAttribute) : VtxDataFacade->GetBroadcaster<double>(Settings->Radius##_AXIS##SourceAttribute);\
+				if (!SolidificationRad##_AXIS){ PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some edges don't have the specified Radius Attribute \"{0}\"."), FText::FromName(Settings->Radius##_AXIS##SourceAttribute.GetName()))); return false; }}
 			PCGEX_FOREACH_XYZ(PCGEX_CREATE_LOCAL_AXIS_GETTER)
 #undef PCGEX_CREATE_LOCAL_AXIS_GETTER
 
 			if (Settings->SolidificationLerpOperand == EPCGExFetchType::Attribute)
 			{
-				SolidificationLerpGetter = EdgeDataFacade->GetOrCreateGetter<double>(Settings->SolidificationLerpAttribute);
+				SolidificationLerpGetter = EdgeDataFacade->GetBroadcaster<double>(Settings->SolidificationLerpAttribute);
 				if (!SolidificationLerpGetter)
 				{
-					PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some edges don't have the specified SolidificationEdgeLerp Attribute {0}."), FText::FromName(Settings->SolidificationLerpAttribute.GetName())));
+					PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some edges don't have the specified SolidificationEdgeLerp Attribute \"{0}\"."), FText::FromName(Settings->SolidificationLerpAttribute.GetName())));
 					return false;
 				}
 			}
@@ -113,19 +113,19 @@ namespace PCGExWriteEdgeProperties
 
 		if (Settings->DirectionMethod == EPCGExEdgeDirectionMethod::EndpointsAttribute)
 		{
-			VtxDirCompGetter = VtxDataFacade->GetOrCreateGetter<double>(Settings->DirSourceAttribute);
+			VtxDirCompGetter = VtxDataFacade->GetBroadcaster<double>(Settings->DirSourceAttribute);
 			if (!VtxDirCompGetter)
 			{
-				PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some vtx don't have the specified DirSource Attribute {0}."), FText::FromName(Settings->DirSourceAttribute.GetName())));
+				PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some vtx don't have the specified DirSource Attribute \"{0}\"."), FText::FromName(Settings->DirSourceAttribute.GetName())));
 				return false;
 			}
 		}
 		else if (Settings->DirectionMethod == EPCGExEdgeDirectionMethod::EdgeDotAttribute)
 		{
-			EdgeDirCompGetter = EdgeDataFacade->GetOrCreateGetter<FVector>(Settings->DirSourceAttribute);
+			EdgeDirCompGetter = EdgeDataFacade->GetBroadcaster<FVector>(Settings->DirSourceAttribute);
 			if (!EdgeDirCompGetter)
 			{
-				PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some edges don't have the specified DirSource Attribute {0}."), FText::FromName(Settings->DirSourceAttribute.GetName())));
+				PCGE_LOG_C(Warning, GraphAndLog, Context, FText::Format(FTEXT("Some edges don't have the specified DirSource Attribute \"{0}\"."), FText::FromName(Settings->DirSourceAttribute.GetName())));
 				return false;
 			}
 		}
@@ -194,7 +194,7 @@ namespace PCGExWriteEdgeProperties
 
 		auto MetadataBlend = [&]()
 		{
-			const PCGEx::FPointRef Target = EdgesIO->GetOutPointRef(Edge.PointIndex);
+			const PCGExData::FPointRef Target = EdgesIO->GetOutPointRef(Edge.PointIndex);
 			MetadataBlender->PrepareForBlending(Target);
 			MetadataBlender->Blend(Target, VtxIO->GetInPointRef(EdgeStartPtIndex), Target, BlendWeightStart);
 			MetadataBlender->Blend(Target, VtxIO->GetInPointRef(EdgeEndPtIndex), Target, BlendWeightEnd);

@@ -21,11 +21,11 @@ namespace PCGExNodeNeighborsCount
 
 		if (TypedFilterFactory->Config.CompareAgainst == EPCGExFetchType::Attribute)
 		{
-			LocalCount = PointDataFacade->GetOrCreateGetter<double>(TypedFilterFactory->Config.LocalCount);
+			LocalCount = PointDataFacade->GetBroadcaster<double>(TypedFilterFactory->Config.LocalCount);
 
 			if (!LocalCount)
 			{
-				PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid LocalCount attribute: {0}."), FText::FromName(TypedFilterFactory->Config.LocalCount.GetName())));
+				PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid LocalCount attribute: \"{0}\"."), FText::FromName(TypedFilterFactory->Config.LocalCount.GetName())));
 				return false;
 			}
 		}

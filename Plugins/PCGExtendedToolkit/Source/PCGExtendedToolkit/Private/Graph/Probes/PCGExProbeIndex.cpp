@@ -20,10 +20,10 @@ bool UPCGExProbeIndex::PrepareForPoints(const PCGExData::FPointIO* InPointIO)
 
 	if (Config.TargetIndex == EPCGExFetchType::Attribute)
 	{
-		TargetCache = PrimaryDataFacade->GetOrCreateGetter<int32>(Config.TargetAttribute);
+		TargetCache = PrimaryDataFacade->GetScopedBroadcaster<int32>(Config.TargetAttribute);
 		if (!TargetCache)
 		{
-			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Target attribute: {0}")), FText::FromName(Config.TargetAttribute.GetName())));
+			PCGE_LOG_C(Error, GraphAndLog, Context, FText::Format(FText::FromString(TEXT("Invalid Target attribute: \"{0}\"")), FText::FromName(Config.TargetAttribute.GetName())));
 			return false;
 		}
 	}

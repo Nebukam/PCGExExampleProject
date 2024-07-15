@@ -12,21 +12,21 @@ bool PCGExPointsFilter::TBooleanComparisonFilter::Init(const FPCGContext* InCont
 {
 	if (!TFilter::Init(InContext, InPointDataFacade)) { return false; }
 
-	OperandA = PointDataFacade->GetOrCreateGetter<bool>(TypedFilterFactory->Config.OperandA);
+	OperandA = PointDataFacade->GetScopedBroadcaster<bool>(TypedFilterFactory->Config.OperandA);
 
 	if (!OperandA)
 	{
-		PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Operand A attribute: {0}."), FText::FromName(TypedFilterFactory->Config.OperandA.GetName())));
+		PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Operand A attribute: \"{0}\"."), FText::FromName(TypedFilterFactory->Config.OperandA.GetName())));
 		return false;
 	}
 
 	if (TypedFilterFactory->Config.CompareAgainst == EPCGExFetchType::Attribute)
 	{
-		OperandB = PointDataFacade->GetOrCreateGetter<bool>(TypedFilterFactory->Config.OperandB);
+		OperandB = PointDataFacade->GetScopedBroadcaster<bool>(TypedFilterFactory->Config.OperandB);
 
 		if (!OperandB)
 		{
-			PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Operand B attribute: {0}."), FText::FromName(TypedFilterFactory->Config.OperandB.GetName())));
+			PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Operand B attribute: \"{0}\"."), FText::FromName(TypedFilterFactory->Config.OperandB.GetName())));
 			return false;
 		}
 	}

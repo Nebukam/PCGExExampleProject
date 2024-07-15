@@ -230,8 +230,7 @@ FPCGExFindContoursContext::~FPCGExFindContoursContext()
 {
 	PCGEX_TERMINATE_ASYNC
 
-	if (SeedsDataFacade) { PCGEX_DELETE(SeedsDataFacade->Source) }
-	PCGEX_DELETE(SeedsDataFacade)
+	PCGEX_DELETE_FACADE_AND_SOURCE(SeedsDataFacade)
 
 	PCGEX_DELETE(Paths)
 
@@ -395,7 +394,7 @@ namespace PCGExFindContours
 
 		ProjectionTaskGroup = AsyncManager->CreateGroup();
 		ProjectionTaskGroup->StartRanges(
-			[&](const int32 Index)
+			[&](const int32 Index, const int32 Count, const int32 LoopIdx)
 			{
 				ProjectedPositions[Index] = ProjectionDetails.ProjectFlat(VtxIO->GetInPoint(Index).Transform.GetLocation(), Index);
 			},
