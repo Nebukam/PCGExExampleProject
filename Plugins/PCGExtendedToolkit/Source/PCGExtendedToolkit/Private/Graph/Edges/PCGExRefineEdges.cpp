@@ -195,14 +195,14 @@ namespace PCGExRefineEdges
 					SanitizeTaskGroup = AsyncManagerPtr->CreateGroup();
 					SanitizeTaskGroup->SetOnCompleteCallback([&]() { InsertEdges(); });
 					SanitizeTaskGroup->StartRanges<FSanitizeRangeTask>(
-						NumNodes, GetDefault<UPCGExGlobalSettings>()->GetPointsBatchIteration(),
+						NumNodes, GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize(),
 						nullptr, this);
 				});
 
 			FilterManager = new PCGExPointFilter::TManager(EdgeDataFacade);
 			FilterManager->Init(Context, TypedContext->PreserveEdgeFilterFactories);
 			FilterTaskGroup->StartRanges<FFilterRangeTask>(
-				NumEdges, GetDefault<UPCGExGlobalSettings>()->GetPointsBatchIteration(),
+				NumEdges, GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize(),
 				nullptr, this);
 		}
 		else
@@ -249,7 +249,7 @@ namespace PCGExRefineEdges
 						break;
 					}
 
-					const double ELengthSqr = EEdge->GetEdgeLengthSquared();
+					const double ELengthSqr = EEdge->GetEdgeLengthSquared(Processor->Cluster);
 					if (LongestLength < ELengthSqr)
 					{
 						LongestLength = ELengthSqr;
@@ -273,7 +273,7 @@ namespace PCGExRefineEdges
 						break;
 					}
 
-					const double ELengthSqr = EEdge->GetEdgeLengthSquared();
+					const double ELengthSqr = EEdge->GetEdgeLengthSquared(Processor->Cluster);
 					if (ShortestLength > ELengthSqr)
 					{
 						ShortestLength = ELengthSqr;

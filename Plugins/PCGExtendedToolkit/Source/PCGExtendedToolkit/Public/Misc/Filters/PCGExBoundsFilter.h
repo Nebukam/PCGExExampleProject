@@ -23,9 +23,17 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExBoundsFilterConfig
 	{
 	}
 
+	/** Bounds type. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	EPCGExPointBoundsSource BoundsSource = EPCGExPointBoundsSource::ScaledBounds;
+
 	/** Transform OperandA with the local point' transform */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bCheckIfInside = true;
+
+	/** Epsilon value used to expand the box when testing if IsInside. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	double InsideEpsilon = 1e-4;
 };
 
 /**
@@ -53,7 +61,7 @@ namespace PCGExPointsFilter
 		explicit TBoundsFilter(const UPCGExBoundsFilterFactory* InFactory)
 			: TFilter(InFactory), TypedFilterFactory(InFactory)
 		{
-			Cloud = TypedFilterFactory->BoundsDataFacade ? TypedFilterFactory->BoundsDataFacade->GetCloud() : nullptr;
+			Cloud = TypedFilterFactory->BoundsDataFacade ? TypedFilterFactory->BoundsDataFacade->GetCloud(TypedFilterFactory->Config.BoundsSource, TypedFilterFactory->Config.InsideEpsilon) : nullptr;
 		}
 
 		const UPCGExBoundsFilterFactory* TypedFilterFactory;

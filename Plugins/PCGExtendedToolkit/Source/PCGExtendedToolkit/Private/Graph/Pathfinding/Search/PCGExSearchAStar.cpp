@@ -20,10 +20,10 @@ bool UPCGExSearchAStar::FindPath(
 	const TArray<PCGExGraph::FIndexedEdge>& EdgesRef = *Cluster->Edges;
 
 	const PCGExCluster::FNode& SeedNode = NodesRef[Cluster->FindClosestNode(SeedPosition, SeedSelection->PickingMethod, 1)];
-	if (!SeedSelection->WithinDistance(SeedNode.Position, SeedPosition)) { return false; }
+	if (!SeedSelection->WithinDistance(Cluster->GetPos(SeedNode), SeedPosition)) { return false; }
 
 	const PCGExCluster::FNode& GoalNode = NodesRef[Cluster->FindClosestNode(GoalPosition, GoalSelection->PickingMethod, 1)];
-	if (!GoalSelection->WithinDistance(GoalNode.Position, GoalPosition)) { return false; }
+	if (!GoalSelection->WithinDistance(Cluster->GetPos(GoalNode), GoalPosition)) { return false; }
 
 	if (SeedNode.NodeIndex == GoalNode.NodeIndex) { return false; }
 
@@ -106,10 +106,27 @@ bool UPCGExSearchAStar::FindPath(
 	int32 PathEdgeIndex;
 	PCGEx::NH64(PathHash, PathNodeIndex, PathEdgeIndex);
 
+	TArray<int32> Path;
+
+	if (PathNodeIndex != -1)
+	{
+		Path.Add(GoalNode.NodeIndex);
+		if (PathNodeIndex != -1)
+		{
+			const PCGExGraph::FIndexedEdge& E = EdgesRef[PathEdgeIndex];
+			Heuristics->FeedbackScore(GoalNode, E);
+			if (LocalFeedback) { Heuristics->FeedbackScore(GoalNode, E); }
+		}
+		else
+		{
+			Heuristics->FeedbackPointScore(GoalNode);
+			if (LocalFeedback) { Heuristics->FeedbackPointScore(GoalNode); }
+		}
+	}
+
 	if (PathNodeIndex != -1)
 	{
 		bSuccess = true;
-		TArray<int32> Path;
 
 		while (PathNodeIndex != -1)
 		{

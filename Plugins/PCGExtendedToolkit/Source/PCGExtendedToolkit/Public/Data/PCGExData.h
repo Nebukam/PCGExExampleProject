@@ -405,7 +405,7 @@ namespace PCGExData
 				PCGEX_DELETE(Getter)
 				return nullptr;
 			}
-			
+
 			FCache<T>* Cache = GetCache<T>(Getter->FullName);
 			Cache->SetDynamicGetter(Getter);
 
@@ -502,7 +502,7 @@ namespace PCGExData
 			return Data->Metadata->GetConstTypedAttribute<T>(InName);
 		}
 
-		PCGExGeo::FPointBoxCloud* GetCloud()
+		PCGExGeo::FPointBoxCloud* GetCloud(const EPCGExPointBoundsSource BoundsSource, const double Epsilon = DBL_EPSILON)
 		{
 			{
 				FReadScopeLock ReadScopeLock(CloudLock);
@@ -511,7 +511,7 @@ namespace PCGExData
 
 			{
 				FWriteScopeLock WriteScopeLock(CloudLock);
-				Cloud = new PCGExGeo::FPointBoxCloud(GetIn());
+				Cloud = new PCGExGeo::FPointBoxCloud(GetIn(), BoundsSource, Epsilon);
 			}
 
 			return Cloud;

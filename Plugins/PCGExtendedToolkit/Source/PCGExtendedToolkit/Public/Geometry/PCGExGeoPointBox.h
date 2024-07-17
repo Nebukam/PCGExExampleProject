@@ -118,14 +118,9 @@ namespace PCGExGeo
 
 		void ReduceToArray()
 		{
-			TArray<uint64> Keys;
-			IntersectionsMap.GetKeys(Keys);
-
-			PCGEX_SET_NUM_UNINITIALIZED(IntersectionsList, Keys.Num())
-
+			PCGEX_SET_NUM_UNINITIALIZED(IntersectionsList, IntersectionsMap.Num())
 			int32 Index = 0;
-			for (const uint64 Key : Keys) { IntersectionsList[Index++] = IntersectionsMap[Key]; }
-			Keys.Empty();
+			for (const TPair<uint64, FIntersections*>& Pair : IntersectionsMap) { IntersectionsList[Index++] = Pair.Value; }
 			IntersectionsMap.Empty();
 		}
 
@@ -165,35 +160,35 @@ namespace PCGExGeo
 		FBox EpsilonBox;
 		int32 Index;
 
-		explicit FPointBox(const FPCGPoint& InPoint, const int32 InIndex):
+		explicit FPointBox(const FPCGPoint& InPoint, const int32 InIndex, const EPCGExPointBoundsSource BoundsSource, double Epsilon = DBL_EPSILON):
 			Transform(FTransform(InPoint.Transform.GetRotation(), InPoint.Transform.GetLocation(), FVector::One())),
 			Index(InIndex)
 		{
-			const FBox PointBox = InPoint.GetLocalBounds();
-			const FVector Extents = PointBox.GetExtent() * InPoint.Transform.GetScale3D();
+			const FBox PointBox = PCGExMath::GetLocalBounds(InPoint, BoundsSource);
+			const FVector Extents = PointBox.GetExtent();
 			const double Len = Extents.Length();
 
 			Box = FBox(Extents * -1, Extents);
-			EpsilonBox = FBox((Extents - PCGExMath::EPSILONV) * -1, (Extents - PCGExMath::EPSILONV));
-			Sphere = FBoxSphereBounds(InPoint.Transform.GetLocation(), FVector(Len), Len);
+			EpsilonBox = Box.ExpandBy(-Epsilon);
+			Sphere = FBoxSphereBounds(Transform.GetLocation(), FVector(Len), Len);
 		}
 
-		bool Contains(const FVector& Position) const { return Box.IsInside(Transform.InverseTransformPosition(Position)); }
-		bool ContainsMinusEpsilon(const FVector& Position) const { return EpsilonBox.IsInside(Transform.InverseTransformPosition(Position)); }
+		FORCEINLINE bool Contains(const FVector& Position) const { return Box.IsInside(Transform.InverseTransformPosition(Position)); }
+		FORCEINLINE bool ContainsMinusEpsilon(const FVector& Position) const { return EpsilonBox.IsInside(Transform.InverseTransformPosition(Position)); }
 
-		bool Intersect(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource) const
+		FORCEINLINE bool Intersect(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource) const
 		{
 			const FBox LocalBox = PCGExMath::GetLocalBounds(Point, BoundsSource).TransformBy(Point.Transform).InverseTransformBy(Transform);
 			return Box.Intersect(LocalBox);
 		}
 
-		bool Contains(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource) const
+		FORCEINLINE bool Contains(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource) const
 		{
 			const FBox LocalBox = PCGExMath::GetLocalBounds(Point, BoundsSource).TransformBy(Point.Transform).InverseTransformBy(Transform);
 			return Box.IsInside(LocalBox);
 		}
 
-		bool ContainsOrIntersect(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource, bool& bContains, bool& bIntersects) const
+		FORCEINLINE bool ContainsOrIntersect(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource, bool& bContains, bool& bIntersects) const
 		{
 			const FBox LocalBox = PCGExMath::GetLocalBounds(Point, BoundsSource).TransformBy(Point.Transform).InverseTransformBy(Transform);
 			bContains = Box.IsInside(LocalBox);
@@ -341,17 +336,20 @@ namespace PCGExGeo
 		FBox CloudBounds;
 
 	public:
-		explicit FPointBoxCloud(const UPCGPointData* PointData)
+		explicit FPointBoxCloud(const UPCGPointData* PointData, const EPCGExPointBoundsSource BoundsSource, const double Epsilon = DBL_EPSILON)
 		{
 			CloudBounds = PointData->GetBounds();
 			Octree = new PointBoxCloudOctree(CloudBounds.GetCenter(), CloudBounds.GetExtent().Length() * 1.5);
 			const TArray<FPCGPoint>& Points = PointData->GetPoints();
 
+			CloudBounds = FBox(ForceInit);
+
 			PCGEX_SET_NUM_UNINITIALIZED(Boxes, Points.Num())
 
 			for (int i = 0; i < Points.Num(); i++)
 			{
-				FPointBox* NewPointBox = new FPointBox(Points[i], i);
+				FPointBox* NewPointBox = new FPointBox(Points[i], i, BoundsSource, Epsilon);
+				CloudBounds += NewPointBox->Box.TransformBy(NewPointBox->Transform);
 				Boxes[i] = NewPointBox;
 				Octree->AddElement(NewPointBox);
 			}
@@ -410,7 +408,7 @@ namespace PCGExGeo
 			Octree->FindNearbyElements(
 				InPosition, [&](const FPointBox* NearbyBox)
 				{
-					if (NearbyBox->Contains(InPosition)) { OutOverlaps.Add(*(Boxes.GetData() + NearbyBox->Index)); }
+					if (NearbyBox->ContainsMinusEpsilon(InPosition)) { OutOverlaps.Add(*(Boxes.GetData() + NearbyBox->Index)); }
 				});
 			return !OutOverlaps.IsEmpty();
 		}
