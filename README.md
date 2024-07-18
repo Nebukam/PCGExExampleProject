@@ -8,7 +8,7 @@
 
  > This project is currently WIP, come back regularily for updates!
 
-![image](https://github.com/Nebukam/PCGExExampleProject/assets/5935407/ecbcfac4-938b-4455-8fb5-ef10c7a19fa0)
+![image](https://github.com/user-attachments/assets/e85deca5-9496-4c5e-a3d1-717e436a199b)
 
 ## Important notes
 - #### The included PCGExtendedToolkit is the latest package published for 5.4.
