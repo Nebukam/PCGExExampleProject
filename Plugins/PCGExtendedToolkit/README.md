@@ -36,7 +36,9 @@ Powerful tool to extract, transfer and blend data between groups of points, spli
 ### Low level utilities
 A lot of simple yet powerful utility nodes ranging from complex sorting, complex partitioning, remapping, advanced filters with chainable conditions, to bitmask operations.
 
-#### *And so much more!*
+![hl-misc](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/docs/_sources/assets/misc/highlight-miscjpg.jpg)
+
+#### *And so much more -- PCGEx has 100+ nodes!*
 
 
 ### Disclaimer
