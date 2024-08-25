@@ -10,7 +10,7 @@
 
 namespace PCGExGeo
 {
-	struct PCGEXTENDEDTOOLKIT_API FCut
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FCut
 	{
 		FVector Position = FVector::ZeroVector;
 		FVector Normal = FVector::ZeroVector;
@@ -23,7 +23,25 @@ namespace PCGExGeo
 		}
 	};
 
-	struct PCGEXTENDEDTOOLKIT_API FIntersections
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FSample
+	{
+		FVector Distances = FVector::ZeroVector;
+		FVector UVW = FVector::ZeroVector;
+		double Weight = 0;
+		int32 BoxIndex = -1;
+		bool bIsInside = false;
+
+		FSample()
+		{
+		}
+
+		FSample(const FVector& InDistances, const int32 InBoxIndex, const bool IsInside):
+			Distances(InDistances), BoxIndex(InBoxIndex), bIsInside(IsInside)
+		{
+		}
+	};
+
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FIntersections
 	{
 		TArray<FCut> Cuts;
 		FVector StartPosition = FVector::ZeroVector;
@@ -86,7 +104,7 @@ namespace PCGExGeo
 		}
 	};
 
-	class PCGEXTENDEDTOOLKIT_API FSegmentation
+	class /*PCGEXTENDEDTOOLKIT_API*/ FSegmentation
 	{
 		mutable FRWLock IntersectionsLock;
 
@@ -152,12 +170,14 @@ namespace PCGExGeo
 		}
 	};
 
-	struct PCGEXTENDEDTOOLKIT_API FPointBox
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FPointBox
 	{
 		FTransform Transform;
 		FBoxSphereBounds Sphere;
+		FVector Extents;
 		FBox Box;
 		FBox EpsilonBox;
+		double Len;
 		int32 Index;
 
 		explicit FPointBox(const FPCGPoint& InPoint, const int32 InIndex, const EPCGExPointBoundsSource BoundsSource, double Epsilon = DBL_EPSILON):
@@ -165,10 +185,11 @@ namespace PCGExGeo
 			Index(InIndex)
 		{
 			const FBox PointBox = PCGExMath::GetLocalBounds(InPoint, BoundsSource);
-			const FVector Extents = PointBox.GetExtent();
-			const double Len = Extents.Length();
+			Extents = PointBox.GetExtent();
+			Len = Extents.Length();
 
 			Box = FBox(Extents * -1, Extents);
+
 			EpsilonBox = Box.ExpandBy(-Epsilon);
 			Sphere = FBoxSphereBounds(Transform.GetLocation(), FVector(Len), Len);
 		}
@@ -176,25 +197,47 @@ namespace PCGExGeo
 		FORCEINLINE bool Contains(const FVector& Position) const { return Box.IsInside(Transform.InverseTransformPosition(Position)); }
 		FORCEINLINE bool ContainsMinusEpsilon(const FVector& Position) const { return EpsilonBox.IsInside(Transform.InverseTransformPosition(Position)); }
 
-		FORCEINLINE bool Intersect(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource) const
+		FORCEINLINE bool Intersect(const FPCGPoint& Point, const EPCGExPointBoundsSource BoundsSource) const
 		{
 			const FBox LocalBox = PCGExMath::GetLocalBounds(Point, BoundsSource).TransformBy(Point.Transform).InverseTransformBy(Transform);
 			return Box.Intersect(LocalBox);
 		}
 
-		FORCEINLINE bool Contains(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource) const
+		FORCEINLINE bool Contains(const FPCGPoint& Point, const EPCGExPointBoundsSource BoundsSource) const
 		{
 			const FBox LocalBox = PCGExMath::GetLocalBounds(Point, BoundsSource).TransformBy(Point.Transform).InverseTransformBy(Transform);
 			return Box.IsInside(LocalBox);
 		}
 
-		FORCEINLINE bool ContainsOrIntersect(const FPCGPoint& Point, EPCGExPointBoundsSource BoundsSource, bool& bContains, bool& bIntersects) const
+		FORCEINLINE bool ContainsOrIntersect(const FPCGPoint& Point, const EPCGExPointBoundsSource BoundsSource, bool& bContains, bool& bIntersects) const
 		{
 			const FBox LocalBox = PCGExMath::GetLocalBounds(Point, BoundsSource).TransformBy(Point.Transform).InverseTransformBy(Transform);
 			bContains = Box.IsInside(LocalBox);
 			bIntersects = Box.Intersect(LocalBox);
 			return bContains || bIntersects;
 		}
+
+		FORCEINLINE void Sample(const FVector& Position, FSample& OutSample) const
+		{
+			const FVector LocalPosition = Transform.InverseTransformPosition(Position);
+			OutSample.bIsInside = Box.IsInside(LocalPosition);
+			OutSample.Distances = LocalPosition;
+			OutSample.BoxIndex = Index;
+			OutSample.UVW = FVector(
+				LocalPosition.X / Extents.X,
+				LocalPosition.Y / Extents.Y,
+				LocalPosition.Z / Extents.Z);
+			OutSample.Weight = 1 - ((
+				(FMath::Clamp(FMath::Abs(OutSample.UVW.X), 0, Extents.X) / Extents.X) +
+				(FMath::Clamp(FMath::Abs(OutSample.UVW.Y), 0, Extents.Y) / Extents.Y) +
+				(FMath::Clamp(FMath::Abs(OutSample.UVW.Z), 0, Extents.Z) / Extents.Z)) / 3);
+		}
+
+		FORCEINLINE void Sample(const FPCGPoint& Point, FSample& OutSample) const
+		{
+			Sample(Point.Transform.GetLocation(), OutSample);
+		}
+
 
 		bool ProcessIntersections(FIntersections* InIntersections) const
 		{
@@ -298,7 +341,7 @@ namespace PCGExGeo
 		}
 	};
 
-	struct PCGEXTENDEDTOOLKIT_API FPointBoxSemantics
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FPointBoxSemantics
 	{
 		enum { MaxElementsPerLeaf = 16 };
 
@@ -328,7 +371,7 @@ namespace PCGExGeo
 		}
 	};
 
-	class PCGEXTENDEDTOOLKIT_API FPointBoxCloud
+	class /*PCGEXTENDEDTOOLKIT_API*/ FPointBoxCloud
 	{
 		using PointBoxCloudOctree = TOctree2<FPointBox*, FPointBoxSemantics>;
 		PointBoxCloudOctree* Octree = nullptr;
@@ -354,6 +397,8 @@ namespace PCGExGeo
 				Octree->AddElement(NewPointBox);
 			}
 		}
+
+		FORCEINLINE const PointBoxCloudOctree* GetOctree() const { return Octree; }
 
 		~FPointBoxCloud()
 		{
@@ -459,6 +504,19 @@ namespace PCGExGeo
 			const TArray<FPCGPoint>& Points = InPointData->GetPoints();
 
 			return false;
+		}
+
+		bool Sample(const FPCGPoint& Point, const EPCGExPointBoundsSource BoundsSource, TArray<FSample>& OutSample) const
+		{
+			const FBoxCenterAndExtent BCAE = FBoxCenterAndExtent(Point.Transform.GetLocation(), PCGExMath::GetLocalBounds(Point, BoundsSource).GetExtent());
+			Octree->FindElementsWithBoundsTest(
+				BCAE, [&](const FPointBox* NearbyBox)
+				{
+					FSample& Sample = OutSample.Emplace_GetRef();
+					NearbyBox->Sample(Point, Sample);
+				});
+
+			return !OutSample.IsEmpty();
 		}
 	};
 }

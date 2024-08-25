@@ -16,7 +16,7 @@
 class UPCGExHeuristicOperation;
 
 USTRUCT(BlueprintType)
-struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicAttributeConfig : public FPCGExHeuristicConfigBase
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExHeuristicAttributeConfig : public FPCGExHeuristicConfigBase
 {
 	GENERATED_BODY()
 
@@ -37,8 +37,8 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicAttributeConfig : public FPCGExHeur
 /**
  * 
  */
-UCLASS(DisplayName = "Direction")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicAttribute : public UPCGExHeuristicOperation
+UCLASS(MinimalAPI, DisplayName = "Direction")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicAttribute : public UPCGExHeuristicOperation
 {
 	GENERATED_BODY()
 
@@ -58,7 +58,8 @@ public:
 		const PCGExCluster::FNode& To,
 		const PCGExGraph::FIndexedEdge& Edge,
 		const PCGExCluster::FNode& Seed,
-		const PCGExCluster::FNode& Goal) const override
+		const PCGExCluster::FNode& Goal,
+		const TArray<uint64>* TravelStack) const override
 	{
 		return CachedScores[Source == EPCGExGraphValueSource::Edge ? Edge.PointIndex : To.NodeIndex];
 	}
@@ -74,8 +75,8 @@ protected:
 };
 
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class PCGEXTENDEDTOOLKIT_API UPCGHeuristicsFactoryAttribute : public UPCGExHeuristicsFactoryBase
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicsFactoryAttribute : public UPCGExHeuristicsFactoryBase
 {
 	GENERATED_BODY()
 
@@ -85,8 +86,8 @@ public:
 	virtual UPCGExHeuristicOperation* CreateOperation() const override;
 };
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
-class PCGEXTENDEDTOOLKIT_API UPCGExCreateHeuristicAttributeSettings : public UPCGExHeuristicsFactoryProviderSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCreateHeuristicAttributeSettings : public UPCGExHeuristicsFactoryProviderSettings
 {
 	GENERATED_BODY()
 

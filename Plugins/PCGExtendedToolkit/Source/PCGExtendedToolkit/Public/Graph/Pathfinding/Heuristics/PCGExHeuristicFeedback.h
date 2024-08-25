@@ -12,7 +12,7 @@
 #include "PCGExHeuristicFeedback.generated.h"
 
 USTRUCT(BlueprintType)
-struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicConfigFeedback : public FPCGExHeuristicConfigBase
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExHeuristicConfigFeedback : public FPCGExHeuristicConfigBase
 {
 	GENERATED_BODY()
 
@@ -37,8 +37,8 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicConfigFeedback : public FPCGExHeuri
 /**
  * 
  */
-UCLASS(DisplayName = "Feedback")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicFeedback : public UPCGExHeuristicOperation
+UCLASS(MinimalAPI, DisplayName = "Feedback")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicFeedback : public UPCGExHeuristicOperation
 {
 	GENERATED_BODY()
 
@@ -67,7 +67,8 @@ public:
 		const PCGExCluster::FNode& To,
 		const PCGExGraph::FIndexedEdge& Edge,
 		const PCGExCluster::FNode& Seed,
-		const PCGExCluster::FNode& Goal) const override
+		const PCGExCluster::FNode& Goal,
+		const TArray<uint64>* TravelStack) const override
 	{
 		const double* NodePtr = NodeExtraWeight.Find(To.NodeIndex);
 		const double* EdgePtr = EdgeExtraWeight.Find(Edge.EdgeIndex);
@@ -94,8 +95,8 @@ public:
 
 ////
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class PCGEXTENDEDTOOLKIT_API UPCGHeuristicsFactoryFeedback : public UPCGExHeuristicsFactoryBase
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicsFactoryFeedback : public UPCGExHeuristicsFactoryBase
 {
 	GENERATED_BODY()
 
@@ -106,8 +107,8 @@ public:
 	virtual UPCGExHeuristicOperation* CreateOperation() const override;
 };
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicFeedbackProviderSettings : public UPCGExHeuristicsFactoryProviderSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicFeedbackProviderSettings : public UPCGExHeuristicsFactoryProviderSettings
 {
 	GENERATED_BODY()
 

@@ -23,8 +23,8 @@
 #define PCGEX_DELETE(_VALUE) if(_VALUE){ delete _VALUE; _VALUE = nullptr; }
 #define PCGEX_DELETE_UOBJECT(_VALUE) if(_VALUE){ PCGEX_UNROOT(_VALUE) _VALUE->MarkAsGarbage(); _VALUE = nullptr; } // ConditionalBeginDestroy
 #define PCGEX_DELETE_OPERATION(_VALUE) if(_VALUE){ _VALUE->Cleanup(); PCGEX_DELETE_UOBJECT(_VALUE) _VALUE = nullptr; } // ConditionalBeginDestroy
-#define PCGEX_DELETE_TARRAY(_VALUE) for(const auto* Item : _VALUE){ delete Item; } _VALUE.Empty();
-#define PCGEX_DELETE_TARRAY_FULL(_VALUE) if(_VALUE){ for(const auto* Item : (*_VALUE)){ delete Item; } PCGEX_DELETE(_VALUE); }
+#define PCGEX_DELETE_TARRAY(_VALUE) for(const auto* Item : _VALUE){ if(Item){ delete Item; }} _VALUE.Empty();
+#define PCGEX_DELETE_TARRAY_FULL(_VALUE) if(_VALUE){ for(const auto* Item : (*_VALUE)){ if(Item){ delete Item; }} PCGEX_DELETE(_VALUE); }
 #define PCGEX_DELETE_TMAP(_VALUE, _TYPE){TArray<_TYPE> Keys; _VALUE.GetKeys(Keys); for (const _TYPE Key : Keys) { delete *_VALUE.Find(Key); } _VALUE.Empty(); Keys.Empty(); }
 #define PCGEX_DELETE_FACADE_AND_SOURCE(_VALUE) if(_VALUE){ PCGEX_DELETE(_VALUE->Source) PCGEX_DELETE(_VALUE) }
 
@@ -33,7 +33,7 @@ MACRO(X)\
 MACRO(Y)\
 MACRO(Z)
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 3
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
 enum class EPCGPinStatus : uint8
 {
 	Normal = 0,
@@ -42,7 +42,7 @@ enum class EPCGPinStatus : uint8
 };
 #endif
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 3
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
 #define PCGEX_FOREACH_SUPPORTEDTYPES(MACRO, ...) \
 MACRO(bool, Boolean, __VA_ARGS__)       \
 MACRO(int32, Integer32, __VA_ARGS__)      \
@@ -126,13 +126,16 @@ if (!_SOURCE.ToSoftObjectPath().IsValid()) { _TARGET = TSoftObjectPtr<_TYPE>(_DE
 else { _TARGET = _SOURCE.LoadSynchronous(); }\
 if (!_TARGET) { _TARGET = TSoftObjectPtr<_TYPE>(_DEFAULT).LoadSynchronous(); }
 
+#define PCGEX_CLEAN_SP(_NAME) _NAME = nullptr;
+
 #pragma endregion
 
 #define PCGEX_SET_NUM(_ARRAY, _NUM) { const int32 _num_ = _NUM; _ARRAY.Reserve(_num_); _ARRAY.SetNum(_num_); }
+#define PCGEX_SET_NUM_DEFAULT(_ARRAY, _NUM, _DEFAULT) { PCGEX_SET_NUM(_ARRAY, _NUM) for(int i = 0; i < _NUM; i++){_ARRAY[i] = _DEFAULT;} }
 #define PCGEX_SET_NUM_PTR(_ARRAY, _NUM) { const int32 _num_ = _NUM; _ARRAY->Reserve(_num_); _ARRAY->SetNum(_num_); }
 
 #define PCGEX_SET_NUM_UNINITIALIZED(_ARRAY, _NUM) { const int32 _num_ = _NUM; _ARRAY.Reserve(_num_); _ARRAY.SetNumUninitialized(_num_); }
-#define PCGEX_SET_NUM_UNINITIALIZED_NULL(_ARRAY, _NUM) { const int32 _num_ = _NUM; _ARRAY.Reserve(_num_); _ARRAY.SetNumUninitialized(_num_); for(int i = 0; i < _num_; i++){_ARRAY[i] = nullptr;} }
+#define PCGEX_SET_NUM_NULLPTR(_ARRAY, _NUM) { const int32 _num_ = _NUM; _ARRAY.Reserve(_num_); _ARRAY.SetNumUninitialized(_num_); for(int i = 0; i < _num_; i++){_ARRAY[i] = nullptr;} }
 #define PCGEX_SET_NUM_UNINITIALIZED_PTR(_ARRAY, _NUM) { const int32 _num_ = _NUM; _ARRAY->Reserve(_num_); _ARRAY->SetNumUninitialized(_num_); }
 
 #define PCGEX_NODE_INFOS(_SHORTNAME, _NAME, _TOOLTIP)\
@@ -141,7 +144,7 @@ virtual FName AdditionalTaskName() const override{ return bCacheResult ? FName(F
 virtual FText GetDefaultNodeTitle() const override { return NSLOCTEXT("PCGEx" #_SHORTNAME, "NodeTitle", "PCGEx | " _NAME);} \
 virtual FText GetNodeTooltipText() const override{ return NSLOCTEXT("PCGEx" #_SHORTNAME "Tooltip", "NodeTooltip", _TOOLTIP); }
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 3
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
 #define PCGEX_NODE_INFOS_CUSTOM_SUBTITLE(_SHORTNAME, _NAME, _TOOLTIP, _TASK_NAME)\
 virtual FName GetDefaultNodeName() const override { return FName(TEXT(#_SHORTNAME)); } \
 virtual FName AdditionalTaskName() const override{ return _TASK_NAME.IsNone() ? FName(GetDefaultNodeTitle().ToString()) : FName(FString(GetDefaultNodeTitle().ToString() + "\r" + _TASK_NAME.ToString())); }\

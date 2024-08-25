@@ -13,7 +13,7 @@
  * 
  */
 UCLASS(Abstract)
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicOperation : public UPCGExOperation
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicOperation : public UPCGExOperation
 {
 	GENERATED_BODY()
 
@@ -43,7 +43,8 @@ public:
 		const PCGExCluster::FNode& To,
 		const PCGExGraph::FIndexedEdge& Edge,
 		const PCGExCluster::FNode& Seed,
-		const PCGExCluster::FNode& Goal) const
+		const PCGExCluster::FNode& Goal,
+		const TArray<uint64>* TravelStack = nullptr) const
 	{
 		return 0;
 	}

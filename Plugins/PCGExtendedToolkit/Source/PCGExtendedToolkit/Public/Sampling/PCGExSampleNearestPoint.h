@@ -38,7 +38,7 @@ class UPCGExNodeStateFactory;
 
 namespace PCGExNearestPoint
 {
-	struct PCGEXTENDEDTOOLKIT_API FTargetInfos
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FTargetInfos
 	{
 		FTargetInfos()
 		{
@@ -53,7 +53,7 @@ namespace PCGExNearestPoint
 		double Distance = 0;
 	};
 
-	struct PCGEXTENDEDTOOLKIT_API FTargetsCompoundInfos
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FTargetsCompoundInfos
 	{
 		FTargetsCompoundInfos()
 		{
@@ -97,8 +97,8 @@ namespace PCGExNearestPoint
 	};
 }
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Misc")
-class PCGEXTENDEDTOOLKIT_API UPCGExSampleNearestPointSettings : public UPCGExPointsProcessorSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Misc")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExSampleNearestPointSettings : public UPCGExPointsProcessorSettings
 {
 	GENERATED_BODY()
 
@@ -130,11 +130,11 @@ public:
 	EPCGExSampleMethod SampleMethod = EPCGExSampleMethod::WithinRange;
 
 	/** Minimum target range. Used as fallback if LocalRangeMin is enabled but missing. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, ClampMin=0))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, ClampMin=0, EditConditionHides, HideEditConditionToggle))
 	double RangeMin = 0;
 
 	/** Maximum target range. Used as fallback if LocalRangeMax is enabled but missing. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, ClampMin=0))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, ClampMin=0, EditConditionHides, HideEditConditionToggle))
 	double RangeMax = 300;
 
 	/** Use a per-point minimum range*/
@@ -263,22 +263,25 @@ public:
 	FName NumSamplesAttributeName = FName("NumSamples");
 };
 
-struct PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestPointContext final : public FPCGExPointsProcessorContext
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestPointContext final : public FPCGExPointsProcessorContext
 {
 	friend class FPCGExSampleNearestPointElement;
 
 	virtual ~FPCGExSampleNearestPointContext() override;
 
 	PCGExData::FFacade* TargetsFacade = nullptr;
+	const UPCGPointData::PointOctree* TargetOctree = nullptr;
 
 	FPCGExBlendingDetails BlendingDetails;
+	const TArray<FPCGPoint>* TargetPoints = nullptr;
+	int32 NumTargets = 0;
 
 	TObjectPtr<UCurveFloat> WeightCurve = nullptr;
 
 	PCGEX_FOREACH_FIELD_NEARESTPOINT(PCGEX_OUTPUT_DECL_TOGGLE)
 };
 
-class PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestPointElement final : public FPCGExPointsProcessorElement
+class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestPointElement final : public FPCGExPointsProcessorElement
 {
 public:
 	virtual FPCGContext* Initialize(
@@ -295,6 +298,8 @@ namespace PCGExSampleNearestPoints
 {
 	class FProcessor final : public PCGExPointsMT::FPointsProcessor
 	{
+		bool bSingleSample = false;
+
 		FPCGExSampleNearestPointContext* LocalTypedContext = nullptr;
 		const UPCGExSampleNearestPointSettings* LocalSettings = nullptr;
 
@@ -316,6 +321,8 @@ namespace PCGExSampleNearestPoints
 		}
 
 		virtual ~FProcessor() override;
+
+		void SamplingFailed(const int32 Index, FPCGPoint& Point) const;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
 		virtual void PrepareSingleLoopScopeForPoints(const uint32 StartIndex, const int32 Count) override;

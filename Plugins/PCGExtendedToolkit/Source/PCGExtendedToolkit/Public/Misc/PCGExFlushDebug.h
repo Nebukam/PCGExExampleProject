@@ -4,15 +4,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Elements/PCGPointProcessingElementBase.h"
 
 #include "PCGEx.h"
 #include "PCGExPointsProcessor.h"
 
 #include "PCGExFlushDebug.generated.h"
 
-UCLASS(BlueprintType, ClassGroup = (Procedural))
-class PCGEXTENDEDTOOLKIT_API UPCGExDebugSettings : public UPCGSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural))
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExDebugSettings : public UPCGSettings
 {
 	GENERATED_BODY()
 
@@ -42,13 +41,13 @@ protected:
 	FLinearColor CustomColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
 };
 
-struct PCGEXTENDEDTOOLKIT_API FPCGExDebugContext final : public FPCGContext
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExDebugContext final : public FPCGContext
 {
 	friend class FPCGExDebugElement;
 	bool bWait = true;
 };
 
-class PCGEXTENDEDTOOLKIT_API FPCGExDebugElement final : public FPCGPointProcessingElementBase
+class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExDebugElement final : public IPCGElement
 {
 public:
 	virtual FPCGContext* Initialize(const FPCGDataCollection& InputData, TWeakObjectPtr<UPCGComponent> SourceComponent, const UPCGNode* Node) override;

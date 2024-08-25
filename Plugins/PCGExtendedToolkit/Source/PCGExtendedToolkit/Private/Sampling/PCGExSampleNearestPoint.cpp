@@ -3,7 +3,6 @@
 
 #include "Sampling/PCGExSampleNearestPoint.h"
 
-#include "PCGExFactoryProvider.h"
 #include "PCGExPointsProcessor.h"
 #include "Data/Blending/PCGExMetadataBlender.h"
 #include "Graph/PCGExCluster.h"
@@ -39,6 +38,9 @@ PCGEX_INITIALIZE_ELEMENT(SampleNearestPoint)
 FPCGExSampleNearestPointContext::~FPCGExSampleNearestPointContext()
 {
 	PCGEX_TERMINATE_ASYNC
+
+	PCGEX_CLEAN_SP(WeightCurve)
+
 	if (TargetsFacade)
 	{
 		PCGEX_DELETE(TargetsFacade->Source)
@@ -77,6 +79,11 @@ bool FPCGExSampleNearestPointElement::Boot(FPCGExContext* InContext) const
 		PCGE_LOG(Error, GraphAndLog, FTEXT("Weight Curve asset could not be loaded."));
 		return false;
 	}
+
+	Context->TargetPoints = &Context->TargetsFacade->Source->GetIn()->GetPoints();
+	Context->NumTargets = Context->TargetPoints->Num();
+
+	Context->TargetOctree = &Context->TargetsFacade->Source->GetIn()->GetOctree();
 
 	return true;
 }
@@ -119,6 +126,17 @@ namespace PCGExSampleNearestPoints
 		PCGEX_DELETE(Blender)
 	}
 
+	void FProcessor::SamplingFailed(const int32 Index, FPCGPoint& Point) const
+	{
+		const double FailSafeDist = RangeMaxGetter ? FMath::Sqrt(RangeMaxGetter->Values[Index]) : LocalSettings->RangeMax;
+		PCGEX_OUTPUT_VALUE(Success, Index, false)
+		PCGEX_OUTPUT_VALUE(Transform, Index, Point.Transform)
+		PCGEX_OUTPUT_VALUE(LookAtTransform, Index, Point.Transform)
+		PCGEX_OUTPUT_VALUE(Distance, Index, FailSafeDist)
+		PCGEX_OUTPUT_VALUE(SignedDistance, Index, FailSafeDist)
+		PCGEX_OUTPUT_VALUE(NumSamples, Index, 0)
+	}
+
 	bool FProcessor::Process(PCGExMT::FTaskManager* AsyncManager)
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(PCGExSampleNearestPoints::Process);
@@ -126,8 +144,6 @@ namespace PCGExSampleNearestPoints
 
 		LocalTypedContext = TypedContext;
 		LocalSettings = Settings;
-
-		// TODO : Add Scoped Fetch
 
 		if (!FPointsProcessor::Process(AsyncManager)) { return false; }
 
@@ -162,6 +178,8 @@ namespace PCGExSampleNearestPoints
 			if (!RangeMaxGetter) { PCGE_LOG_C(Warning, GraphAndLog, Context, FTEXT("RangeMax metadata missing")); }
 		}
 
+		bSingleSample = LocalSettings->SampleMethod != EPCGExSampleMethod::WithinRange;
+
 		StartParallelLoopForPoints();
 
 		return true;
@@ -174,27 +192,12 @@ namespace PCGExSampleNearestPoints
 
 	void FProcessor::ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 Count)
 	{
-		auto SamplingFailed = [&]()
-		{
-			const double FailSafeDist = RangeMaxGetter ? FMath::Sqrt(RangeMaxGetter->Values[Index]) : LocalSettings->RangeMax;
-			PCGEX_OUTPUT_VALUE(Success, Index, false)
-			PCGEX_OUTPUT_VALUE(Transform, Index, Point.Transform)
-			PCGEX_OUTPUT_VALUE(LookAtTransform, Index, Point.Transform)
-			PCGEX_OUTPUT_VALUE(Distance, Index, FailSafeDist)
-			PCGEX_OUTPUT_VALUE(SignedDistance, Index, FailSafeDist)
-			PCGEX_OUTPUT_VALUE(NumSamples, Index, 0)
-		};
-
 		if (!PointFilterCache[Index])
 		{
-			SamplingFailed();
+			SamplingFailed(Index, Point);
 			return;
 		}
 
-		const bool bSingleSample = (LocalSettings->SampleMethod == EPCGExSampleMethod::ClosestTarget || LocalSettings->SampleMethod == EPCGExSampleMethod::FarthestTarget);
-
-		const TArray<FPCGPoint>& TargetPoints = LocalTypedContext->TargetsFacade->Source->GetIn()->GetPoints();
-		const int32 NumTargets = TargetPoints.Num();
 		const FVector SourceCenter = Point.Transform.GetLocation();
 
 		double RangeMin = FMath::Pow(RangeMaxGetter ? RangeMinGetter->Values[Index] : LocalSettings->RangeMin, 2);
@@ -207,7 +210,7 @@ namespace PCGExSampleNearestPoints
 
 
 		PCGExNearestPoint::FTargetsCompoundInfos TargetsCompoundInfos;
-		auto ProcessTarget = [&](const int32 PointIndex, const FPCGPoint& Target)
+		auto SampleTarget = [&](const int32 PointIndex, const FPCGPoint& Target)
 		{
 			//if (Context->ValueFilterManager && !Context->ValueFilterManager->Results[PointIndex]) { return; } // TODO : Implement
 
@@ -220,8 +223,7 @@ namespace PCGExSampleNearestPoints
 
 			if (RangeMax > 0 && (Dist < RangeMin || Dist > RangeMax)) { return; }
 
-			if (LocalSettings->SampleMethod == EPCGExSampleMethod::ClosestTarget ||
-				LocalSettings->SampleMethod == EPCGExSampleMethod::FarthestTarget)
+			if (bSingleSample)
 			{
 				TargetsCompoundInfos.UpdateCompound(PCGExNearestPoint::FTargetInfos(PointIndex, Dist));
 			}
@@ -232,44 +234,27 @@ namespace PCGExSampleNearestPoints
 			}
 		};
 
-
-		auto OctreeCallback = [&](const FPCGPointRef& InPointRef)
-		{
-			const ptrdiff_t PointIndex = InPointRef.Point - TargetPoints.GetData();
-			if (!TargetPoints.IsValidIndex(PointIndex)) { return; }
-
-			ProcessTarget(PointIndex, TargetPoints[PointIndex]);
-		};
-
 		if (RangeMax > 0)
 		{
-			if (LocalSettings->SampleMethod == EPCGExSampleMethod::ClosestTarget)
+			const FBox Box = FBoxCenterAndExtent(SourceCenter, FVector(FMath::Sqrt(RangeMax))).GetBox();
+			auto ProcessNeighbor = [&](const FPCGPointRef& InPointRef)
 			{
-				LocalTypedContext->TargetsFacade->Source->GetIn()->GetOctree().FindNearbyElements(SourceCenter, OctreeCallback);
-			}
-			else
-			{
-				const FBox Box = FBoxCenterAndExtent(SourceCenter, FVector(FMath::Sqrt(RangeMax))).GetBox();
-				LocalTypedContext->TargetsFacade->Source->GetIn()->GetOctree().FindElementsWithBoundsTest(Box, OctreeCallback);
-			}
+				const ptrdiff_t PointIndex = InPointRef.Point - LocalTypedContext->TargetPoints->GetData();
+				SampleTarget(PointIndex, *(LocalTypedContext->TargetPoints->GetData() + PointIndex));
+			};
+
+			LocalTypedContext->TargetOctree->FindElementsWithBoundsTest(Box, ProcessNeighbor);
 		}
 		else
 		{
-			if (LocalSettings->SampleMethod == EPCGExSampleMethod::ClosestTarget)
-			{
-				LocalTypedContext->TargetsFacade->Source->GetIn()->GetOctree().FindNearbyElements(SourceCenter, OctreeCallback);
-			}
-			else
-			{
-				TargetsInfos.Reserve(NumTargets);
-				for (int i = 0; i < NumTargets; i++) { ProcessTarget(i, TargetPoints[i]); }
-			}
+			TargetsInfos.Reserve(LocalTypedContext->NumTargets);
+			for (int i = 0; i < LocalTypedContext->NumTargets; i++) { SampleTarget(i, *(LocalTypedContext->TargetPoints->GetData() + i)); }
 		}
 
 		// Compound never got updated, meaning we couldn't find target in range
 		if (TargetsCompoundInfos.UpdateCount <= 0)
 		{
-			SamplingFailed();
+			SamplingFailed(Index, Point);
 			return;
 		}
 

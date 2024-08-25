@@ -6,8 +6,6 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 
-#include "Helpers/PCGHelpers.h"
-
 #include "PCGEx.h"
 #include "PCGExAttributeHelpers.h"
 
@@ -35,7 +33,7 @@ enum class EPCGExStringMatchMode : uint8
 };
 
 USTRUCT(BlueprintType)
-struct PCGEXTENDEDTOOLKIT_API FPCGExNameFiltersDetails
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExNameFiltersDetails
 {
 	GENERATED_BODY()
 
@@ -43,7 +41,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExNameFiltersDetails
 	{
 	}
 
-	explicit FPCGExNameFiltersDetails(bool FilterToRemove)
+	explicit FPCGExNameFiltersDetails(const bool FilterToRemove)
 		: bFilterToRemove(FilterToRemove)
 	{
 	}
@@ -72,7 +70,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExNameFiltersDetails
 
 	void Init()
 	{
-		const TArray<FString> Names = PCGHelpers::GetStringArrayFromCommaSeparatedString(CommaSeparatedNames);
+		const TArray<FString> Names = PCGEx::GetStringArrayFromCommaSeparatedList(CommaSeparatedNames);
 		for (const FString& Name : Names) { Matches.Add(Name, CommaSeparatedNameFilter); }
 	}
 
@@ -137,7 +135,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExNameFiltersDetails
 };
 
 USTRUCT(BlueprintType)
-struct PCGEXTENDEDTOOLKIT_API FPCGExCarryOverDetails
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExCarryOverDetails
 {
 	GENERATED_BODY()
 

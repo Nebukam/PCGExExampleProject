@@ -10,23 +10,9 @@
 #include "Geometry/PCGExGeo.h"
 #include "PCGExSplitPath.generated.h"
 
-class UPCGExEdgeRefineOperation;
-
 namespace PCGExSplitPath
 {
 	const FName SourceSplitFilters = TEXT("SplitConditions");
-	const FName SourceRemoveFilters = TEXT("RemoveConditions");
-
-	struct PCGEXTENDEDTOOLKIT_API FPath
-	{
-		int32 Start = -1;
-		int32 End = -1;
-		int32 Count = 0;
-
-		FPath()
-		{
-		}
-	};
 }
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Path Split Action"))
@@ -34,13 +20,14 @@ enum class EPCGExPathSplitAction : uint8
 {
 	Split UMETA(DisplayName = "Split", ToolTip="Duplicate the split point so the original becomes a new end, and the copy a new start."),
 	Remove UMETA(DisplayName = "Remove", ToolTip="Remove the split point, shrinking both the previous and next paths."),
+	Disconnect UMETA(DisplayName = "Disconnect", ToolTip="Disconnect the split point from the next one, starting a new path from the next."),
 };
 
 /**
  * 
  */
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Path")
-class PCGEXTENDEDTOOLKIT_API UPCGExSplitPathSettings : public UPCGExPathProcessorSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Path")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExSplitPathSettings : public UPCGExPathProcessorSettings
 {
 	GENERATED_BODY()
 
@@ -71,14 +58,14 @@ public:
 
 	/** If both split and remove are true, the selected behavior takes priority */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	EPCGExPathSplitAction Prioritize = EPCGExPathSplitAction::Split;
+	EPCGExPathSplitAction SplitAction = EPCGExPathSplitAction::Split;
 
 	/** Whether to output single-point data or not */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bOmitSinglePointOutputs = true;
 };
 
-struct PCGEXTENDEDTOOLKIT_API FPCGExSplitPathContext final : public FPCGExPathProcessorContext
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSplitPathContext final : public FPCGExPathProcessorContext
 {
 	friend class FPCGExSplitPathElement;
 
@@ -88,7 +75,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExSplitPathContext final : public FPCGExPathPr
 	TArray<UPCGExFilterFactoryBase*> RemoveFilterFactories;
 };
 
-class PCGEXTENDEDTOOLKIT_API FPCGExSplitPathElement final : public FPCGExPathProcessorElement
+class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSplitPathElement final : public FPCGExPathProcessorElement
 {
 public:
 	virtual FPCGContext* Initialize(
@@ -103,15 +90,26 @@ protected:
 
 namespace PCGExSplitPath
 {
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FPath
+	{
+		int32 Start = -1;
+		int32 End = -1;
+		int32 Count = 0;
+
+		FPath()
+		{
+		}
+	};
+
 	class FProcessor final : public PCGExPointsMT::FPointsProcessor
 	{
 		FPCGExSplitPathContext* LocalTypedContext = nullptr;
 		const UPCGExSplitPathSettings* LocalSettings = nullptr;
 
+		PCGExPointFilter::TManager* FilterManager = nullptr;
+
 		bool bClosedPath = false;
 
-		TArray<bool> DoSplit;
-		TArray<bool> DoRemove;
 		TArray<FPath> Paths;
 		TArray<PCGExData::FPointIO*> PathsIOs;
 
@@ -121,19 +119,96 @@ namespace PCGExSplitPath
 		int32 LastIndex = -1;
 		int32 CurrentPath = -1;
 
-		bool bPriorityToSplit = true;
-
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints)
 			: FPointsProcessor(InPoints)
 		{
-			DefaultPointFilterValue = false;
 		}
 
 		virtual ~FProcessor() override;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
-		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount) override;
+
+		FORCEINLINE void DoActionSplit(const int32 Index)
+		{
+			if (!FilterManager->Test(Index))
+			{
+				if (CurrentPath == -1)
+				{
+					CurrentPath = Paths.Emplace();
+					FPath& NewPath = Paths[CurrentPath];
+					NewPath.Start = Index;
+				}
+
+				FPath& Path = Paths[CurrentPath];
+				Path.Count++;
+				return;
+			}
+
+			if (CurrentPath != -1)
+			{
+				FPath& ClosedPath = Paths[CurrentPath];
+				ClosedPath.End = Index;
+				ClosedPath.Count++;
+			}
+
+			CurrentPath = Paths.Emplace();
+			FPath& NewPath = Paths[CurrentPath];
+			NewPath.Start = Index;
+			NewPath.Count++;
+		}
+
+		FORCEINLINE void DoActionRemove(const int32 Index)
+		{
+			if (!FilterManager->Test(Index))
+			{
+				if (CurrentPath == -1)
+				{
+					CurrentPath = Paths.Emplace();
+					FPath& NewPath = Paths[CurrentPath];
+					NewPath.Start = Index;
+				}
+
+				FPath& Path = Paths[CurrentPath];
+				Path.Count++;
+				return;
+			}
+
+			if (CurrentPath != -1)
+			{
+				FPath& Path = Paths[CurrentPath];
+				Path.End = Index - 1;
+			}
+
+			CurrentPath = -1;
+		}
+
+		FORCEINLINE void DoActionDisconnect(const int32 Index)
+		{
+			if (!FilterManager->Test(Index))
+			{
+				if (CurrentPath == -1)
+				{
+					CurrentPath = Paths.Emplace();
+					FPath& NewPath = Paths[CurrentPath];
+					NewPath.Start = Index;
+				}
+
+				FPath& Path = Paths[CurrentPath];
+				Path.Count++;
+				return;
+			}
+
+			if (CurrentPath != -1)
+			{
+				FPath& ClosedPath = Paths[CurrentPath];
+				ClosedPath.End = Index;
+				ClosedPath.Count++;
+			}
+
+			CurrentPath = -1;
+		}
+
 		virtual void ProcessSingleRangeIteration(const int32 Iteration, const int32 LoopIdx, const int32 LoopCount) override;
 		virtual void CompleteWork() override;
 		virtual void Output() override;

@@ -11,7 +11,7 @@
 #include "PCGExHeuristicDistance.generated.h"
 
 USTRUCT(BlueprintType)
-struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicConfigShortestDistance : public FPCGExHeuristicConfigBase
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExHeuristicConfigShortestDistance : public FPCGExHeuristicConfigBase
 {
 	GENERATED_BODY()
 
@@ -24,8 +24,8 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicConfigShortestDistance : public FPC
 /**
  * 
  */
-UCLASS(DisplayName = "Shortest Distance")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicDistance : public UPCGExHeuristicOperation
+UCLASS(MinimalAPI, DisplayName = "Shortest Distance")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicDistance : public UPCGExHeuristicOperation
 {
 	GENERATED_BODY()
 
@@ -45,7 +45,8 @@ public:
 		const PCGExCluster::FNode& To,
 		const PCGExGraph::FIndexedEdge& Edge,
 		const PCGExCluster::FNode& Seed,
-		const PCGExCluster::FNode& Goal) const override
+		const PCGExCluster::FNode& Goal,
+		const TArray<uint64>* TravelStack) const override
 	{
 		return SampleCurve((*Cluster->EdgeLengths)[Edge.EdgeIndex]) * ReferenceWeight;
 	}
@@ -56,8 +57,8 @@ protected:
 
 ////
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class PCGEXTENDEDTOOLKIT_API UPCGHeuristicsFactoryShortestDistance : public UPCGExHeuristicsFactoryBase
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicsFactoryShortestDistance : public UPCGExHeuristicsFactoryBase
 {
 	GENERATED_BODY()
 
@@ -67,8 +68,8 @@ public:
 	virtual UPCGExHeuristicOperation* CreateOperation() const override;
 };
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicsShortestDistanceProviderSettings : public UPCGExHeuristicsFactoryProviderSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicsShortestDistanceProviderSettings : public UPCGExHeuristicsFactoryProviderSettings
 {
 	GENERATED_BODY()
 

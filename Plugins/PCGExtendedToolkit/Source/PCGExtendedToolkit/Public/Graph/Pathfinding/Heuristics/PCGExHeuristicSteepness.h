@@ -11,7 +11,7 @@
 #include "PCGExHeuristicSteepness.generated.h"
 
 USTRUCT(BlueprintType)
-struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicConfigSteepness : public FPCGExHeuristicConfigBase
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExHeuristicConfigSteepness : public FPCGExHeuristicConfigBase
 {
 	GENERATED_BODY()
 
@@ -32,12 +32,12 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExHeuristicConfigSteepness : public FPCGExHeur
 /**
  * 
  */
-UCLASS(DisplayName = "Steepness")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicSteepness : public UPCGExHeuristicOperation
+UCLASS(MinimalAPI, DisplayName = "Steepness")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicSteepness : public UPCGExHeuristicOperation
 {
 	GENERATED_BODY()
 
-	friend class UPCGHeuristicsFactorySteepness;
+	friend class UPCGExHeuristicsFactorySteepness;
 
 public:
 	virtual void PrepareForCluster(const PCGExCluster::FCluster* InCluster) override;
@@ -55,7 +55,8 @@ public:
 		const PCGExCluster::FNode& To,
 		const PCGExGraph::FIndexedEdge& Edge,
 		const PCGExCluster::FNode& Seed,
-		const PCGExCluster::FNode& Goal) const override
+		const PCGExCluster::FNode& Goal,
+		const TArray<uint64>* TravelStack) const override
 	{
 		return SampleCurve(GetDot(Cluster->GetPos(From), Cluster->GetPos(To))) * ReferenceWeight;
 	}
@@ -71,8 +72,8 @@ protected:
 	}
 };
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class PCGEXTENDEDTOOLKIT_API UPCGHeuristicsFactorySteepness : public UPCGExHeuristicsFactoryBase
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicsFactorySteepness : public UPCGExHeuristicsFactoryBase
 {
 	GENERATED_BODY()
 
@@ -82,8 +83,8 @@ public:
 	virtual UPCGExHeuristicOperation* CreateOperation() const override;
 };
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
-class PCGEXTENDEDTOOLKIT_API UPCGExHeuristicsSteepnessProviderSettings : public UPCGExHeuristicsFactoryProviderSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExHeuristicsSteepnessProviderSettings : public UPCGExHeuristicsFactoryProviderSettings
 {
 	GENERATED_BODY()
 

@@ -118,7 +118,6 @@ namespace PCGExUberFilter
 {
 	FProcessor::~FProcessor()
 	{
-		
 	}
 
 	bool FProcessor::Process(PCGExMT::FTaskManager* AsyncManager)
@@ -145,10 +144,7 @@ namespace PCGExUberFilter
 
 		TestTaskGroup = AsyncManager->CreateGroup();
 		TestTaskGroup->SetOnIterationRangeStartCallback(
-			[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx)
-			{
-				PointDataFacade->Fetch(StartIndex, Count);
-			});
+			[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx) { PointDataFacade->Fetch(StartIndex, Count); });
 
 		if (Results)
 		{
@@ -213,7 +209,6 @@ namespace PCGExUberFilter
 			else { OutsidePoints[Indices[i]] = OriginalPoints[i]; }
 		}
 	}
-
 }
 
 #undef LOCTEXT_NAMESPACE

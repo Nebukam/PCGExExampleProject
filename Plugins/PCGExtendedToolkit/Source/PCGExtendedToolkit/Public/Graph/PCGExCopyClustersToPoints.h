@@ -9,8 +9,8 @@
 
 #include "PCGExCopyClustersToPoints.generated.h"
 
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph")
-class PCGEXTENDEDTOOLKIT_API UPCGExCopyClustersToPointsSettings : public UPCGExEdgesProcessorSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCopyClustersToPointsSettings : public UPCGExEdgesProcessorSettings
 {
 	GENERATED_BODY()
 
@@ -35,9 +35,10 @@ public:
 	/** Target inherit behavior */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	FPCGExTransformDetails TransformDetails;
+
 };
 
-struct PCGEXTENDEDTOOLKIT_API FPCGExCopyClustersToPointsContext final : public FPCGExEdgesProcessorContext
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExCopyClustersToPointsContext final : public FPCGExEdgesProcessorContext
 {
 	friend class UPCGExCopyClustersToPointsSettings;
 	friend class FPCGExCopyClustersToPointsElement;
@@ -49,7 +50,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExCopyClustersToPointsContext final : public F
 	PCGExData::FPointIO* Targets = nullptr;
 };
 
-class PCGEXTENDEDTOOLKIT_API FPCGExCopyClustersToPointsElement final : public FPCGExEdgesProcessorElement
+class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExCopyClustersToPointsElement final : public FPCGExEdgesProcessorElement
 {
 public:
 	virtual FPCGContext* Initialize(
@@ -67,7 +68,7 @@ namespace PCGExCopyClusters
 	class FProcessor final : public PCGExClusterMT::FClusterProcessor
 	{
 		FPCGExCopyClustersToPointsContext* LocalTypedContext = nullptr;
-		
+
 	public:
 		TArray<PCGExData::FPointIO*>* VtxDupes = nullptr;
 		TArray<FString>* VtxTag = nullptr;
@@ -90,7 +91,7 @@ namespace PCGExCopyClusters
 		friend class FProcessor;
 
 		FPCGExCopyClustersToPointsContext* LocalTypedContext = nullptr;
-		
+
 	public:
 		TArray<PCGExData::FPointIO*> VtxDupes;
 		TArray<FString> VtxTag;

@@ -31,8 +31,8 @@ class UPCGExFilterFactoryBase;
  * Use PCGExSampling to manipulate the outgoing attributes instead of handling everything here.
  * This way we can multi-thread the various calculations instead of mixing everything along with async/game thread collision
  */
-UCLASS(BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Misc")
-class PCGEXTENDEDTOOLKIT_API UPCGExSampleNearestSurfaceSettings : public UPCGExPointsProcessorSettings
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Misc")
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExSampleNearestSurfaceSettings : public UPCGExPointsProcessorSettings
 {
 	GENERATED_BODY()
 
@@ -178,7 +178,7 @@ public:
 	FPCGExForwardDetails AttributesForwarding;
 };
 
-struct PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestSurfaceContext final : public FPCGExPointsProcessorContext
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestSurfaceContext final : public FPCGExPointsProcessorContext
 {
 	friend class FPCGExSampleNearestSurfaceElement;
 
@@ -193,7 +193,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestSurfaceContext final : public F
 	PCGEX_FOREACH_FIELD_NEARESTSURFACE(PCGEX_OUTPUT_DECL_TOGGLE)
 };
 
-class PCGEXTENDEDTOOLKIT_API FPCGExSampleNearestSurfaceElement final : public FPCGExPointsProcessorElement
+class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestSurfaceElement final : public FPCGExPointsProcessorElement
 {
 public:
 	virtual FPCGContext* Initialize(

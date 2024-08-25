@@ -7,7 +7,6 @@
 #include "Data/PCGExData.h"
 #include "Data/PCGExPointFilter.h"
 #include "Helpers/PCGSettingsHelpers.h"
-#include "PCGExGlobalSettings.h"
 
 #define LOCTEXT_NAMESPACE "PCGExGraphSettings"
 
@@ -248,8 +247,6 @@ FPCGContext* FPCGExPointsProcessorElement::Initialize(
 
 void FPCGExPointsProcessorElement::DisabledPassThroughData(FPCGContext* Context) const
 {
-	//FPCGPointProcessingElementBase::DisabledPassThroughData(Context);
-
 	const UPCGExPointsProcessorSettings* Settings = Context->GetInputSettings<UPCGExPointsProcessorSettings>();
 	check(Settings);
 

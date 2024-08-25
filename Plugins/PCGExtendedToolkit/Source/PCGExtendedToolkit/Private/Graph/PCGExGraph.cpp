@@ -4,6 +4,7 @@
 #include "Graph/PCGExGraph.h"
 
 #include "PCGExPointsProcessor.h"
+#include "PCGExRandom.h"
 #include "Graph/PCGExCluster.h"
 #include "Graph/Data/PCGExClusterData.h"
 
@@ -129,7 +130,7 @@ namespace PCGExGraph
 		}
 	}
 
-	void FGraph::InsertEdgesUnsafe(const TSet<uint64>& InEdges, int32 InIOIndex)
+	void FGraph::InsertEdgesUnsafe(const TSet<uint64>& InEdges, const int32 InIOIndex)
 	{
 		uint32 A;
 		uint32 B;
@@ -195,7 +196,11 @@ namespace PCGExGraph
 
 			while (Stack.Num() > 0)
 			{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
+				const int32 NextIndex = Stack.Pop(false);
+#else
 				const int32 NextIndex = Stack.Pop(EAllowShrinking::No);
+#endif
 				FNode& Node = Nodes[NextIndex];
 				Node.NumExportedEdges = 0;
 
@@ -508,7 +513,7 @@ namespace PCGExGraphTask
 						Graph->EdgePosition));
 			}
 
-			if (EdgePt.Seed == 0 || Graph->bRefreshEdgeSeed) { PCGExMath::RandomizeSeed(EdgePt, SeedOffset); }
+			if (EdgePt.Seed == 0 || Graph->bRefreshEdgeSeed) { EdgePt.Seed = PCGExRandom::ComputeSeed(EdgePt, SeedOffset); }
 		}
 
 		PCGEX_ASYNC_WRITE_DELETE(AsyncManager, EdgeEndpoints)

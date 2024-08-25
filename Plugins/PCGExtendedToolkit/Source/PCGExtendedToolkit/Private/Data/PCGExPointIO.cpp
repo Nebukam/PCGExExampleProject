@@ -218,7 +218,7 @@ namespace PCGExData
 
 #pragma region FPointIOCollection
 
-	FPointIOCollection::FPointIOCollection(FPCGExContext* InContext):Context(InContext)
+	FPointIOCollection::FPointIOCollection(FPCGExContext* InContext): Context(InContext)
 	{
 	}
 
@@ -306,7 +306,6 @@ namespace PCGExData
 
 	/**
 	 * Write valid outputs to Context' tagged data
-	 * @param Context
 	 */
 	void FPointIOCollection::OutputToContext()
 	{

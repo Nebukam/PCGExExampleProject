@@ -11,8 +11,7 @@
 TArray<FPCGPinProperties> UPCGExSplitPathSettings::InputPinProperties() const
 {
 	TArray<FPCGPinProperties> PinProperties = Super::InputPinProperties();
-	PCGEX_PIN_PARAMS(PCGExSplitPath::SourceSplitFilters, "Filters used to know if a point should be split", Normal, {})
-	PCGEX_PIN_PARAMS(PCGExSplitPath::SourceRemoveFilters, "Filters used to know if a point should be removed", Normal, {})
+	PCGEX_PIN_PARAMS(PCGExSplitPath::SourceSplitFilters, "Filters used to know if a point should be split", Required, {})
 	return PinProperties;
 }
 
@@ -26,8 +25,6 @@ FPCGExSplitPathContext::~FPCGExSplitPathContext()
 
 	SplitFilterFactories.Empty();
 	RemoveFilterFactories.Empty();
-
-	PCGEX_DELETE(MainPaths)
 }
 
 bool FPCGExSplitPathElement::Boot(FPCGExContext* InContext) const
@@ -37,11 +34,10 @@ bool FPCGExSplitPathElement::Boot(FPCGExContext* InContext) const
 	PCGEX_CONTEXT_AND_SETTINGS(SplitPath)
 
 	GetInputFactories(Context, PCGExSplitPath::SourceSplitFilters, Context->SplitFilterFactories, PCGExFactories::PointFilters, false);
-	GetInputFactories(Context, PCGExSplitPath::SourceRemoveFilters, Context->RemoveFilterFactories, PCGExFactories::PointFilters, false);
 
-	if (Context->SplitFilterFactories.IsEmpty() && Context->RemoveFilterFactories.IsEmpty())
+	if (Context->SplitFilterFactories.IsEmpty())
 	{
-		PCGE_LOG(Error, GraphAndLog, FTEXT("Missing at least some filters in Split and/or Remove"));
+		PCGE_LOG(Error, GraphAndLog, FTEXT("Missing split filters"));
 		return false;
 	}
 
@@ -61,21 +57,21 @@ bool FPCGExSplitPathElement::ExecuteInternal(FPCGContext* InContext) const
 	{
 		if (!Boot(Context)) { return true; }
 
-		bool bHasInvalildInputs = false;
+		bool bHasInvalidInputs = false;
 		if (!Context->StartBatchProcessingPoints<PCGExPointsMT::TBatch<PCGExSplitPath::FProcessor>>(
 			[&](PCGExData::FPointIO* Entry)
 			{
 				if (Entry->GetNum() < 2)
 				{
 					if (!Settings->bOmitSinglePointOutputs) { Entry->InitializeOutput(PCGExData::EInit::Forward); }
-					else { bHasInvalildInputs = true; }
+					else { bHasInvalidInputs = true; }
 					return false;
 				}
 				return true;
 			},
 			[&](PCGExPointsMT::TBatch<PCGExSplitPath::FProcessor>* NewBatch)
 			{
-				NewBatch->SetPointsFilterData(&Context->FilterFactories);
+				//NewBatch->SetPointsFilterData(&Context->FilterFactories);
 			},
 			PCGExMT::State_Done))
 		{
@@ -83,7 +79,7 @@ bool FPCGExSplitPathElement::ExecuteInternal(FPCGContext* InContext) const
 			return true;
 		}
 
-		if (bHasInvalildInputs)
+		if (bHasInvalidInputs)
 		{
 			PCGE_LOG(Warning, GraphAndLog, FTEXT("Some inputs have less than 2 points and won't be processed."));
 		}
@@ -103,6 +99,7 @@ namespace PCGExSplitPath
 {
 	FProcessor::~FProcessor()
 	{
+		PCGEX_DELETE(FilterManager)
 		PCGEX_DELETE_TARRAY(PathsIOs)
 		Paths.Empty();
 	}
@@ -117,92 +114,49 @@ namespace PCGExSplitPath
 
 		if (!FPointsProcessor::Process(AsyncManager)) { return false; }
 
-		bInlineProcessPoints = true;
+		PointDataFacade->bSupportsDynamic = true;
 		bClosedPath = Settings->bClosedPath;
-
-		PCGEX_SET_NUM_UNINITIALIZED(DoSplit, PointIO->GetNum())
-		PCGEX_SET_NUM_UNINITIALIZED(DoRemove, PointIO->GetNum())
 
 		if (!TypedContext->SplitFilterFactories.IsEmpty())
 		{
-			PCGExPointFilter::TManager* FilterManager = new PCGExPointFilter::TManager(PointDataFacade);
-			if (!FilterManager->Init(Context, TypedContext->SplitFilterFactories))
-			{
-				PCGEX_DELETE(FilterManager)
-				return false;
-			}
-
-			for (int i = 0; i < DoSplit.Num(); i++) { DoSplit[i] = FilterManager->Test(i); }
-			PCGEX_DELETE(FilterManager)
+			FilterManager = new PCGExPointFilter::TManager(PointDataFacade);
+			if (!FilterManager->Init(Context, TypedContext->SplitFilterFactories)) { PCGEX_DELETE(FilterManager) }
 		}
-		else { for (bool& Split : DoSplit) { Split = false; } }
 
-		if (!TypedContext->RemoveFilterFactories.IsEmpty())
+		if (!FilterManager)
 		{
-			PCGExPointFilter::TManager* FilterManager = new PCGExPointFilter::TManager(PointDataFacade);
-			if (!FilterManager->Init(Context, TypedContext->RemoveFilterFactories))
-			{
-				PCGEX_DELETE(FilterManager)
-				return false;
-			}
-
-			for (int i = 0; i < DoRemove.Num(); i++) { DoRemove[i] = FilterManager->Test(i); }
-			PCGEX_DELETE(FilterManager)
+			// TODO : Throw error/warning
+			return false;
 		}
-		else { for (bool& Remove : DoRemove) { Remove = false; } }
 
-		bPriorityToSplit = Settings->Prioritize == EPCGExPathSplitAction::Split;
+		const int32 NumPoints = PointIO->GetNum();
+		const int32 ChunkSize = GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize();
 
-		StartParallelLoopForPoints(PCGExData::ESource::In);
+		PCGExMT::FTaskGroup* TaskGroup = AsyncManager->CreateGroup();
+		TaskGroup->SetOnIterationRangeStartCallback(
+			[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx) { PointDataFacade->Fetch(StartIndex, Count); });
+
+		switch (Settings->SplitAction)
+		{
+		case EPCGExPathSplitAction::Split:
+			TaskGroup->StartRanges(
+				[&](const int32 Index, const int32 Count, const int32 LoopIdx) { DoActionSplit(Index); },
+				NumPoints, ChunkSize, true);
+			break;
+		case EPCGExPathSplitAction::Remove:
+			TaskGroup->StartRanges(
+				[&](const int32 Index, const int32 Count, const int32 LoopIdx) { DoActionRemove(Index); },
+				NumPoints, ChunkSize, true);
+			break;
+		case EPCGExPathSplitAction::Disconnect:
+			TaskGroup->StartRanges(
+				[&](const int32 Index, const int32 Count, const int32 LoopIdx) { DoActionDisconnect(Index); },
+				NumPoints, ChunkSize, true);
+			break;
+		default: ;
+		}
 
 		return true;
-	}
-
-	void FProcessor::ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount)
-	{
-		bool bSplit = DoSplit[Index];
-		const bool bRemove = DoRemove[Index];
-
-		if (!bSplit && !bRemove)
-		{
-			if (CurrentPath == -1)
-			{
-				CurrentPath = Paths.Emplace();
-				FPath& NewPath = Paths[CurrentPath];
-				NewPath.Start = Index;
-			}
-
-			FPath& Path = Paths[CurrentPath];
-			Path.Count++;
-			return;
-		}
-
-		if (bSplit && bRemove) { bSplit = bPriorityToSplit; }
-
-		if (bSplit)
-		{
-			if (CurrentPath != -1)
-			{
-				FPath& ClosedPath = Paths[CurrentPath];
-				ClosedPath.End = Index;
-				ClosedPath.Count++;
-			}
-
-			CurrentPath = Paths.Emplace();
-			FPath& NewPath = Paths[CurrentPath];
-			NewPath.Start = Index;
-			NewPath.Count++;
-		}
-		else
-		{
-			if (CurrentPath != -1)
-			{
-				FPath& Path = Paths[CurrentPath];
-				Path.End = Index - 1;
-			}
-
-			CurrentPath = -1;
-		}
 	}
 
 	void FProcessor::ProcessSingleRangeIteration(const int32 Iteration, const int32 LoopIdx, const int32 LoopCount)
@@ -248,7 +202,7 @@ namespace PCGExSplitPath
 			if (Paths.Num() > 1 || Paths[0].End != -1 || Paths[0].Start != 0) { bAddOpenTag = Settings->OpenPathTag.IsEmpty() ? false : true; }
 		}
 
-		PCGEX_SET_NUM_UNINITIALIZED_NULL(PathsIOs, Paths.Num())
+		PCGEX_SET_NUM_NULLPTR(PathsIOs, Paths.Num())
 		StartParallelLoopForRange(Paths.Num());
 
 		//TODO : If closed path is enabled, and if the first & last points are not removed after the split
