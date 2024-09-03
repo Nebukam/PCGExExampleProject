@@ -21,7 +21,9 @@ MACRO(Location, FVector)\
 MACRO(LookAt, FVector)\
 MACRO(Normal, FVector)\
 MACRO(IsInside, bool)\
-MACRO(Distance, double)\
+MACRO(Distance, double)
+
+#define PCGEX_FOREACH_FIELD_NEARESTSURFACE_ACTOR(MACRO)\
 MACRO(ActorReference, FString)\
 MACRO(PhysMat, FString)
 
@@ -82,7 +84,7 @@ public:
 	bool bWriteSuccess = false;
 
 	/** Name of the 'boolean' attribute to write sampling success to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteSuccess"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="Success", PCG_Overridable, EditCondition="bWriteSuccess"))
 	FName SuccessAttributeName = FName("bSamplingSuccess");
 
 	/** Write the sample location. */
@@ -90,7 +92,7 @@ public:
 	bool bWriteLocation = false;
 
 	/** Name of the 'vector' attribute to write sampled Location to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteLocation"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="Location", PCG_Overridable, EditCondition="bWriteLocation"))
 	FName LocationAttributeName = FName("NearestLocation");
 
 	/** Write the sample "look at" direction from the point. */
@@ -98,7 +100,7 @@ public:
 	bool bWriteLookAt = false;
 
 	/** Name of the 'vector' attribute to write sampled LookAt to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteLookAt"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="LookAt", PCG_Overridable, EditCondition="bWriteLookAt"))
 	FName LookAtAttributeName = FName("NearestLookAt");
 
 
@@ -107,7 +109,7 @@ public:
 	bool bWriteNormal = false;
 
 	/** Name of the 'vector' attribute to write sampled Normal to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteNormal"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="Normal", PCG_Overridable, EditCondition="bWriteNormal"))
 	FName NormalAttributeName = FName("NearestNormal");
 
 
@@ -116,7 +118,7 @@ public:
 	bool bWriteDistance = false;
 
 	/** Name of the 'double' attribute to write sampled distance to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteDistance"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="Distance", PCG_Overridable, EditCondition="bWriteDistance"))
 	FName DistanceAttributeName = FName("NearestDistance");
 
 	/** Write the inside/outside status of the point. */
@@ -124,7 +126,7 @@ public:
 	bool bWriteIsInside = false;
 
 	/** Name of the 'bool' attribute to write sampled point inside or outside the collision.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteIsInside"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="IsInside", PCG_Overridable, EditCondition="bWriteIsInside"))
 	FName IsInsideAttributeName = FName("IsInside");
 
 	/** Write the actor reference hit. */
@@ -132,7 +134,7 @@ public:
 	bool bWriteActorReference = false;
 
 	/** Name of the 'string' attribute to write actor reference to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output (Actor Data)", meta=(PCG_Overridable, EditCondition="bWriteActorReference"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output (Actor Data)", meta=(DisplayName="ActorReference", PCG_Overridable, EditCondition="bWriteActorReference"))
 	FName ActorReferenceAttributeName = FName("ActorReference");
 
 	/** Write the actor reference hit. */
@@ -140,7 +142,7 @@ public:
 	bool bWritePhysMat = false;
 
 	/** Name of the 'string' attribute to write actor reference to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output (Actor Data)", meta=(PCG_Overridable, EditCondition="bWritePhysMat"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output (Actor Data)", meta=(DisplayName="PhysMat", PCG_Overridable, EditCondition="bWritePhysMat"))
 	FName PhysMatAttributeName = FName("PhysMat");
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Collision", meta=(PCG_Overridable))
@@ -188,9 +190,11 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestSurfaceContext final : publ
 
 	bool bUseInclude = false;
 	TMap<AActor*, int32> IncludedActors;
+	TArray<UPrimitiveComponent*> IncludedPrimitives;
 	TArray<AActor*> IgnoredActors;
 
 	PCGEX_FOREACH_FIELD_NEARESTSURFACE(PCGEX_OUTPUT_DECL_TOGGLE)
+	PCGEX_FOREACH_FIELD_NEARESTSURFACE_ACTOR(PCGEX_OUTPUT_DECL_TOGGLE)
 };
 
 class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestSurfaceElement final : public FPCGExPointsProcessorElement
@@ -218,6 +222,7 @@ namespace PCGExSampleNearestSurface
 		const UPCGExSampleNearestSurfaceSettings* LocalSettings = nullptr;
 
 		PCGEX_FOREACH_FIELD_NEARESTSURFACE(PCGEX_OUTPUT_DECL)
+		PCGEX_FOREACH_FIELD_NEARESTSURFACE_ACTOR(PCGEX_OUTPUT_DECL)
 
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints):

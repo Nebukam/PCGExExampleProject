@@ -88,7 +88,7 @@ public:
 	bool bWriteEdgeLength = false;
 
 	/** Name of the 'boolean' attribute to write sampling success to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteEdgeLength"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="EdgeLength", PCG_Overridable, EditCondition="bWriteEdgeLength"))
 	FName EdgeLengthAttributeName = FName("EdgeLength");
 
 	/** Output Edge Direction */
@@ -96,7 +96,7 @@ public:
 	bool bWriteEdgeDirection = false;
 
 	/** Name of the 'boolean' attribute to write sampling success to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteEdgeDirection"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="EdgeDirection", PCG_Overridable, EditCondition="bWriteEdgeDirection"))
 	FName EdgeDirectionAttributeName = FName("EdgeDirection");
 
 	/** Edges will inherit point attributes*/
@@ -116,7 +116,7 @@ public:
 	bool bWriteHeuristics = false;
 
 	/** Name of the 'double' attribute to write heuristics to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, EditCondition="bWriteHeuristics"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="Heuristics", PCG_Overridable, EditCondition="bWriteHeuristics"))
 	FName HeuristicsAttributeName = FName("Heuristics");
 
 	/** Heuristic write mode. */
@@ -162,7 +162,7 @@ public:
 	EPCGExGraphValueSource RadiusXSource = EPCGExGraphValueSource::Vtx;
 
 	/** Attribute read on edge endpoints */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification|Radiuses", meta = (PCG_Overridable, EditCondition="bWriteRadiusX && SolidificationAxis != EPCGExMinimalAxis::X && SolidificationAxis != EPCGExMinimalAxis::None && RadiusXType!=EPCGExFetchType::Attribute", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Solidification|Radiuses", meta = (PCG_Overridable, EditCondition="bWriteRadiusX && SolidificationAxis != EPCGExMinimalAxis::X && SolidificationAxis != EPCGExMinimalAxis::None && RadiusXType==EPCGExFetchType::Attribute", EditConditionHides))
 	FPCGAttributePropertyInputSelector RadiusXSourceAttribute;
 
 	/** Radius X Constant */
@@ -253,6 +253,15 @@ namespace PCGExWriteEdgeProperties
 
 		PCGEX_FOREACH_FIELD_EDGEEXTRAS(PCGEX_OUTPUT_DECL)
 
+		bool bSolidify = false;
+
+		PCGExData::FCache<double>* VtxDirCompGetter = nullptr;
+		PCGExData::FCache<FVector>* EdgeDirCompGetter = nullptr;
+
+#define PCGEX_LOCAL_EDGE_GETTER_DECL(_AXIS) PCGExData::FCache<double>* SolidificationRad##_AXIS = nullptr; bool bOwnSolidificationRad##_AXIS = true; double Rad##_AXIS##Constant = 1;
+		PCGEX_FOREACH_XYZ(PCGEX_LOCAL_EDGE_GETTER_DECL)
+#undef PCGEX_LOCAL_EDGE_GETTER_DECL
+
 	public:
 		FProcessor(PCGExData::FPointIO* InVtx, PCGExData::FPointIO* InEdges):
 			FClusterProcessor(InVtx, InEdges)
@@ -264,14 +273,5 @@ namespace PCGExWriteEdgeProperties
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
 		virtual void ProcessSingleEdge(PCGExGraph::FIndexedEdge& Edge) override;
 		virtual void CompleteWork() override;
-
-		bool bSolidify = false;
-
-		PCGExData::FCache<double>* VtxDirCompGetter = nullptr;
-		PCGExData::FCache<FVector>* EdgeDirCompGetter = nullptr;
-
-#define PCGEX_LOCAL_EDGE_GETTER_DECL(_AXIS) PCGExData::FCache<double>* SolidificationRad##_AXIS = nullptr; bool bOwnSolidificationRad##_AXIS = true; double Rad##_AXIS##Constant = 1;
-		PCGEX_FOREACH_XYZ(PCGEX_LOCAL_EDGE_GETTER_DECL)
-#undef PCGEX_LOCAL_EDGE_GETTER_DECL
 	};
 }

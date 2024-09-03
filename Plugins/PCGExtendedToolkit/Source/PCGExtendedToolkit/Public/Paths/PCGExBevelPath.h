@@ -82,7 +82,7 @@ public:
 
 	/** Bevel width value interpretation.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_NotOverridable))
-	EPCGExMeanMeasure WidthMeasure = EPCGExMeanMeasure::Discrete;
+	EPCGExMeanMeasure WidthMeasure = EPCGExMeanMeasure::Relative;
 
 	/** Bevel width source */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_NotOverridable))
@@ -248,6 +248,11 @@ namespace PCGExBevelPath
 		PCGExData::FCache<double>* SubdivAmountGetter = nullptr;
 		double ConstantSubdivAmount = 0;
 
+		PCGEx::TFAttributeWriter<bool>* EndpointsWriter = nullptr;
+		PCGEx::TFAttributeWriter<bool>* StartPointWriter = nullptr;
+		PCGEx::TFAttributeWriter<bool>* EndPointWriter = nullptr;
+		PCGEx::TFAttributeWriter<bool>* SubdivisionWriter = nullptr;
+
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints)
 			: FPointsProcessor(InPoints)
@@ -262,6 +267,8 @@ namespace PCGExBevelPath
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
 		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount) override;
 		virtual void ProcessSingleRangeIteration(const int32 Iteration, const int32 LoopIdx, const int32 LoopCount) override;
+		void WriteFlags(const int32 Index);
 		virtual void CompleteWork() override;
+		virtual void Write() override;
 	};
 }

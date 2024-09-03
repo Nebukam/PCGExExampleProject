@@ -17,6 +17,7 @@ MACRO(DistanceToStart, double)\
 MACRO(DistanceToEnd, double)\
 MACRO(PointTime, double)\
 MACRO(PointNormal, FVector)\
+MACRO(PointBinormal, FVector)\
 MACRO(DirectionToNext, FVector)\
 MACRO(DirectionToPrev, FVector)
 
@@ -53,25 +54,13 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bClosedPath = false;
 
-	/** Up vector used to calculate Offset direction.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Normal", meta=(PCG_Overridable))
-	FVector UpVector = FVector::UpVector;
-
-	/** Fetch the Up vector from a local point attribute. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Normal", meta = (PCG_Overridable, InlineEditConditionToggle))
-	bool bUseLocalUpVector = false;
-
-	/** Fetch the Up vector from a local point attribute. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Normal", meta = (PCG_Overridable, EditCondition="bUseLocalOffset"))
-	FPCGAttributePropertyInputSelector LocalUpVector;
-
 
 	/** Output Path Length. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWritePathLength = false;
 
 	/** Name of the 'double' attribute to write path length to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(PCG_Overridable, EditCondition="bWritePathLength"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(DisplayName="PathLength", PCG_Overridable, EditCondition="bWritePathLength"))
 	FName PathLengthAttributeName = FName("PathLength");
 
 
@@ -80,7 +69,7 @@ public:
 	bool bWritePathDirection = false;
 
 	/** Name of the 'FVector' attribute to write averaged direction to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(PCG_Overridable, EditCondition="bWritePathDirection"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(DisplayName="PathDirection", PCG_Overridable, EditCondition="bWritePathDirection"))
 	FName PathDirectionAttributeName = FName("PathDirection");
 
 	/** Output averaged path direction. */
@@ -88,17 +77,34 @@ public:
 	bool bWritePathCentroid = false;
 
 	/** Name of the 'FVector' attribute to write averaged direction to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(PCG_Overridable, EditCondition="bWritePathCentroid"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(DisplayName="PathCentroid", PCG_Overridable, EditCondition="bWritePathCentroid"))
 	FName PathCentroidAttributeName = FName("PathCentroid");
 
 	///
+
+	/** Type of Up vector */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable))
+	EPCGExFetchType UpVectorType = EPCGExFetchType::Constant;
+
+	/** Up Attribute read on points */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta = (PCG_Overridable, EditCondition="UpVectorType==EPCGExFetchType::Attribute", EditConditionHides))
+	FPCGAttributePropertyInputSelector UpVectorSourceAttribute;
+
+	/** Up Attribute constant */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta = (PCG_Overridable, EditCondition="UpVectorType==EPCGExFetchType::Constant", EditConditionHides))
+	FVector UpVectorConstant = FVector::UpVector;
+
+	/** Whether to average normal for computations */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta = (PCG_Overridable))
+	bool bAverageNormals = true;
+
 
 	/** Output Dot product of Prev/Next directions. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteDot = false;
 
 	/** Name of the 'double' attribute to write distance to next point to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDot"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="Dot", PCG_Overridable, EditCondition="bWriteDot"))
 	FName DotAttributeName = FName("Dot");
 
 	/** Output Dot product of Prev/Next directions. */
@@ -106,7 +112,7 @@ public:
 	bool bWriteAngle = false;
 
 	/** Name of the 'double' attribute to write angle to next point to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteAngle"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="Angle", PCG_Overridable, EditCondition="bWriteAngle"))
 	FName AngleAttributeName = FName("Angle");
 
 	/** Unit/range to output the angle to.*/
@@ -118,7 +124,7 @@ public:
 	bool bWriteDistanceToNext = false;
 
 	/** Name of the 'double' attribute to write distance to next point to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDistanceToNext"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="DistanceToNext", PCG_Overridable, EditCondition="bWriteDistanceToNext"))
 	FName DistanceToNextAttributeName = FName("DistanceToNext");
 
 
@@ -127,7 +133,7 @@ public:
 	bool bWriteDistanceToPrev = false;
 
 	/** Name of the 'double' attribute to write distance to prev point to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDistanceToPrev"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="DistanceToPrev", PCG_Overridable, EditCondition="bWriteDistanceToPrev"))
 	FName DistanceToPrevAttributeName = FName("DistanceToPrev");
 
 
@@ -136,7 +142,7 @@ public:
 	bool bWriteDistanceToStart = false;
 
 	/** Name of the 'double' attribute to write distance to start to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDistanceToStart"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="DistanceToStart", PCG_Overridable, EditCondition="bWriteDistanceToStart"))
 	FName DistanceToStartAttributeName = FName("DistanceToStart");
 
 
@@ -145,7 +151,7 @@ public:
 	bool bWriteDistanceToEnd = false;
 
 	/** Name of the 'double' attribute to write distance to start to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDistanceToEnd"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="DistanceToEnd", PCG_Overridable, EditCondition="bWriteDistanceToEnd"))
 	FName DistanceToEndAttributeName = FName("DistanceToEnd");
 
 
@@ -154,25 +160,31 @@ public:
 	bool bWritePointTime = false;
 
 	/** Name of the 'double' attribute to write distance to start to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWritePointTime"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="PointTime", PCG_Overridable, EditCondition="bWritePointTime"))
 	FName PointTimeAttributeName = FName("PointTime");
-
 
 	/** Output point normal. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWritePointNormal = false;
 
 	/** Name of the 'FVector' attribute to write point normal to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWritePointNormal"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="PointNormal", PCG_Overridable, EditCondition="bWritePointNormal"))
 	FName PointNormalAttributeName = FName("PointNormal");
 
+	/** Output point normal. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, InlineEditConditionToggle))
+	bool bWritePointBinormal = false;
+
+	/** Name of the 'FVector' attribute to write point binormal to. Note that it's stabilized.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="PointBinormal", PCG_Overridable, EditCondition="bWritePointBinormal"))
+	FName PointBinormalAttributeName = FName("PointBinormal");
 
 	/** Output direction to next normal. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteDirectionToNext = false;
 
 	/** Name of the 'FVector' attribute to write direction to next point to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDirectionToNext"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="DirectionToNext", PCG_Overridable, EditCondition="bWriteDirectionToNext"))
 	FName DirectionToNextAttributeName = FName("DirectionToNext");
 
 
@@ -181,9 +193,8 @@ public:
 	bool bWriteDirectionToPrev = false;
 
 	/** Name of the 'FVector' attribute to write direction to prev point to.*/
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(PCG_Overridable, EditCondition="bWriteDirectionToPrev"))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Points", meta=(DisplayName="DirectionToPrev", PCG_Overridable, EditCondition="bWriteDirectionToPrev"))
 	FName DirectionToPrevAttributeName = FName("DirectionToPrev");
-
 
 	/** . */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tags", meta=(InlineEditConditionToggle))
@@ -227,12 +238,28 @@ protected:
 
 namespace PCGExWritePathProperties
 {
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FPointDetails
+	{
+		int32 Index;
+		double Length;
+		FVector Position;
+		FVector Normal;
+		FVector Binormal;
+		FVector ToPrev;
+		FVector ToNext;
+	};
+
 	class FProcessor final : public PCGExPointsMT::FPointsProcessor
 	{
 		PCGEX_FOREACH_FIELD_PATH(PCGEX_OUTPUT_DECL)
 
-		TArray<FVector> Positions;
+		TArray<FPointDetails> Details;
+
 		bool bClosedPath = false;
+
+		FVector UpConstant = FVector::ZeroVector;
+		PCGExData::FCache<FVector>* UpGetter = nullptr;
+
 		int32 LastIndex = 0;
 
 		const UPCGExWritePathPropertiesSettings* LocalSettings = nullptr;
@@ -246,6 +273,7 @@ namespace PCGExWritePathProperties
 		virtual ~FProcessor() override;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
+		virtual void PrepareSingleLoopScopeForPoints(const uint32 StartIndex, const int32 Count) override;
 		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 Count) override;
 		virtual void CompleteWork() override;
 	};

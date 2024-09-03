@@ -100,10 +100,7 @@ namespace PCGExData
 
 		virtual ~FCache() override
 		{
-			Values.Empty();
-			PCGEX_DELETE(Reader)
-			PCGEX_DELETE(Writer)
-			PCGEX_DELETE(DynamicBroadcaster)
+			Flush();
 		}
 
 		PCGEx::FAttributeIOBase<T>* PrepareReader(const ESource InSource = ESource::In, const bool bFetch = false)
@@ -222,6 +219,8 @@ namespace PCGExData
 			bInitialized = true;
 			bIsPureReader = true;
 
+			PCGEX_SET_NUM_UNINITIALIZED(Values, Source->GetNum(ESource::In))
+
 			Getter->GrabAndDump(Source, Values, bCaptureMinMax, Min, Max);
 			Attribute = Getter->Attribute;
 		}
@@ -262,6 +261,15 @@ namespace PCGExData
 			if (!IsDynamic()) { return; }
 			if (DynamicBroadcaster) { DynamicBroadcaster->Fetch(Source, Values, StartIndex, Count); }
 			else if (Reader) { Reader->Fetch(StartIndex, Count); }
+		}
+
+		void Flush()
+		{
+			bInitialized = false;
+			Values.Empty();
+			PCGEX_DELETE(Reader)
+			PCGEX_DELETE(Writer)
+			PCGEX_DELETE(DynamicBroadcaster)
 		}
 	};
 

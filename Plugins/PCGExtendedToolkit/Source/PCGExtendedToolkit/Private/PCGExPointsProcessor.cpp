@@ -124,6 +124,8 @@ FPCGExPointsProcessorContext::~FPCGExPointsProcessorContext()
 		if (OwnedProcessorOperations.Contains(Operation)) { PCGEX_DELETE_OPERATION(Operation) }
 	}
 
+	SubProcessorMap.Empty();
+
 	PCGEX_DELETE(MainBatch)
 	BatchablePoints.Empty();
 
@@ -170,6 +172,7 @@ bool FPCGExPointsProcessorContext::ProcessPointsBatch()
 	{
 		if (!IsAsyncWorkComplete()) { return false; }
 
+		MTState_PointsProcessingDone();
 		CompleteBatch(GetAsyncManager(), MainBatch);
 		SetAsyncState(PCGExPointsMT::MTState_PointsCompletingWork);
 	}
@@ -177,6 +180,8 @@ bool FPCGExPointsProcessorContext::ProcessPointsBatch()
 	if (IsState(PCGExPointsMT::MTState_PointsCompletingWork))
 	{
 		if (!IsAsyncWorkComplete()) { return false; }
+
+		MTState_PointsCompletingWorkDone();
 
 		if (MainBatch->bRequiresWriteStep)
 		{
@@ -193,6 +198,8 @@ bool FPCGExPointsProcessorContext::ProcessPointsBatch()
 	if (IsState(PCGExPointsMT::MTState_PointsWriting))
 	{
 		if (!IsAsyncWorkComplete()) { return false; }
+
+		MTState_PointsWritingDone();
 
 		if (TargetState_PointsProcessingDone == PCGExMT::State_Done) { Done(); }
 		else { SetState(TargetState_PointsProcessingDone); }
@@ -233,6 +240,25 @@ bool FPCGExPointsProcessorContext::IsAsyncWorkComplete()
 
 	bIsPaused = true;
 	return false;
+}
+
+bool FPCGExPointsProcessorElement::PrepareDataInternal(FPCGContext* Context) const
+{
+	FPCGExContext* Ctx = static_cast<FPCGExContext*>(Context);
+	if (Ctx)
+	{
+		if (!Ctx->WasAssetLoadRequested())
+		{
+			Ctx->RegisterAssetDependencies();
+			if (Ctx->HasAssetRequirements())
+			{
+				Ctx->LoadAssets();
+				return false;
+			}
+		}
+	}
+
+	return IPCGElement::PrepareDataInternal(Context);
 }
 
 FPCGContext* FPCGExPointsProcessorElement::Initialize(
@@ -322,6 +348,12 @@ bool FPCGExPointsProcessorElement::Boot(FPCGExContext* InContext) const
 {
 	FPCGExPointsProcessorContext* Context = static_cast<FPCGExPointsProcessorContext*>(InContext);
 	PCGEX_SETTINGS(PointsProcessor)
+
+	if (Context->bAssetLoadError)
+	{
+		PCGE_LOG(Error, GraphAndLog, FTEXT("An error occured while loading asset dependencies."));
+		return false;
+	}
 
 	if (Context->InputData.GetInputs().IsEmpty()) { return false; } //Get rid of errors and warning when there is no input
 

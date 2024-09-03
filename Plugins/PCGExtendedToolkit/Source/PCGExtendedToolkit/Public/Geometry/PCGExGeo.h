@@ -415,6 +415,26 @@ namespace PCGExGeo
 		for (int i = 0; i < NumPoints; i++) { OutPositions[i] = Points[i].Transform.GetLocation(); }
 	}
 
+	FORCEINLINE static FVector GetBarycentricCoordinates(const FVector& Point, const FVector& A, const FVector& B, const FVector& C)
+	{
+		const FVector AB = B - A;
+		const FVector AC = C - A;
+		const FVector AD = Point - A;
+
+		const double d00 = FVector::DotProduct(AB, AB);
+		const double d01 = FVector::DotProduct(AB, AC);
+		const double d11 = FVector::DotProduct(AC, AC);
+		const double d20 = FVector::DotProduct(AD, AB);
+		const double d21 = FVector::DotProduct(AD, AC);
+
+		const double Den = d00 * d11 - d01 * d01;
+		const double V = (d11 * d20 - d01 * d21) / Den;
+		const double W = (d00 * d21 - d01 * d20) / Den;
+		const double U = 1.0f - V - W;
+
+		return FVector(U, V, W);
+	}
+
 	/**
 		 *	 Leave <---.Apex-----> Arrive (Direction)
 		 *		   . '   |    '  .  
@@ -473,6 +493,7 @@ namespace PCGExGeo
 		FVector Hand = FVector::ZeroVector;
 		FVector OtherHand = FVector::ZeroVector;
 
+		bool bIsLine = false;
 
 		FExCenterArc()
 		{
@@ -501,6 +522,8 @@ namespace PCGExGeo
 
 			Hand = (A - Center).GetSafeNormal();
 			OtherHand = (C - Center).GetSafeNormal();
+
+			bIsLine = FMath::IsNearlyEqual(FMath::Abs(FVector::DotProduct(Hand, OtherHand)), 1);
 
 			Normal = FVector::CrossProduct(Hand, OtherHand).GetSafeNormal();
 			Theta = FMath::Acos(FVector::DotProduct(Hand, OtherHand));

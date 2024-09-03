@@ -17,7 +17,7 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCopyClustersToPointsSettings : public UPC
 public:
 	//~Begin UPCGSettings
 #if WITH_EDITOR
-	PCGEX_NODE_INFOS(CopyClustersToPoints, "Cluster : Copy to Points", "Create a copies of the input clusters onto the target points. \n NOTE: Does not sanitize input.");
+	PCGEX_NODE_INFOS(CopyClustersToPoints, "Cluster : Copy to Points", "Create a copies of the input clusters onto the target points.  NOTE: Does not sanitize input.");
 	virtual FLinearColor GetNodeTitleColor() const override { return GetDefault<UPCGExGlobalSettings>()->NodeColorCluster; }
 #endif
 
@@ -35,7 +35,6 @@ public:
 	/** Target inherit behavior */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	FPCGExTransformDetails TransformDetails;
-
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExCopyClustersToPointsContext final : public FPCGExEdgesProcessorContext

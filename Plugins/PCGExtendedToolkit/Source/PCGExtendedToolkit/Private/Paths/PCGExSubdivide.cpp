@@ -93,6 +93,9 @@ namespace PCGExSubdivide
 
 		PCGEX_TYPED_CONTEXT_AND_SETTINGS(Subdivide)
 
+		// Must be set before process for filters
+		PointDataFacade->bSupportsDynamic = true;
+
 		if (!FPointsProcessor::Process(AsyncManager)) { return false; }
 
 		LocalSettings = Settings;
@@ -113,8 +116,6 @@ namespace PCGExSubdivide
 		}
 
 		bUseCount = Settings->SubdivideMethod == EPCGExSubdivideMode::Count;
-
-		PointDataFacade->bSupportsDynamic = true;
 
 		Blending = Cast<UPCGExSubPointsBlendOperation>(PrimaryOperation);
 
@@ -158,8 +159,7 @@ namespace PCGExSubdivide
 
 		TArray<FPCGPoint>& MutablePoints = PointIO->GetOut()->GetMutablePoints();
 
-		PCGExMath::FPathMetricsSquared Metrics = PCGExMath::FPathMetricsSquared();
-		Metrics.Add(Sub.Start);
+		PCGExMath::FPathMetricsSquared Metrics = PCGExMath::FPathMetricsSquared(Sub.Start);
 
 		const double StepSize = Sub.Dist / static_cast<double>(Sub.NumSubdivisions);
 		const double StartOffset = (Sub.Dist - StepSize * Sub.NumSubdivisions) * 0.5;
@@ -198,8 +198,7 @@ namespace PCGExSubdivide
 		}
 
 		if (LocalSettings->bClosedPath) { Subdivisions[Subdivisions.Num() - 1].OutEnd = 0; }
-
-		Subdivisions[Subdivisions.Num() - 1].NumSubdivisions = 0;
+		else { Subdivisions[Subdivisions.Num() - 1].NumSubdivisions = 0; }
 
 		if (NumPoints == PointIO->GetNum())
 		{
@@ -220,6 +219,8 @@ namespace PCGExSubdivide
 			const FPCGPoint& OriginalPoint = InPoints[i];
 			MutablePoints[Sub.OutStart] = OriginalPoint;
 			Metadata->InitializeOnSet(MutablePoints[Sub.OutStart].MetadataEntry);
+
+			if (Sub.NumSubdivisions == 0) { continue; }
 
 			for (int s = 1; s <= Sub.NumSubdivisions; s++)
 			{

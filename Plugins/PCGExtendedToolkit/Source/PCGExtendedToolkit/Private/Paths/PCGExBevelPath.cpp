@@ -3,6 +3,7 @@
 
 #include "Paths/PCGExBevelPath.h"
 
+#include "PCGExRandom.h"
 #include "Data/PCGExPointFilter.h"
 
 #define LOCTEXT_NAMESPACE "PCGExBevelPathElement"
@@ -111,6 +112,7 @@ bool FPCGExBevelPathElement::ExecuteInternal(FPCGContext* InContext) const
 			},
 			[&](PCGExPointsMT::TBatch<PCGExBevelPath::FProcessor>* NewBatch)
 			{
+				NewBatch->bRequiresWriteStep = (Settings->bFlagEndpoints || Settings->bFlagSubdivision || Settings->bFlagEndPoint || Settings->bFlagStartPoint);
 			},
 			PCGExMT::State_Done))
 		{
@@ -242,6 +244,14 @@ namespace PCGExBevelPath
 	void FBevel::SubdivideArc(const double Factor, const double bIsCount)
 	{
 		const PCGExGeo::FExCenterArc Arc = PCGExGeo::FExCenterArc(Arrive, Corner, Leave);
+
+		if (Arc.bIsLine)
+		{
+			// Fallback to line since we can't infer a proper radius
+			SubdivideLine(Factor, bIsCount);
+			return;
+		}
+
 		int32 SubdivCount = bIsCount ? Factor : FMath::Floor(Arc.GetLength() / Factor);
 
 		const double StepSize = 1 / static_cast<double>(SubdivCount + 1);
@@ -284,9 +294,11 @@ namespace PCGExBevelPath
 		LocalTypedContext = TypedContext;
 		LocalSettings = Settings;
 
+		// Must be set before process for filters
+		PointDataFacade->bSupportsDynamic = true;
+
 		if (!FPointsProcessor::Process(AsyncManager)) { return false; }
 
-		PointDataFacade->bSupportsDynamic = true;
 
 		bInlineProcessPoints = true;
 		bClosedPath = Settings->bClosedPath;
@@ -408,12 +420,35 @@ namespace PCGExBevelPath
 		StartPoint.Transform.SetLocation(Bevel->Arrive);
 		EndPoint.Transform.SetLocation(Bevel->Leave);
 
+		PCGExRandom::ComputeSeed(StartPoint);
+		PCGExRandom::ComputeSeed(EndPoint);
+
 		if (Bevel->Subdivisions.IsEmpty()) { return; }
 
 		for (int i = 0; i < Bevel->Subdivisions.Num(); i++)
 		{
-			MutablePoints[Bevel->StartOutputIndex + i + 1].Transform.SetLocation(Bevel->Subdivisions[i]);
+			FPCGPoint& Pt = MutablePoints[Bevel->StartOutputIndex + i + 1];
+			Pt.Transform.SetLocation(Bevel->Subdivisions[i]);
+			PCGExRandom::ComputeSeed(Pt);
 		}
+	}
+
+	void FProcessor::WriteFlags(const int32 Index)
+	{
+		const FBevel* Bevel = Bevels[Index];
+		if (!Bevel) { return; }
+
+		if (EndpointsWriter)
+		{
+			EndpointsWriter->Values[Bevel->StartOutputIndex] = true;
+			EndpointsWriter->Values[Bevel->EndOutputIndex] = true;
+		}
+
+		if (StartPointWriter) { StartPointWriter->Values[Bevel->StartOutputIndex] = true; }
+
+		if (EndPointWriter) { EndPointWriter->Values[Bevel->EndOutputIndex] = true; }
+
+		if (SubdivisionWriter) { for (int i = 1; i <= Bevel->Subdivisions.Num(); i++) { SubdivisionWriter->Values[Bevel->StartOutputIndex + i] = true; } }
 	}
 
 	void FProcessor::CompleteWork()
@@ -457,6 +492,40 @@ namespace PCGExBevelPath
 		PCGEX_SET_NUM(MutablePoints, NumOutPoints);
 
 		StartParallelLoopForRange(PointIO->GetNum());
+	}
+
+	void FProcessor::Write()
+	{
+		if (LocalSettings->bFlagEndpoints)
+		{
+			EndpointsWriter = PointDataFacade->GetWriter<bool>(LocalSettings->EndpointsFlagName, false, true, true);
+		}
+
+		if (LocalSettings->bFlagStartPoint)
+		{
+			StartPointWriter = PointDataFacade->GetWriter<bool>(LocalSettings->StartPointFlagName, false, true, true);
+		}
+
+		if (LocalSettings->bFlagEndPoint)
+		{
+			EndPointWriter = PointDataFacade->GetWriter<bool>(LocalSettings->EndPointFlagName, false, true, true);
+		}
+
+		if (LocalSettings->bFlagSubdivision)
+		{
+			SubdivisionWriter = PointDataFacade->GetWriter<bool>(LocalSettings->SubdivisionFlagName, false, true, true);
+		}
+
+		PCGExMT::FTaskGroup* WriteFlagsTask = AsyncManagerPtr->CreateGroup();
+		WriteFlagsTask->SetOnCompleteCallback([&]() { PointDataFacade->Write(AsyncManagerPtr, true); });
+		WriteFlagsTask->StartRanges(
+			[&](const int32 Index, const int32 Count, const int32 LoopIdx)
+			{
+				if (!PointFilterCache[Index]) { return; }
+				WriteFlags(Index);
+			}, PointIO->GetNum(), GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize());
+
+		FPointsProcessor::Write();
 	}
 }
 
