@@ -17,8 +17,10 @@ bool FPCGExMeshCollectionEntry::Validate(const UPCGExAssetCollection* ParentColl
 void FPCGExMeshCollectionEntry::UpdateStaging(const UPCGExAssetCollection* OwningCollection, const bool bRecursive)
 {
 	if (bIsSubCollection)
-	{
+	{		
+		Staging.Path = SubCollection.ToSoftObjectPath();
 		if (bRecursive && SubCollection.LoadSynchronous()) { SubCollection.Get()->RebuildStagingData(true); }
+		Super::UpdateStaging(OwningCollection, bRecursive);
 		return;
 	}
 
@@ -47,12 +49,6 @@ void UPCGExMeshCollection::RebuildStagingData(const bool bRecursive)
 }
 
 #if WITH_EDITOR
-bool UPCGExMeshCollection::EDITOR_IsCacheableProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	if (Super::EDITOR_IsCacheableProperty(PropertyChangedEvent)) { return true; }
-	return PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UPCGExMeshCollection, Entries);
-}
-
 void UPCGExMeshCollection::EDITOR_RefreshDisplayNames()
 {
 	Super::EDITOR_RefreshDisplayNames();

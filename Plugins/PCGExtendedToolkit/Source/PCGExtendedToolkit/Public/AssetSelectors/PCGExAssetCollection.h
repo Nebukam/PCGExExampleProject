@@ -9,6 +9,7 @@
 #include "Data/PCGExData.h"
 #include "Engine/AssetManager.h"
 #include "Engine/DataAsset.h"
+#include "Geometry/PCGExFitting.h"
 
 #include "PCGExAssetCollection.generated.h"
 
@@ -28,17 +29,6 @@ enum class EPCGExIndexPickMode : uint8
 	Descending UMETA(DisplayName = "Collection order (Descending)", Tooltip="..."),
 	WeightAscending UMETA(DisplayName = "Weight (Descending)", Tooltip="..."),
 	WeightDescending UMETA(DisplayName = "Weight (Ascending)", Tooltip="..."),
-};
-
-UENUM(BlueprintType)
-enum class EPCGExStagedPropertyType : uint8
-{
-	Double UMETA(DisplayName = "Double", Tooltip="...") ,
-	Integer32 UMETA(DisplayName = "Integer 32", Tooltip="...") ,
-	Vector UMETA(DisplayName = "Vector", Tooltip="...") ,
-	Color UMETA(DisplayName = "Color", Tooltip="...") ,
-	Boolean UMETA(DisplayName = "Boolean", Tooltip="...") ,
-	Name UMETA(DisplayName = "Name", Tooltip="...")
 };
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Distribution"))
@@ -159,7 +149,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExAssetAttributeSetDetails
 
 	/** Name of the attribute on the AttributeSet that contains the asset path to be staged */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditConditionHides))
-	FName AssetPathSourceAttribute = NAME_None;
+	FName AssetPathSourceAttribute = FName("AssetPath");
 
 	/** Name of the attribute on the AttributeSet that contains the asset weight, if any. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditConditionHides))
@@ -170,55 +160,13 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExAssetAttributeSetDetails
 	FName CategorySourceAttribute = NAME_None;
 };
 
-USTRUCT(BlueprintType, DisplayName="[PCGEx] Asset Staged Property")
-struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExStagedProperty
-{
-	GENERATED_BODY()
-	virtual ~FPCGExStagedProperty() = default;
-
-	FPCGExStagedProperty()
-	{
-	}
-
-	UPROPERTY(EditAnywhere, Category = Settings)
-	FName Name = NAME_None;
-
-#if WITH_EDITORONLY_DATA
-	UPROPERTY()
-	bool bIsChildProperty = false;
-#endif
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsChildProperty", EditConditionHides))
-	EPCGExStagedPropertyType Type = EPCGExStagedPropertyType::Double;
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(DisplayName="Value", EditCondition="Type==EPCGExStagedPropertyType::Double", EditConditionHides))
-	double MDouble = 0.0;
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(DisplayName="Value", EditCondition="Type==EPCGExStagedPropertyType::Integer32", EditConditionHides))
-	int32 MInt32 = 0.0;
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(DisplayName="Value", EditCondition="Type==EPCGExStagedPropertyType::Vector", EditConditionHides))
-	FVector MVector = FVector::ZeroVector;
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(DisplayName="Value", EditCondition="Type==EPCGExStagedPropertyType::Color", EditConditionHides))
-	FLinearColor MColor = FLinearColor::White;
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(DisplayName="Value", EditCondition="Type==EPCGExStagedPropertyType::Boolean", EditConditionHides))
-	bool MBoolean = true;
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(DisplayName="Value", EditCondition="Type==EPCGExStagedPropertyType::Name", EditConditionHides))
-	FName MName = NAME_None;
-};
-
 USTRUCT(BlueprintType, DisplayName="[PCGEx] Asset Staging Data")
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExAssetStagingData
 {
 	GENERATED_BODY()
-	virtual ~FPCGExAssetStagingData() = default;
 
-	FPCGExAssetStagingData()
-	{
-	}
+	UPROPERTY()
+	bool bIsSubCollection = false;
 
 	UPROPERTY()
 	FSoftObjectPath Path;
@@ -228,12 +176,9 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExAssetStagingData
 
 	UPROPERTY()
 	FName Category = NAME_None; // Dupe from parent.
-
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditFixedSize))
-	TArray<FPCGExStagedProperty> CustomProperties;
-
-	UPROPERTY(VisibleAnywhere, Category = Baked)
-	FVector Pivot = FVector::ZeroVector;
+	
+	UPROPERTY()
+	FPCGExFittingVariations Variations;
 
 	UPROPERTY(VisibleAnywhere, Category = Baked)
 	FBox Bounds = FBox(ForceInitToZero);
@@ -267,13 +212,16 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExAssetCollectionEntry
 	UPROPERTY(EditAnywhere, Category = Settings)
 	bool bIsSubCollection = false;
 
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides, ClampMin=0))
+	UPROPERTY(EditAnywhere, Category = Settings, meta=(ClampMin=0))
 	int32 Weight = 1;
 
-	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = Settings)
 	FName Category = NAME_None;
 
-	UPROPERTY(EditAnywhere, Category = Settings)
+	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection"))
+	FPCGExFittingVariations Variations;
+	
+	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection"))
 	FPCGExAssetStagingData Staging;
 
 	//UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="bSubCollection", EditConditionHides))
@@ -386,12 +334,12 @@ namespace PCGExAssetCollection
 
 		FORCEINLINE int32 GetPickAscending(const int32 Index) const
 		{
-			return Indices.IsValidIndex(Index) ? Indices[(Indices.Num() - 1) - Index] : -1;
+			return Indices.IsValidIndex(Index) ? Indices[Index] : -1;
 		}
 
 		FORCEINLINE int32 GetPickDescending(const int32 Index) const
 		{
-			return Indices.IsValidIndex(Index) ? Indices[Index] : -1;
+			return Indices.IsValidIndex(Index) ? Indices[(Indices.Num() - 1) - Index] : -1;
 		}
 
 		FORCEINLINE int32 GetPickWeightAscending(const int32 Index) const
@@ -426,7 +374,6 @@ namespace PCGExAssetCollection
 	{
 		if (!InActor)
 		{
-			InStaging.Pivot = FVector::ZeroVector;
 			InStaging.Bounds = FBox(ForceInitToZero);
 			return;
 		}
@@ -435,7 +382,6 @@ namespace PCGExAssetCollection
 		FVector Extents = FVector::ZeroVector;
 		InActor->GetActorBounds(true, Origin, Extents);
 
-		InStaging.Pivot = Origin;
 		InStaging.Bounds = FBoxCenterAndExtent(Origin, Extents).GetBox();
 	}
 
@@ -443,12 +389,10 @@ namespace PCGExAssetCollection
 	{
 		if (!InMesh)
 		{
-			InStaging.Pivot = FVector::ZeroVector;
 			InStaging.Bounds = FBox(ForceInitToZero);
 			return;
 		}
 
-		InStaging.Pivot = FVector::ZeroVector;
 		InStaging.Bounds = InMesh->GetBoundingBox();
 	}
 
@@ -474,7 +418,6 @@ public:
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-	virtual bool EDITOR_IsCacheableProperty(FPropertyChangedEvent& PropertyChangedEvent);
 	virtual void EDITOR_RefreshDisplayNames();
 
 	UFUNCTION(CallInEditor, Category = Tools, meta=(DisplayName="Rebuild Staging", ShortToolTip="Rebuild Staging data just for this collection."))
@@ -533,6 +476,10 @@ public:
 
 #pragma endregion
 
+	FORCEINLINE virtual bool GetStagingAt(const FPCGExAssetStagingData*& OutStaging, const int32 Index) const
+	{
+		return false;
+	}
 
 	FORCEINLINE virtual bool GetStaging(const FPCGExAssetStagingData*& OutStaging, const int32 Index, const int32 Seed, const EPCGExIndexPickMode PickMode = EPCGExIndexPickMode::Ascending) const
 	{
@@ -565,6 +512,15 @@ public:
 
 protected:
 #pragma region GetStaging
+	template <typename T>
+	FORCEINLINE bool GetStagingAtTpl(const FPCGExAssetStagingData*& OutStaging, const TArray<T>& InEntries, const int32 Index) const
+	{
+		const int32 Pick = Cache->GetPick(Index, EPCGExIndexPickMode::Ascending);
+		if (!InEntries.IsValidIndex(Pick)) { return false; }
+		OutStaging = &InEntries[Pick].Staging;
+		return true;
+	}
+
 	template <typename T>
 	FORCEINLINE bool GetStagingTpl(const FPCGExAssetStagingData*& OutStaging, const TArray<T>& InEntries, const int32 Index, const int32 Seed, const EPCGExIndexPickMode PickMode = EPCGExIndexPickMode::Ascending) const
 	{
@@ -648,7 +604,6 @@ protected:
 	void EDITOR_SetDirty()
 	{
 		bCacheNeedsRebuild = true;
-		if (bAutoRebuildStaging) { EDITOR_RebuildStagingData(); }
 	}
 #endif
 
@@ -738,27 +693,24 @@ protected:
 		auto SetEntryPath = [&](const int32 Index, const FSoftObjectPath& Path) { Collection->Entries[Index].SetAssetPath(Path); };
 
 #define PCGEX_FOREACH_COLLECTION_ENTRY(_TYPE, _NAME, _BODY)\
-		TArray<_TYPE> V; PCGEX_SET_NUM(V, NumEntries)\
-		FPCGAttributeAccessor<_TYPE>* A = new FPCGAttributeAccessor<_TYPE>(Metadata->GetConstTypedAttribute<_TYPE>(_NAME), Metadata);\
-		A->GetRange(MakeArrayView(V), 0, *Keys);\
-		for (int i = 0; i < NumEntries; i++) { _BODY }\
-		PCGEX_DELETE(A)
+		const FPCGMetadataAttribute<_TYPE>* A = Metadata->GetConstTypedAttribute<_TYPE>(_NAME);\
+		for (int i = 0; i < NumEntries; i++) { _TYPE V = A->GetValueFromItemKey(i); _BODY }
 
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION > 3
 		if (PathIdentity->UnderlyingType == EPCGMetadataTypes::SoftObjectPath)
 		{
-			PCGEX_FOREACH_COLLECTION_ENTRY(FSoftObjectPath, PathIdentity->Name, { SetEntryPath(i, V[i]); })
+			PCGEX_FOREACH_COLLECTION_ENTRY(FSoftObjectPath, PathIdentity->Name, { SetEntryPath(i, V); })
 		}
 		else
 #endif
 			if (PathIdentity->UnderlyingType == EPCGMetadataTypes::String)
 			{
-				PCGEX_FOREACH_COLLECTION_ENTRY(FString, PathIdentity->Name, { SetEntryPath(i, FSoftObjectPath(V[i])); })
+				PCGEX_FOREACH_COLLECTION_ENTRY(FString, PathIdentity->Name, { SetEntryPath(i, FSoftObjectPath(V)); })
 			}
 			else
 			{
-				PCGEX_FOREACH_COLLECTION_ENTRY(FName, PathIdentity->Name, { SetEntryPath(i, FSoftObjectPath(V[i].ToString())); })
+				PCGEX_FOREACH_COLLECTION_ENTRY(FName, PathIdentity->Name, { SetEntryPath(i, FSoftObjectPath(V.ToString())); })
 			}
 
 
@@ -767,7 +719,7 @@ protected:
 		{
 #define PCGEX_ATT_TOINT32(_NAME, _TYPE)\
 			if (WeightIdentity->UnderlyingType == EPCGMetadataTypes::_NAME){ \
-				PCGEX_FOREACH_COLLECTION_ENTRY(int32, WeightIdentity->Name, {  Collection->Entries[i].Weight = static_cast<int32>(V[i]); }) }
+				PCGEX_FOREACH_COLLECTION_ENTRY(_TYPE, WeightIdentity->Name, {  Collection->Entries[i].Weight = static_cast<int32>(V); }) }
 
 			PCGEX_ATT_TOINT32(Integer32, int32)
 			else
@@ -785,11 +737,11 @@ protected:
 		{
 			if (CategoryIdentity->UnderlyingType == EPCGMetadataTypes::String)
 			{
-				PCGEX_FOREACH_COLLECTION_ENTRY(FString, WeightIdentity->Name, { Collection->Entries[i].Category = FName(V[i]); })
+				PCGEX_FOREACH_COLLECTION_ENTRY(FString, WeightIdentity->Name, { Collection->Entries[i].Category = FName(V); })
 			}
 			else if (CategoryIdentity->UnderlyingType == EPCGMetadataTypes::Name)
 			{
-				PCGEX_FOREACH_COLLECTION_ENTRY(FName, WeightIdentity->Name, { Collection->Entries[i].Category = V[i]; })
+				PCGEX_FOREACH_COLLECTION_ENTRY(FName, WeightIdentity->Name, { Collection->Entries[i].Category = V; })
 			}
 		}
 
@@ -832,6 +784,9 @@ namespace PCGExAssetCollection
 
 		int32 MaxIndex = 0;
 		double MaxInputIndex = 0;
+
+		TArray<int32> MinCache;
+		TArray<int32> MaxCache;
 
 		FDistributionHelper(
 			UPCGExAssetCollection* InCollection,

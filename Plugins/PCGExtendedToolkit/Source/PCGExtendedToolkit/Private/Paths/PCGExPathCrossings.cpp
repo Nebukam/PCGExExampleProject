@@ -32,7 +32,7 @@ bool FPCGExPathCrossingsElement::Boot(FPCGExContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(PathCrossings)
 
-	if (Settings->bFlagSubPoints) { PCGEX_VALIDATE_NAME(Settings->FlagName) }
+	if (Settings->bFlagCrossing) { PCGEX_VALIDATE_NAME(Settings->CrossingFlagAttributeName) }
 
 	PCGEX_OPERATION_BIND(Blending, UPCGExSubPointsBlendInterpolate)
 	Context->Blending->bClosedPath = Settings->bClosedPath;
@@ -118,7 +118,7 @@ namespace PCGExPathCrossings
 		bClosedPath = Settings->bClosedPath;
 		bSelfIntersectionOnly = Settings->bSelfIntersectionOnly;
 		Details = Settings->IntersectionDetails;
-		Details.ComputeDot();
+		Details.Init();
 
 		CanCutFilterManager = new PCGExPointFilter::TManager(PointDataFacade);
 		if (!CanCutFilterManager->Init(Context, TypedContext->CanCutFilterFactories)) { PCGEX_DELETE(CanCutFilterManager) }
@@ -215,6 +215,13 @@ namespace PCGExPathCrossings
 			const FVector& B2 = *(P2->GetData() + E2->End);
 			if (A1 == A2 || A1 == B2 || A2 == B1 || B2 == B1) { return; }
 
+			if (Details.bUseMinAngle || Details.bUseMaxAngle)
+			{
+				const double Dot = FVector::DotProduct((B1 - A1).GetSafeNormal(), (B2 - A2).GetSafeNormal());
+				if (Dot < Details.MinDot || Dot > Details.MaxDot) { return; }
+			}
+
+
 			FVector A;
 			FVector B;
 			FMath::SegmentDistToSegment(
@@ -269,7 +276,7 @@ namespace PCGExPathCrossings
 		const PCGExPaths::FPathEdge* Edge = Edges[Iteration];
 		if (!Crossing)
 		{
-			if (FlagWriter) { FlagWriter->Values[Edge->OffsetedStart] = true; }
+			if (FlagWriter) { FlagWriter->Values[Edge->OffsetedStart] = false; }
 			return;
 		}
 
@@ -347,6 +354,7 @@ namespace PCGExPathCrossings
 			}
 		}
 
+		if (Settings->bFlagCrossing) { FlagWriter = PointDataFacade->GetWriter(Settings->CrossingFlagAttributeName, false, true, true); }
 		Blending->PrepareForData(PointDataFacade, PointDataFacade, PCGExData::ESource::Out);
 
 		StartParallelLoopForRange(NumPoints);

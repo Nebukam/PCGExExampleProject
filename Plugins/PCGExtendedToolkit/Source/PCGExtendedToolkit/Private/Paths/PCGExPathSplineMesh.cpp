@@ -68,18 +68,11 @@ bool FPCGExPathSplineMeshElement::Boot(FPCGExContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(PathSplineMesh)
 
-	if (!Settings->bTangentsFromAttributes)
+	if (Settings->bApplyCustomTangents)
 	{
-		PCGEX_OPERATION_BIND(Tangents, UPCGExZeroTangents)
-		Context->Tangents->bClosedPath = Settings->bClosedPath;
+		PCGEX_VALIDATE_NAME(Settings->ArriveTangentAttribute)
+		PCGEX_VALIDATE_NAME(Settings->LeaveTangentAttribute)
 	}
-
-	/*
-	if (Settings->bPerSegmentTargetActor)
-	{
-		PCGEX_VALIDATE_NAME(Settings->TargetActorAttributeName)
-	}
-	*/
 
 	if (Settings->CollectionSource == EPCGExCollectionSource::Asset)
 	{
@@ -130,7 +123,6 @@ bool FPCGExPathSplineMeshElement::ExecuteInternal(FPCGContext* InContext) const
 			},
 			[&](PCGExPointsMT::TBatch<PCGExPathSplineMesh::FProcessor>* NewBatch)
 			{
-				NewBatch->PrimaryOperation = Context->Tangents;
 			},
 			PCGExMT::State_Done))
 		{
@@ -188,15 +180,21 @@ namespace PCGExPathSplineMesh
 		Helper = new PCGExAssetCollection::FDistributionHelper(LocalTypedContext->MainCollection, Settings->DistributionSettings);
 		if (!Helper->Init(Context, PointDataFacade)) { return false; }
 
-		if (Settings->bTangentsFromAttributes)
+		if (Settings->bApplyCustomTangents)
 		{
-			Tangents = Cast<UPCGExTangentsOperation>(PrimaryOperation);
-			Tangents->PrepareForData(PointDataFacade);
-		}
-		else
-		{
-			ArriveReader = PointDataFacade->GetScopedBroadcaster<FVector>(Settings->Arrive);
-			LeaveReader = PointDataFacade->GetScopedBroadcaster<FVector>(Settings->Leave);
+			ArriveReader = PointDataFacade->GetReader<FVector>(Settings->ArriveTangentAttribute);
+			if (!ArriveReader)
+			{
+				PCGE_LOG_C(Error, GraphAndLog, Context, FTEXT("Could not fetch tangent' Arrive attribute on some inputs."));
+				return false;
+			}
+
+			LeaveReader = PointDataFacade->GetReader<FVector>(Settings->LeaveTangentAttribute);
+			if (!ArriveReader)
+			{
+				PCGE_LOG_C(Error, GraphAndLog, Context, FTEXT("Could not fetch tangent' Leave attribute on some inputs."));
+				return false;
+			}
 		}
 
 		LastIndex = PointIO->GetNum() - 1;
@@ -216,6 +214,7 @@ namespace PCGExPathSplineMesh
 
 	void FProcessor::ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 Count)
 	{
+		// TODO : Support closed splines
 		if (Index == LastIndex) { return; } // Ignore last index, only used for maths reasons
 
 		Segments[Index] = PCGExPaths::FSplineMeshSegment();
@@ -243,6 +242,33 @@ namespace PCGExPathSplineMesh
 		Segment.Params.EndPos = EndTransform.GetLocation();
 		Segment.Params.EndScale = FVector2D(Scale.Y, Scale.Z);
 		Segment.Params.EndRoll = EndTransform.GetRotation().Rotator().Roll;
+
+		if (LocalSettings->bApplyCustomTangents)
+		{
+			int32 NextIndex = Index + 1;
+
+			if (bClosedPath)
+			{
+				if (NextIndex > LastIndex) { NextIndex = 0; }
+
+				Segment.Params.StartTangent = LeaveReader->Values[Index];
+				Segment.Params.EndTangent = ArriveReader->Values[NextIndex];
+			}
+			else
+			{
+				if (NextIndex > LastIndex)
+				{
+					Segment.Params.StartTangent = LeaveReader->Values[Index];
+					Segment.Params.EndTangent = ArriveReader->Values[Index];
+				}
+				else
+				{
+					Segment.Params.StartTangent = LeaveReader->Values[Index];
+					Segment.Params.EndTangent = ArriveReader->Values[NextIndex];
+				}
+			}
+		}
+
 
 		/*
 		AActor* TargetActor = LocalSettings->TargetActor.Get() ? LocalSettings->TargetActor.Get() : Context->GetTargetActor(nullptr);

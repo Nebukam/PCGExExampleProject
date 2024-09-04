@@ -286,7 +286,7 @@ namespace PCGExBridgeClusters
 
 		// Force writing cluster ID to Vtx, otherwise we inherit from previous metadata.
 		const uint64 ClusterId = VtxIO->GetOut()->UID;
-		PCGEx::TFAttributeWriter<int64>* ClusterIdWriter = new PCGEx::TFAttributeWriter<int64>(PCGExGraph::Tag_ClusterId);
+		PCGEx::TAttributeWriter<int64>* ClusterIdWriter = new PCGEx::TAttributeWriter<int64>(PCGExGraph::Tag_ClusterId);
 		for (int64& Id : ClusterIdWriter->Values) { Id = ClusterId; }
 		PCGEX_ASYNC_WRITE_DELETE(AsyncManagerPtr, ClusterIdWriter);
 
@@ -343,6 +343,8 @@ namespace PCGExBridgeClusters
 		FPCGMetadataAttribute<int64>* EdgeEndpointsAtt = static_cast<FPCGMetadataAttribute<int64>*>(EdgeMetadata->GetMutableAttribute(PCGExGraph::Tag_EdgeEndpoints));
 		FPCGMetadataAttribute<int64>* OutVtxEndpointAtt = static_cast<FPCGMetadataAttribute<int64>*>(Batch->VtxIO->GetOut()->Metadata->GetMutableAttribute(PCGExGraph::Tag_VtxEndpoint));
 
+		if (!EdgeEndpointsAtt || !OutVtxEndpointAtt) { return false; } // Somehow crashes, sometimes? Need to look into it.
+		
 		EdgeEndpointsAtt->SetValue(EdgePoint.MetadataEntry, PCGEx::H64(StartIdx, EndIdx));
 		OutVtxEndpointAtt->SetValue(StartPoint.MetadataEntry, PCGEx::H64(StartIdx, StartNumEdges + 1));
 		OutVtxEndpointAtt->SetValue(EndPoint.MetadataEntry, PCGEx::H64(EndIdx, EndNumEdges + 1));

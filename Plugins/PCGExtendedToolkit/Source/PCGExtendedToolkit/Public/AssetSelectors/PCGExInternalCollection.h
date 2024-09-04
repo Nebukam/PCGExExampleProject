@@ -46,7 +46,7 @@ protected:
 	virtual void OnSubCollectionLoaded() override;
 };
 
-UCLASS(NotBlueprintable, DisplayName="[PCGEx] Untyped Collection")
+UCLASS(Hidden, DisplayName="[PCGEx] Untyped Collection")
 class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExInternalCollection : public UPCGExAssetCollection
 {
 	GENERATED_BODY()
@@ -57,10 +57,11 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExInternalCollection : public UPCGExAssetCo
 public:
 	virtual void RebuildStagingData(const bool bRecursive) override;
 
-#if WITH_EDITOR
-	virtual bool EDITOR_IsCacheableProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
-
+	FORCEINLINE virtual bool GetStagingAt(const FPCGExAssetStagingData*& OutStaging, const int32 Index) const override
+	{
+		return GetStagingAtTpl(OutStaging, Entries, Index);
+	}
+	
 	FORCEINLINE virtual bool GetStaging(const FPCGExAssetStagingData*& OutStaging, const int32 Index, const int32 Seed, const EPCGExIndexPickMode PickMode) const override
 	{
 		return GetStagingTpl(OutStaging, Entries, Index, Seed, PickMode);
