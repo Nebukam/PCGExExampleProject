@@ -13,6 +13,11 @@
 #include "PCGExPathCrossings.generated.h"
 
 
+namespace PCGExDataBlending
+{
+	class FCompoundBlender;
+}
+
 class UPCGExSubPointsBlendOperation;
 /**
  * 
@@ -61,12 +66,40 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bFlagCrossing"))
 	FName CrossingFlagAttributeName = "bIsCrossing";
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, InlineEditConditionToggle))
+	bool bWriteAlpha = false;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bWriteAlpha"))
+	FName CrossingAlphaAttributeName = "Alpha";
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bWriteAlpha", HideEditConditionToggle))
+	double DefaultAlpha = -1;
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	bool bDoCrossBlending = false;
 
 	/** If enabled, blend in properties & attributes from external sources. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bDoCrossBlending"))
+	FPCGExCarryOverDetails CrossingCarryOver;
+	
+	/** If enabled, blend in properties & attributes from external sources. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bDoCrossBlending"))
 	FPCGExBlendingDetails CrossingBlending = FPCGExBlendingDetails(EPCGExDataBlendingType::None);
+
+	FPCGExDistanceDetails CrossingBlendingDistance;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, InlineEditConditionToggle))
+	bool bTagIfHasCrossing = false;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, EditCondition="bTagIfHasCrossing"))
+	FString HasCrossingsTag = TEXT("HasCrossings");
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, InlineEditConditionToggle))
+	bool bTagIfHasNoCrossings = false;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, EditCondition="bTagIfHasNoCrossings"))
+	FString HasNoCrossingsTag = TEXT("HasNoCrossings");
+	
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPathCrossingsContext final : public FPCGExPathProcessorContext
@@ -112,6 +145,7 @@ namespace PCGExPathCrossings
 
 	class FProcessor final : public PCGExPointsMT::FPointsProcessor
 	{
+		const UPCGExPathCrossingsSettings* LocalSettings = nullptr;
 		FPCGExPathCrossingsContext* LocalTypedContext = nullptr;
 
 		bool bClosedPath = false;
@@ -130,12 +164,16 @@ namespace PCGExPathCrossings
 
 		UPCGExSubPointsBlendOperation* Blending = nullptr;
 
+		PCGExData::FIdxCompoundList* CompoundList = nullptr;
+		PCGExDataBlending::FCompoundBlender* CompoundBlender = nullptr;
+
 		using TEdgeOctree = TOctree2<PCGExPaths::FPathEdge*, PCGExPaths::FPathEdgeSemantics>;
 		TEdgeOctree* EdgeOctree = nullptr;
 
 		FPCGExPathEdgeIntersectionDetails Details;
 
 		PCGEx::TAttributeWriter<bool>* FlagWriter = nullptr;
+		PCGEx::TAttributeWriter<double>* AlphaWriter = nullptr;
 
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints)
@@ -150,7 +188,8 @@ namespace PCGExPathCrossings
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
 		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount) override;
-		virtual void ProcessSingleRangeIteration(const int32 Iteration, const int32 LoopIdx, const int32 LoopCount) override;
+		void FixPoint(const int32 Index);
+		void CrossBlendPoint(const int32 Index);
 		void OnSearchComplete();
 		virtual void CompleteWork() override;
 		virtual void Write() override;

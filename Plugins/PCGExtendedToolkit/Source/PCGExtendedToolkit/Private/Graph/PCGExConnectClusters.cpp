@@ -323,13 +323,16 @@ namespace PCGExBridgeClusters
 		UPCGMetadata* EdgeMetadata = PointIO->GetOut()->Metadata;
 
 		const FPCGMetadataAttribute<int64>* InVtxEndpointAtt = static_cast<FPCGMetadataAttribute<int64>*>(Batch->VtxIO->GetIn()->Metadata->GetMutableAttribute(PCGExGraph::Tag_VtxEndpoint));
-		
+
 		FPCGPoint& EdgePoint = PointIO->GetOut()->GetMutablePoints()[TaskIndex];
 
 		const FPCGPoint& StartPoint = Batch->VtxIO->GetOutPoint(IndexA);
 		const FPCGPoint& EndPoint = Batch->VtxIO->GetOutPoint(IndexB);
 
-		EdgePoint.Transform.SetLocation(FMath::Lerp(StartPoint.Transform.GetLocation(), EndPoint.Transform.GetLocation(), 0.5));
+		if(EdgePoint.Transform.IsValid())
+		{
+			EdgePoint.Transform.SetLocation(FMath::Lerp(StartPoint.Transform.GetLocation(), EndPoint.Transform.GetLocation(), 0.5));
+		}
 
 		uint32 StartIdx;
 		uint32 StartNumEdges;

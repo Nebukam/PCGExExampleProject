@@ -21,17 +21,18 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	EPCGExBlendOver BlendOver = EPCGExBlendOver::Distance;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="BlendOver==EPCGExPathBlendOver::Fixed", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="BlendOver==EPCGExBlendOver::Fixed", EditConditionHides))
 	double Weight = 0.5;
 
 	virtual void CopySettingsFrom(const UPCGExOperation* Other) override;
 
 	virtual void BlendSubPoints(
-		const PCGExData::FPointRef& StartPoint,
-		const PCGExData::FPointRef& EndPoint,
+		const PCGExData::FPointRef& From,
+		const PCGExData::FPointRef& To,
 		const TArrayView<FPCGPoint>& SubPoints,
 		const PCGExMath::FPathMetricsSquared& Metrics,
-		PCGExDataBlending::FMetadataBlender* InBlender) const override;
+		PCGExDataBlending::FMetadataBlender* InBlender,
+		const int32 StartIndex) const override;
 
 	virtual PCGExDataBlending::FMetadataBlender* CreateBlender(PCGExData::FFacade* InPrimaryFacade, PCGExData::FFacade* InSecondaryFacade, const PCGExData::ESource SecondarySource) override;
 
