@@ -69,7 +69,7 @@ namespace PCGExGraph
 	{
 		uint32 Start = 0;
 		uint32 End = 0;
-		int bValid = 1; // int for atomic operations
+		int8 bValid = 1; // int for atomic operations
 
 		FEdge()
 		{
@@ -161,7 +161,7 @@ namespace PCGExGraph
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(FPCGExEdge::BuildIndexedEdges-Vanilla);
 
-		PCGEx:: TAttributeReader<int64>* EndpointsReader = new PCGEx:: TAttributeReader<int64>(Tag_EdgeEndpoints);
+		PCGEx::TAttributeReader<int64>* EndpointsReader = new PCGEx::TAttributeReader<int64>(Tag_EdgeEndpoints);
 		if (!EndpointsReader->Bind(const_cast<PCGExData::FPointIO*>(EdgeIO)))
 		{
 			PCGEX_DELETE(EndpointsReader)
@@ -230,7 +230,7 @@ namespace PCGExGraph
 		TRACE_CPUPROFILER_EVENT_SCOPE(FPCGExEdge::BuildIndexedEdges-WithPoints);
 		//EdgeIO.CreateInKeys();
 
-		PCGEx:: TAttributeReader<int64>* EndpointsReader = new PCGEx:: TAttributeReader<int64>(Tag_EdgeEndpoints);
+		PCGEx::TAttributeReader<int64>* EndpointsReader = new PCGEx::TAttributeReader<int64>(Tag_EdgeEndpoints);
 
 		if (!EndpointsReader->Bind(const_cast<PCGExData::FPointIO*>(EdgeIO)))
 		{
@@ -298,23 +298,23 @@ namespace PCGExGraph
 
 	static void SetClusterVtx(const PCGExData::FPointIO* IO, FString& OutId)
 	{
-		IO->Tags->Set(TagStr_ClusterPair, IO->GetOutIn()->UID, OutId);
-		IO->Tags->RawTags.Add(TagStr_PCGExVtx);
-		IO->Tags->RawTags.Remove(TagStr_PCGExEdges);
+		IO->Tags->Add(TagStr_ClusterPair, IO->GetOutIn()->UID, OutId);
+		IO->Tags->Add(TagStr_PCGExVtx);
+		IO->Tags->Remove(TagStr_PCGExEdges);
 	}
 
 	static void MarkClusterVtx(const PCGExData::FPointIO* IO, const FString& Id)
 	{
-		IO->Tags->Set(TagStr_ClusterPair, Id);
-		IO->Tags->RawTags.Add(TagStr_PCGExVtx);
-		IO->Tags->RawTags.Remove(TagStr_PCGExEdges);
+		IO->Tags->Add(TagStr_ClusterPair, Id);
+		IO->Tags->Add(TagStr_PCGExVtx);
+		IO->Tags->Remove(TagStr_PCGExEdges);
 	}
 
 	static void MarkClusterEdges(const PCGExData::FPointIO* IO, const FString& Id)
 	{
-		IO->Tags->Set(TagStr_ClusterPair, Id);
-		IO->Tags->RawTags.Add(TagStr_PCGExEdges);
-		IO->Tags->RawTags.Remove(TagStr_PCGExVtx);
+		IO->Tags->Add(TagStr_ClusterPair, Id);
+		IO->Tags->Add(TagStr_PCGExEdges);
+		IO->Tags->Remove(TagStr_PCGExVtx);
 	}
 
 	static void MarkClusterEdges(const TArrayView<PCGExData::FPointIO*> Edges, const FString& Id)

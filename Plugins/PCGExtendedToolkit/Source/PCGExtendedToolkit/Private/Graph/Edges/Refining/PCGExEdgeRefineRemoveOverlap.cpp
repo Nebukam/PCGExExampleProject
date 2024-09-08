@@ -51,7 +51,7 @@ void UPCGExEdgeRemoveOverlap::ProcessEdge(PCGExGraph::FIndexedEdge& Edge)
 		if (bUseMinAngle || bUseMaxAngle)
 		{
 			const double Dot = FMath::Abs(FVector::DotProduct(Cluster->GetDir(*EEdge->Start, *EEdge->End), Cluster->GetDir(*OtherEEdge->Start, *OtherEEdge->End)));
-			if (!(Dot <= MaxDot && Dot >= MinDot)) { return true; }
+			if (!(Dot >= MaxDot && Dot <= MinDot)) { return true; }
 		}
 
 		const double OtherLength = OtherEEdge->GetEdgeLengthSquared(Cluster);
