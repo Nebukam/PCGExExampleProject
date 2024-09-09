@@ -33,6 +33,7 @@ protected:
 	//~Begin UPCGExPointsProcessorSettings
 public:
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
+	//PCGEX_NODE_POINT_FILTER(PCGExPointFilter::SourcePointFiltersLabel, "Filters", PCGExFactories::PointFilters, false)
 	//~End UPCGExPointsProcessorSettings
 
 public:
@@ -81,9 +82,6 @@ namespace PCGExPathIntersections
 		PCGExGeo::FSegmentation* Segmentation = nullptr;
 
 		FPCGExBoxIntersectionDetails Details;
-
-		PCGExMT::FTaskGroup* FindIntersectionsTaskGroup = nullptr;
-		PCGExMT::FTaskGroup* InsertionTaskGroup = nullptr;
 
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints)

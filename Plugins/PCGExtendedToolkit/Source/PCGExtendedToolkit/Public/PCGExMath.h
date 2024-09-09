@@ -18,27 +18,27 @@ MACRO(FSoftClassPath)
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Mean Measure"))
 enum class EPCGExMeanMeasure : uint8
 {
-	Relative UMETA(DisplayName = "Relative", ToolTip="Input value will be normalized between 0..1, or used as a factor. (what it means exactly depends on context. See node-specific documentation.)"),
-	Discrete UMETA(DisplayName = "Discrete", ToolTip="Raw value will be used, or used as absolute. (what it means exactly depends on context. See node-specific documentation.)"),
+	Relative = 0 UMETA(DisplayName = "Relative", ToolTip="Input value will be normalized between 0..1, or used as a factor. (what it means exactly depends on context. See node-specific documentation.)"),
+	Discrete = 1 UMETA(DisplayName = "Discrete", ToolTip="Raw value will be used, or used as absolute. (what it means exactly depends on context. See node-specific documentation.)"),
 };
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Mean Method"))
 enum class EPCGExMeanMethod : uint8
 {
-	Average UMETA(DisplayName = "Average", ToolTip="Average"),
-	Median UMETA(DisplayName = "Median", ToolTip="Median"),
-	ModeMin UMETA(DisplayName = "Mode (Highest)", ToolTip="Mode length (~= highest most common value)"),
-	ModeMax UMETA(DisplayName = "Mode (Lowest)", ToolTip="Mode length (~= lowest most common value)"),
-	Central UMETA(DisplayName = "Central", ToolTip="Central uses the middle value between Min/Max input values."),
-	Fixed UMETA(DisplayName = "Fixed", ToolTip="Fixed threshold"),
+	Average = 0 UMETA(DisplayName = "Average", ToolTip="Average"),
+	Median  = 1 UMETA(DisplayName = "Median", ToolTip="Median"),
+	ModeMin = 2 UMETA(DisplayName = "Mode (Highest)", ToolTip="Mode length (~= highest most common value)"),
+	ModeMax = 3 UMETA(DisplayName = "Mode (Lowest)", ToolTip="Mode length (~= lowest most common value)"),
+	Central = 4 UMETA(DisplayName = "Central", ToolTip="Central uses the middle value between Min/Max input values."),
+	Fixed   = 5 UMETA(DisplayName = "Fixed", ToolTip="Fixed threshold"),
 };
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Point Bounds Source"))
 enum class EPCGExPointBoundsSource : uint8
 {
-	ScaledBounds UMETA(DisplayName = "Scaled Bounds", ToolTip="Scaled Bounds"),
-	DensityBounds UMETA(DisplayName = "Density Bounds", ToolTip="Density Bounds (scaled + steepness)"),
-	Bounds UMETA(DisplayName = "Bounds", ToolTip="Unscaled Bounds (why?)")
+	ScaledBounds  = 0 UMETA(DisplayName = "Scaled Bounds", ToolTip="Scaled Bounds"),
+	DensityBounds = 1 UMETA(DisplayName = "Density Bounds", ToolTip="Density Bounds (scaled + steepness)"),
+	Bounds        = 2 UMETA(DisplayName = "Bounds", ToolTip="Unscaled Bounds (why?)")
 };
 
 namespace PCGExMath
@@ -348,38 +348,38 @@ namespace PCGExMath
 #pragma region Sub
 
 	template <typename T, typename CompilerSafety = void>
-	FORCEINLINE static T Sub(const T& A, const T& B) { return A - B; }
+	FORCEINLINE static T Subtract(const T& A, const T& B) { return A - B; }
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static bool Sub(const bool& A, const bool& B) { return B ? true : A; }
+	FORCEINLINE static bool Subtract(const bool& A, const bool& B) { return B ? true : A; }
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FRotator Sub(const FRotator& A, const FRotator& B) { return B - A; }
+	FORCEINLINE static FRotator Subtract(const FRotator& A, const FRotator& B) { return B - A; }
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FQuat Sub(const FQuat& A, const FQuat& B) { return Sub(A.Rotator(), B.Rotator()).Quaternion(); }
+	FORCEINLINE static FQuat Subtract(const FQuat& A, const FQuat& B) { return Subtract(A.Rotator(), B.Rotator()).Quaternion(); }
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FTransform Sub(const FTransform& A, const FTransform& B)
+	FORCEINLINE static FTransform Subtract(const FTransform& A, const FTransform& B)
 	{
 		return FTransform(
-			Sub(A.GetRotation(), B.GetRotation()),
+			Subtract(A.GetRotation(), B.GetRotation()),
 			A.GetLocation() - B.GetLocation(),
 			A.GetScale3D() - B.GetScale3D());
 	}
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FString Sub(const FString& A, const FString& B) { return A < B ? A : B; }
+	FORCEINLINE static FString Subtract(const FString& A, const FString& B) { return A < B ? A : B; }
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FName Sub(const FName& A, const FName& B) { return A.ToString() < B.ToString() ? A : B; }
+	FORCEINLINE static FName Subtract(const FName& A, const FName& B) { return A.ToString() < B.ToString() ? A : B; }
 
 	// Unhandled, but needs to be supported as property
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FSoftObjectPath Sub(const FSoftObjectPath& A, const FSoftObjectPath& B) { return A; }
+	FORCEINLINE static FSoftObjectPath Subtract(const FSoftObjectPath& A, const FSoftObjectPath& B) { return A; }
 
 	template <typename CompilerSafety = void>
-	FORCEINLINE static FSoftClassPath Sub(const FSoftClassPath& A, const FSoftClassPath& B) { return A; }
+	FORCEINLINE static FSoftClassPath Subtract(const FSoftClassPath& A, const FSoftClassPath& B) { return A; }
 
 #pragma endregion
 

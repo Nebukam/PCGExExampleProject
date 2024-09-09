@@ -9,8 +9,6 @@
 #define LOCTEXT_NAMESPACE "PCGExSmoothElement"
 #define PCGEX_NAMESPACE Smooth
 
-FName UPCGExSmoothSettings::GetPointFilterLabel() const { return FName("SmoothConditions"); }
-
 PCGExData::EInit UPCGExSmoothSettings::GetMainOutputInitMode() const { return PCGExData::EInit::DuplicateInput; }
 
 PCGEX_INITIALIZE_ELEMENT(Smooth)
@@ -136,7 +134,6 @@ namespace PCGExSmooth
 	void FProcessor::ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 Count)
 	{
 		if (!PointFilterCache[Index]) { return; }
-
 
 		PCGExData::FPointRef PtRef = PointIO->GetOutPointRef(Index);
 		const double LocalSmoothing = Smoothing ? FMath::Clamp(Smoothing->Values[Index], 0, TNumericLimits<double>::Max()) * LocalSettings->ScaleSmoothingAmountAttribute : LocalSettings->SmoothingAmountConstant;

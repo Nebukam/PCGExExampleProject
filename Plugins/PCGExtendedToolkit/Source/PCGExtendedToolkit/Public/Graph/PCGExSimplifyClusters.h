@@ -23,14 +23,14 @@ public:
 #endif
 
 protected:
-	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
 	virtual FPCGElementPtr CreateElement() const override;
 	//~End UPCGSettings
 
-	//~Begin UPCGExEdgesProcessorSettings interface
+	//~Begin UPCGExEdgesProcessorSettings interface	
 public:
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
 	virtual PCGExData::EInit GetEdgeOutputInitMode() const override;
+	PCGEX_NODE_POINT_FILTER(PCGExPointFilter::SourceKeepConditionLabel, "Prevents vtx from being pruned by the simplification process", PCGExFactories::ClusterNodeFilters, false)
 	//~End UPCGExEdgesProcessorSettings interface
 
 	/** If enabled, only check for dead ends. */

@@ -13,8 +13,8 @@
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Uber Filter Mode"))
 enum class EPCGExUberFilterMode : uint8
 {
-	Partition UMETA(DisplayName = "Partition points", ToolTip="Create inside/outside dataset from the filter results."),
-	Write UMETA(DisplayName = "Write result", ToolTip="Simply write filter result to an attribute but doesn't change point structure."),
+	Partition = 0 UMETA(DisplayName = "Partition points", ToolTip="Create inside/outside dataset from the filter results."),
+	Write     = 1 UMETA(DisplayName = "Write result", ToolTip="Simply write filter result to an attribute but doesn't change point structure."),
 };
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Misc")
@@ -37,7 +37,6 @@ public:
 #endif
 
 protected:
-	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
 	virtual TArray<FPCGPinProperties> OutputPinProperties() const override;
 	virtual FPCGElementPtr CreateElement() const override;
 	//~End UPCGSettings
@@ -45,6 +44,7 @@ protected:
 	//~Begin UPCGExPointsProcessorSettings
 public:
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
+	PCGEX_NODE_POINT_FILTER(PCGExPointFilter::SourceFiltersLabel, "Filters", PCGExFactories::PointFilters, true)
 	//~End UPCGExPointsProcessorSettings
 
 public:
@@ -91,13 +91,12 @@ namespace PCGExUberFilter
 {
 	class FProcessor final : public PCGExPointsMT::FPointsProcessor
 	{
-		int32 NumInside = 0;
-		int32 NumOutside = 0;
-
+		const UPCGExUberFilterSettings* LocalSettings = nullptr;
 		FPCGExUberFilterContext* LocalTypedContext = nullptr;
 
-		PCGExMT::FTaskGroup* TestTaskGroup = nullptr;
-
+		int32 NumInside = 0;
+		int32 NumOutside = 0;
+		
 		PCGEx::TAttributeWriter<bool>* Results = nullptr;
 
 	public:
@@ -112,6 +111,8 @@ namespace PCGExUberFilter
 		virtual ~FProcessor() override;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
+		virtual void PrepareSingleLoopScopeForPoints(const uint32 StartIndex, const int32 Count) override;
+		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount) override;
 		PCGExData::FPointIO* CreateIO(PCGExData::FPointIOCollection* InCollection, const PCGExData::EInit InitMode) const;
 		virtual void CompleteWork() override;
 	};

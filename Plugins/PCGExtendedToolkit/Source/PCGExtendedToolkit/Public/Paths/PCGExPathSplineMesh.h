@@ -50,6 +50,7 @@ protected:
 	//~End UPCGSettings
 
 public:
+	PCGEX_NODE_POINT_FILTER(PCGExPointFilter::SourcePointFiltersLabel, "Filters", PCGExFactories::PointFilters, false)
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
 
 	/** Consider paths to be closed -- processing will wrap between first and last points. */

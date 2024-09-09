@@ -19,24 +19,24 @@ namespace PCGExBevelPath
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Bevel Mode"))
 enum class EPCGExBevelMode : uint8
 {
-	Radius UMETA(DisplayName = "Radius", ToolTip="Width is used as a radius value to compute distance along each point neighboring segments"),
-	Distance UMETA(DisplayName = "Distance", ToolTip="Width is used as a distance along each point neighboring segments"),
+	Radius   = 0 UMETA(DisplayName = "Radius", ToolTip="Width is used as a radius value to compute distance along each point neighboring segments"),
+	Distance = 1 UMETA(DisplayName = "Distance", ToolTip="Width is used as a distance along each point neighboring segments"),
 };
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Bevel Profile Type"))
 enum class EPCGExBevelProfileType : uint8
 {
-	Line UMETA(DisplayName = "Line", ToolTip="Line profile"),
-	Arc UMETA(DisplayName = "Arc", ToolTip="Arc profile"),
-	Custom UMETA(DisplayName = "Custom", ToolTip="Custom profile"),
+	Line   = 0 UMETA(DisplayName = "Line", ToolTip="Line profile"),
+	Arc    = 1 UMETA(DisplayName = "Arc", ToolTip="Arc profile"),
+	Custom = 2 UMETA(DisplayName = "Custom", ToolTip="Custom profile"),
 };
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Bevel Limit"))
 enum class EPCGExBevelLimit : uint8
 {
-	None UMETA(DisplayName = "None", ToolTip="Bevel is not limited"),
-	ClosestNeighbor UMETA(DisplayName = "Closest neighbor", ToolTip="Closest neighbor position is used as upper limit"),
-	Balanced UMETA(DisplayName = "Balanced", ToolTip="Weighted balance against opposite bevel position, falling back to closest neighbor"),
+	None            = 0 UMETA(DisplayName = "None", ToolTip="Bevel is not limited"),
+	ClosestNeighbor = 1 UMETA(DisplayName = "Closest neighbor", ToolTip="Closest neighbor position is used as upper limit"),
+	Balanced        = 2 UMETA(DisplayName = "Balanced", ToolTip="Weighted balance against opposite bevel position, falling back to closest neighbor"),
 };
 
 /**
@@ -61,6 +61,7 @@ protected:
 	//~Begin UPCGExPointsProcessorSettings
 public:
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
+	PCGEX_NODE_POINT_FILTER(PCGExBevelPath::SourceBevelFilters, "Filters used to know if a point should be Beveled", PCGExFactories::PointFilters, false)
 	//~End UPCGExPointsProcessorSettings
 
 public:
@@ -164,7 +165,6 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExBevelPathContext final : public FPCGExPa
 
 	virtual ~FPCGExBevelPathContext() override;
 
-	TArray<UPCGExFilterFactoryBase*> BevelFilterFactories;
 	PCGExData::FFacade* CustomProfileFacade = nullptr;
 
 	TArray<FVector> CustomProfilePositions;

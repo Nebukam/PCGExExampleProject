@@ -13,8 +13,8 @@
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Transform Component Selector"))
 enum class EPCGExOrientUsage : uint8
 {
-	ApplyToPoint UMETA(DisplayName = "Apply to point", ToolTip="Applies the orientation transform to the point"),
-	OutputToAttribute UMETA(DisplayName = "Output to attribute", ToolTip="Output the orientation transform to an attribute"),
+	ApplyToPoint      = 0 UMETA(DisplayName = "Apply to point", ToolTip="Applies the orientation transform to the point"),
+	OutputToAttribute = 1 UMETA(DisplayName = "Output to attribute", ToolTip="Output the orientation transform to an attribute"),
 };
 
 namespace PCGExOrient
@@ -46,7 +46,7 @@ protected:
 
 	//~Begin UPCGExPointProcessorSettings
 public:
-	virtual FName GetPointFilterLabel() const override { return FName("FlipOrientationConditions"); }
+	PCGEX_NODE_POINT_FILTER(FName("Flip Orientation Conditions"), "Filters used to know whether an orientation should be flipped or not", PCGExFactories::PointFilters, false)
 	//~End UPCGExPointProcessorSettings
 
 public:

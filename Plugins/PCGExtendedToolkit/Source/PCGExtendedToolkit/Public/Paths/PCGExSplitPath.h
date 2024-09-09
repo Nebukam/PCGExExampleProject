@@ -18,9 +18,11 @@ namespace PCGExSplitPath
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Path Split Action"))
 enum class EPCGExPathSplitAction : uint8
 {
-	Split UMETA(DisplayName = "Split", ToolTip="Duplicate the split point so the original becomes a new end, and the copy a new start."),
-	Remove UMETA(DisplayName = "Remove", ToolTip="Remove the split point, shrinking both the previous and next paths."),
-	Disconnect UMETA(DisplayName = "Disconnect", ToolTip="Disconnect the split point from the next one, starting a new path from the next."),
+	Split      = 0 UMETA(DisplayName = "Split", ToolTip="Duplicate the split point so the original becomes a new end, and the copy a new start."),
+	Remove     = 1 UMETA(DisplayName = "Remove", ToolTip="Remove the split point, shrinking both the previous and next paths."),
+	Disconnect = 2 UMETA(DisplayName = "Disconnect", ToolTip="Disconnect the split point from the next one, starting a new path from the next."),
+	Partition  = 3 UMETA(DisplayName = "Partition", ToolTip="Works like split but only create new data set as soon as the filter result changes from its previous result."),
+	Switch     = 4 UMETA(DisplayName = "Switch", ToolTip="Use the result of the filter as a switch signal to change between keep/prune behavior."),
 };
 
 /**
@@ -38,13 +40,13 @@ public:
 #endif
 
 protected:
-	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
 	virtual FPCGElementPtr CreateElement() const override;
 	//~End UPCGSettings
 
 	//~Begin UPCGExPointsProcessorSettings
 public:
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
+	PCGEX_NODE_POINT_FILTER(PCGExSplitPath::SourceSplitFilters, "Filters used to know if a point should be split", PCGExFactories::PointFilters, true)
 	//~End UPCGExPointsProcessorSettings
 
 public:
@@ -60,6 +62,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	EPCGExPathSplitAction SplitAction = EPCGExPathSplitAction::Split;
 
+	/** The initial switch value to start from. If false, will only starting to create paths after the first true result. If false, will start to create paths from the beginning and stop at the first true result instead.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, EditCondition="SplitAction==EPCGExPathSplitAction::Switch", EditConditionHides))
+	bool bInitialSwitchValue = false;
+
+	/** Should point insertion be inclusive of the behavior change */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, EditCondition="SplitAction==EPCGExPathSplitAction::Switch || SplitAction==EPCGExPathSplitAction::Partition", EditConditionHides))
+	bool bInclusive = false;
+
 	/** Whether to output single-point data or not */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bOmitSinglePointOutputs = true;
@@ -71,8 +81,6 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSplitPathContext final : public FPCGExPa
 
 	virtual ~FPCGExSplitPathContext() override;
 
-	TArray<UPCGExFilterFactoryBase*> SplitFilterFactories;
-	TArray<UPCGExFilterFactoryBase*> RemoveFilterFactories;
 };
 
 class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSplitPathElement final : public FPCGExPathProcessorElement
@@ -92,6 +100,7 @@ namespace PCGExSplitPath
 {
 	struct /*PCGEXTENDEDTOOLKIT_API*/ FPath
 	{
+		bool bEven = false;
 		int32 Start = -1;
 		int32 End = -1;
 		int32 Count = 0;
@@ -106,8 +115,6 @@ namespace PCGExSplitPath
 		FPCGExSplitPathContext* LocalTypedContext = nullptr;
 		const UPCGExSplitPathSettings* LocalSettings = nullptr;
 
-		PCGExPointFilter::TManager* FilterManager = nullptr;
-
 		bool bClosedPath = false;
 
 		TArray<FPath> Paths;
@@ -115,6 +122,8 @@ namespace PCGExSplitPath
 
 		bool bWrapLastPath = false;
 		bool bAddOpenTag = false;
+		bool bLastResult = false;
+		bool bEven = true;
 
 		int32 LastIndex = -1;
 		int32 CurrentPath = -1;
@@ -131,7 +140,7 @@ namespace PCGExSplitPath
 
 		FORCEINLINE void DoActionSplit(const int32 Index)
 		{
-			if (!FilterManager->Test(Index))
+			if (!PointFilterCache[Index])
 			{
 				if (CurrentPath == -1)
 				{
@@ -160,7 +169,7 @@ namespace PCGExSplitPath
 
 		FORCEINLINE void DoActionRemove(const int32 Index)
 		{
-			if (!FilterManager->Test(Index))
+			if (!PointFilterCache[Index])
 			{
 				if (CurrentPath == -1)
 				{
@@ -185,7 +194,7 @@ namespace PCGExSplitPath
 
 		FORCEINLINE void DoActionDisconnect(const int32 Index)
 		{
-			if (!FilterManager->Test(Index))
+			if (!PointFilterCache[Index])
 			{
 				if (CurrentPath == -1)
 				{
@@ -207,6 +216,82 @@ namespace PCGExSplitPath
 			}
 
 			CurrentPath = -1;
+		}
+
+		FORCEINLINE void DoActionPartition(const int32 Index)
+		{
+			if (PointFilterCache[Index] != bLastResult)
+			{
+				bLastResult = !bLastResult;
+
+				if (CurrentPath != -1)
+				{
+					FPath& ClosedPath = Paths[CurrentPath];
+					if (LocalSettings->bInclusive)
+					{
+						ClosedPath.End = Index;
+						ClosedPath.Count++;
+					}
+					else
+					{
+						ClosedPath.End = Index - 1;
+					}
+
+					CurrentPath = -1;
+				}
+			}
+
+			if (CurrentPath == -1)
+			{
+				CurrentPath = Paths.Emplace();
+				FPath& NewPath = Paths[CurrentPath];
+				NewPath.bEven = bEven;
+				bEven = !bEven;
+				NewPath.Start = Index;
+			}
+
+			FPath& Path = Paths[CurrentPath];
+			Path.Count++;
+		}
+
+		FORCEINLINE void DoActionSwitch(const int32 Index)
+		{
+			auto ClosePath = [&]()
+			{
+				if (CurrentPath != -1)
+				{
+					FPath& ClosedPath = Paths[CurrentPath];
+					if (LocalSettings->bInclusive)
+					{
+						ClosedPath.End = Index;
+						ClosedPath.Count++;
+					}
+					else
+					{
+						ClosedPath.End = Index - 1;
+					}
+				}
+
+				CurrentPath = -1;
+			};
+
+			if (PointFilterCache[Index]) { bLastResult = !bLastResult; }
+
+			if (bLastResult)
+			{
+				if (CurrentPath == -1)
+				{
+					CurrentPath = Paths.Emplace();
+					FPath& NewPath = Paths[CurrentPath];
+					NewPath.Start = Index;
+				}
+
+				FPath& Path = Paths[CurrentPath];
+				Path.Count++;
+				return;
+			}
+
+			ClosePath();
 		}
 
 		virtual void ProcessSingleRangeIteration(const int32 Iteration, const int32 LoopIdx, const int32 LoopCount) override;

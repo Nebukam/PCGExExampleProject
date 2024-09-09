@@ -22,8 +22,8 @@ namespace PCGExCluster
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Cluster Closest Search Mode"))
 enum class EPCGExClusterClosestSearchMode : uint8
 {
-	Node UMETA(DisplayName = "Closest node", ToolTip="Proximity to node position"),
-	Edge UMETA(DisplayName = "Closest edge", ToolTip="Proximity to edge, then endpoint"),
+	Node = 0 UMETA(DisplayName = "Closest node", ToolTip="Proximity to node position"),
+	Edge = 1 UMETA(DisplayName = "Closest edge", ToolTip="Proximity to edge, then endpoint"),
 };
 
 USTRUCT(BlueprintType)
@@ -582,6 +582,7 @@ namespace PCGExClusterTask
 	{
 		TArray<PCGExCluster::FNode>& Nodes = *Cluster->Nodes;
 
+		const TArray<bool>& Brkpts = *Breakpoints;
 		int32 LastIndex = Chain->First;
 		int32 NextIndex = Chain->Last;
 		Chain->Edges.Add(Nodes[LastIndex].GetEdgeIndex(NextIndex));
@@ -589,7 +590,7 @@ namespace PCGExClusterTask
 		while (NextIndex != -1)
 		{
 			const PCGExCluster::FNode& NextNode = Nodes[NextIndex];
-			if ((*(Breakpoints->GetData() + NextIndex)) || NextNode.IsComplex() || NextNode.IsDeadEnd())
+			if (Brkpts[NextIndex] || NextNode.IsComplex() || NextNode.IsDeadEnd())
 			{
 				LastIndex = NextIndex;
 				break;

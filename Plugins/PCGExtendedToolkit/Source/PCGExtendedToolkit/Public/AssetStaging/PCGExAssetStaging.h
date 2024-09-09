@@ -28,6 +28,7 @@ public:
 protected:
 	virtual FPCGElementPtr CreateElement() const override;
 	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
+	PCGEX_NODE_POINT_FILTER(PCGExPointFilter::SourcePointFiltersLabel, "Filters which points get staged.", PCGExFactories::PointFilters, false)
 	//~End UPCGSettings
 
 	//~Begin UPCGExPointsProcessorSettings

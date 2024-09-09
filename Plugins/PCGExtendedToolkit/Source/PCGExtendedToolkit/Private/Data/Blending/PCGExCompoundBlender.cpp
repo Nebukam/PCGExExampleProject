@@ -282,10 +282,9 @@ namespace PCGExDataBlending
 			IdxIO, IdxPt, Weights);
 
 		const int32 NumCompounded = IdxPt.Num();
-
 		if (NumCompounded == 0) { return; }
 
-		PCGEX_SET_NUM_DEFAULT(InheritedTags, TagAttributes.Num(), false)
+		InheritedTags.Init(false, TagAttributes.Num());
 
 		// Blend Properties
 		BlendProperties(Target, IdxIO, IdxPt, Weights);

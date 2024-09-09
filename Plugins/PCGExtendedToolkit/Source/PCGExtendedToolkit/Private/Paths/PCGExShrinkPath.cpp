@@ -8,8 +8,6 @@
 
 PCGExData::EInit UPCGExShrinkPathSettings::GetMainOutputInitMode() const { return PCGExData::EInit::NoOutput; }
 
-FName UPCGExShrinkPathSettings::GetPointFilterLabel() const { return FName("StopConditions"); }
-
 PCGEX_INITIALIZE_ELEMENT(ShrinkPath)
 
 void FPCGExShrinkPathContext::GetShrinkAmounts(const PCGExData::FPointIO* PointIO, double& Start, double& End, EPCGExPathShrinkDistanceCutType& StartCut, EPCGExPathShrinkDistanceCutType& EndCut) const
@@ -197,7 +195,7 @@ namespace PCGExShrinkPath
 		};
 
 		int32 StartOffset = 0;
-		int32 EndOffset = 0;
+		int32 EndOffset = 1;
 
 		EPCGExShrinkEndpoint SafeShrinkFirst = Settings->ShrinkFirst;
 
@@ -261,7 +259,7 @@ namespace PCGExShrinkPath
 				}
 				else
 				{
-					if (PointFilterCache.Last(EndOffset)) { return; }
+					if (PointFilterCache[PointFilterCache.Num() - EndOffset]) { return; }
 
 					const int32 LastIndex = MutablePoints.Num() - 1;
 					if (MutablePoints.IsValidIndex(LastIndex)) { RemoveIndex = LastIndex; }

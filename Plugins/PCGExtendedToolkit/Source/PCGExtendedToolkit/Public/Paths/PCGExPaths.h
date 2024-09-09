@@ -48,7 +48,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPathEdgeIntersectionDetails
 
 	/** Name of the attribute to flag point as crossing (result of an Edge/Edge intersection) */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Metadata", meta=(PCG_Overridable, EditCondition="bWriteCrossing"))
-	FName CrossingAttributeName = "bCrossing";
+	FName CrossingAttributeName = "bIsCrossing";
 
 	void Init()
 	{
@@ -64,7 +64,8 @@ namespace PCGExPaths
 {
 	const FName SourceCanCutFilters = TEXT("Can Cut Conditions");
 	const FName SourceCanBeCutFilters = TEXT("Can Be Cut Conditions");
-	
+	const FName SourceTriggerFilters = TEXT("Trigger Conditions");
+
 	struct /*PCGEXTENDEDTOOLKIT_API*/ FPathMetrics
 	{
 		FPathMetrics()
@@ -128,8 +129,6 @@ namespace PCGExPaths
 	{
 		int32 Start = -1;
 		int32 End = -1;
-		bool bCanBeCut = false;
-		bool bCanCut = false;
 		FBoxSphereBounds FSBounds = FBoxSphereBounds{};
 		int32 OffsetedStart = -1;
 

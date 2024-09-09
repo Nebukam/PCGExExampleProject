@@ -33,7 +33,7 @@ bool FPCGExPathCrossingsElement::Boot(FPCGExContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(PathCrossings)
 
-	if (Settings->bFlagCrossing) { PCGEX_VALIDATE_NAME(Settings->CrossingFlagAttributeName) }
+	if (Settings->IntersectionDetails.bWriteCrossing) { PCGEX_VALIDATE_NAME(Settings->IntersectionDetails.CrossingAttributeName) }
 	if (Settings->bWriteAlpha) { PCGEX_VALIDATE_NAME(Settings->CrossingAlphaAttributeName) }
 
 	PCGEX_OPERATION_BIND(Blending, UPCGExSubPointsBlendInterpolate)
@@ -145,6 +145,9 @@ namespace PCGExPathCrossings
 		PCGEX_SET_NUM_UNINITIALIZED(Edges, NumPoints)
 		PCGEX_SET_NUM_NULLPTR(Crossings, NumPoints)
 
+		CanCut.Init(true, NumPoints);
+		CanBeCut.Init(true, NumPoints);
+
 		FBox PointBounds = FBox(ForceInit);
 		for (int i = 0; i < NumPoints; i++)
 		{
@@ -167,13 +170,13 @@ namespace PCGExPathCrossings
 
 				if (!bClosedPath)
 				{
-					Edges.Last()->bCanBeCut = false;
-					Edges.Last()->bCanCut = false;
+					CanBeCut[NumPoints - 1] = false;
+					CanCut[NumPoints - 1] = false;
 				}
 
 				for (int i = 0; i < NumPoints; i++)
 				{
-					if (!Edges[i]->bCanCut) { continue; } // !!
+					if (!CanCut[i]) { continue; } // !!
 					EdgeOctree->AddElement(Edges[i]);
 				}
 			});
@@ -192,8 +195,11 @@ namespace PCGExPathCrossings
 				const double Length = FVector::DistSquared(Positions[Edge->Start], Positions[Edge->End]);
 				Lengths[Index] = Length;
 
-				Edge->bCanBeCut = Length == 0 ? false : CanBeCutFilterManager ? CanBeCutFilterManager->Test(Index) : true;
-				Edge->bCanCut = Length == 0 ? false : CanCutFilterManager ? CanCutFilterManager->Test(Index) : true;
+				if (Length > 0)
+				{
+					if (CanCutFilterManager) { CanCut[Index] = CanCutFilterManager->Test(Index); }
+					if (CanBeCutFilterManager) { CanBeCut[Index] = CanBeCutFilterManager->Test(Index); }
+				}
 
 				Edges[Index] = Edge;
 			}, NumPoints, GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize());
@@ -205,11 +211,10 @@ namespace PCGExPathCrossings
 	{
 		Crossings[Index] = nullptr;
 
+		if (!CanBeCut[Index]) { return; }
 		if (!bClosedPath && Index == LastIndex) { return; }
 
 		const PCGExPaths::FPathEdge* Edge = Edges[Index];
-
-		if (!Edge->bCanBeCut) { return; }
 
 		int32 CurrentIOIndex = PointIO->IOIndex;
 		const TArray<FVector>* P2 = &Positions;
@@ -419,14 +424,14 @@ namespace PCGExPathCrossings
 			CompoundBlender = new PCGExDataBlending::FCompoundBlender(&LocalSettings->CrossingBlending, &LocalSettings->CrossingCarryOver);
 			for (const PCGExData::FPointIO* IO : LocalTypedContext->MainPoints->Pairs)
 			{
-				if (IOIndices.Contains(IO->IOIndex)) { CompoundBlender->AddSource(LocalTypedContext->SubProcessorMap[IO]->PointDataFacade); }
+				if (IO && IOIndices.Contains(IO->IOIndex)) { CompoundBlender->AddSource(LocalTypedContext->SubProcessorMap[IO]->PointDataFacade); }
 			}
 
 			CompoundBlender->PrepareSoftMerge(PointDataFacade, CompoundList);
 		}
 
 		// Flag last so it doesn't get captured by blenders
-		if (LocalSettings->bFlagCrossing) { FlagWriter = PointDataFacade->GetWriter(LocalSettings->CrossingFlagAttributeName, false, true, true); }
+		if (LocalSettings->IntersectionDetails.bWriteCrossing) { FlagWriter = PointDataFacade->GetWriter(LocalSettings->IntersectionDetails.CrossingAttributeName, false, true, true); }
 		if (LocalSettings->bWriteAlpha) { AlphaWriter = PointDataFacade->GetWriter<double>(LocalSettings->CrossingAlphaAttributeName, LocalSettings->DefaultAlpha, true, true); }
 
 		if (PointIO->GetIn()->GetPoints().Num() != PointIO->GetOut()->GetPoints().Num()) { if (LocalSettings->bTagIfHasCrossing) { PointIO->Tags->Add(LocalSettings->HasCrossingsTag); } }
