@@ -9,7 +9,6 @@ namespace PCGExMT
 	FTaskManager::~FTaskManager()
 	{
 		Stopped = true;
-		PCGEX_DELETE_TARRAY(Groups)
 		Reset();
 	}
 
@@ -50,6 +49,8 @@ namespace PCGExMT
 		QueuedTasks.Empty();
 		NumStarted = 0;
 		NumCompleted = 0;
+
+		PCGEX_DELETE_TARRAY(Groups)
 	}
 
 	void FTaskGroup::StartRanges(const IterationCallback& Callback, const int32 MaxItems, const int32 ChunkSize, const bool bInlined, const bool bExecuteSmallSynchronously)
