@@ -57,7 +57,7 @@ bool FPCGExPartitionVerticesElement::ExecuteInternal(FPCGContext* InContext) con
 			return true;
 		}
 
-		Context->VtxPartitions->Pairs.Reserve(Context->GetTotalNumProcessors());
+		Context->VtxPartitions->Pairs.Reserve(Context->GetClusterProcessorsNum());
 	}
 
 	if (!Context->ProcessClusters()) { return false; }
@@ -125,12 +125,12 @@ namespace PCGExPartitionVertices
 		return true;
 	}
 
-	void FProcessor::ProcessSingleNode(const int32 Index, PCGExCluster::FNode& Node)
+	void FProcessor::ProcessSingleNode(const int32 Index, PCGExCluster::FNode& Node, const int32 LoopIdx, const int32 Count)
 	{
 		PointPartitionIO->GetOut()->GetMutablePoints()[Node.NodeIndex] = VtxIO->GetInPoint(KeptIndices[Node.NodeIndex]);
 	}
 
-	void FProcessor::ProcessSingleEdge(PCGExGraph::FIndexedEdge& Edge)
+	void FProcessor::ProcessSingleEdge(const int32 EdgeIndex, PCGExGraph::FIndexedEdge& Edge, const int32 LoopIdx, const int32 Count)
 	{
 		Edge.Start = Remapping[Edge.Start];
 		Edge.End = Remapping[Edge.End];

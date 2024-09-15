@@ -8,6 +8,7 @@
 #include "CoreMinimal.h"
 #include "PCGExMacros.h"
 #include "PCGEx.h"
+#include "PCGExActorSelector.h"
 #include "PCGExMath.h"
 #include "Data/PCGExAttributeHelpers.h"
 
@@ -47,40 +48,6 @@ enum class EPCGExSubdivideMode : uint8
 {
 	Distance = 0 UMETA(DisplayName = "Distance", ToolTip="Number of subdivisions depends on segment' length"),
 	Count    = 1 UMETA(DisplayName = "Count", ToolTip="Number of subdivisions is constant"),
-};
-
-USTRUCT(BlueprintType)
-struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPointFilterActionDetails
-{
-	GENERATED_BODY()
-
-	FPCGExPointFilterActionDetails()
-	{
-	}
-
-	/** Action type. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	EPCGExFilterDataAction Action = EPCGExFilterDataAction::Keep;
-
-	/**  */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, EditCondition="Action == EPCGExFilterDataAction::Tag"))
-	FName KeepTag = NAME_None;
-
-	/**  */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, EditCondition="Action == EPCGExFilterDataAction::Tag"))
-	FName OmitTag = NAME_None;
-
-	bool Validate(const FPCGContext* Context) const
-	{
-		if (Action == EPCGExFilterDataAction::Tag)
-		{
-			PCGEX_VALIDATE_NAME_C(Context, KeepTag)
-			PCGEX_VALIDATE_NAME_C(Context, OmitTag)
-			return true;
-		}
-
-		return true;
-	}
 };
 
 USTRUCT(BlueprintType)
@@ -598,6 +565,88 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExTransformDetails
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	bool bInheritRotation = false;
 };
+
+USTRUCT(BlueprintType)
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExCollisionDetails
+{
+	GENERATED_BODY()
+
+	FPCGExCollisionDetails()
+	{
+	}
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	bool bTraceComplex = false;
+
+	/** Collision type to check against */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	EPCGExCollisionFilterType CollisionType = EPCGExCollisionFilterType::Channel;
+
+	/** Collision channel to check against */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="CollisionType==EPCGExCollisionFilterType::Channel", EditConditionHides, Bitmask, BitmaskEnum="/Script/Engine.ECollisionChannel"))
+	TEnumAsByte<ECollisionChannel> CollisionChannel = ECC_WorldDynamic;
+
+	/** Collision object type to check against */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="CollisionType==EPCGExCollisionFilterType::ObjectType", EditConditionHides, Bitmask, BitmaskEnum="/Script/Engine.EObjectTypeQuery"))
+	int32 CollisionObjectType = ObjectTypeQuery1;
+
+	/** Collision profile to check against */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="CollisionType==EPCGExCollisionFilterType::Profile", EditConditionHides))
+	FName CollisionProfileName = NAME_None;
+
+	/** Ignore this graph' PCG content */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
+	bool bIgnoreSelf = true;
+
+	/** Ignore a procedural selection of actors */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, InlineEditConditionToggle))
+	bool bIgnoreActors = false;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bIgnoreActors"))
+	FPCGExActorSelectorSettings IgnoredActorSelector;
+
+	TArray<AActor*> IgnoredActors;
+	UWorld* World = nullptr;
+
+	void Init(FPCGContext* InContext)
+	{
+		World = InContext->SourceComponent->GetWorld();
+
+		if (bIgnoreActors)
+		{
+			const TFunction<bool(const AActor*)> BoundsCheck = [](const AActor*) -> bool { return true; };
+			const TFunction<bool(const AActor*)> SelfIgnoreCheck = [](const AActor*) -> bool { return true; };
+			IgnoredActors = PCGExActorSelector::FindActors(IgnoredActorSelector, InContext->SourceComponent.Get(), BoundsCheck, SelfIgnoreCheck);
+		}
+
+		if (bIgnoreSelf) { IgnoredActors.Add(InContext->SourceComponent->GetOwner()); }
+	}
+
+	void Update(FCollisionQueryParams& InCollisionParams) const
+	{
+		InCollisionParams.bTraceComplex = bTraceComplex;
+		InCollisionParams.AddIgnoredActors(IgnoredActors);
+	}
+
+	bool Linecast(const FVector& From, const FVector& To, FHitResult& HitResult) const
+	{
+		FCollisionQueryParams CollisionParams;
+		Update(CollisionParams);
+
+		switch (CollisionType)
+		{
+		case EPCGExCollisionFilterType::Channel:
+			return World->LineTraceSingleByChannel(HitResult, From, To, CollisionChannel, CollisionParams);
+		case EPCGExCollisionFilterType::ObjectType:
+			return World->LineTraceSingleByObjectType(HitResult, From, To, FCollisionObjectQueryParams(CollisionObjectType), CollisionParams);
+		case EPCGExCollisionFilterType::Profile:
+			return World->LineTraceSingleByProfile(HitResult, From, To, CollisionProfileName, CollisionParams);
+		default:
+			return false;
+		}
+	}
+};
+
 
 namespace PCGExDetails
 {

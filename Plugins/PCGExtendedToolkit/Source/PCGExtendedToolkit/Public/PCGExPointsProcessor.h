@@ -15,6 +15,7 @@
 #include "Data/PCGExPointIO.h"
 #include "PCGExOperation.h"
 #include "PCGExPointsMT.h"
+#include "RenderGraphResources.h"
 
 #include "PCGExPointsProcessor.generated.h"
 
@@ -287,7 +288,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPointsProcessorContext : public FPCGExCo
 			TypedBatch->SetPointsFilterData(&FilterFactories);
 		}
 
-		ScheduleBatch(GetAsyncManager(), MainBatch);
+		if (MainBatch->PrepareProcessing()) { MainBatch->Process(GetAsyncManager()); }
 		SetAsyncState(PCGExPointsMT::MTState_PointsProcessing);
 
 		return true;
@@ -303,6 +304,14 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPointsProcessorContext : public FPCGExCo
 
 	virtual void MTState_PointsWritingDone()
 	{
+	}
+
+	template <typename T>
+	void GatherProcessors(TArray<T*> OutProcessors)
+	{
+		OutProcessors.Reserve(MainBatch->GetNumProcessors());
+		PCGExPointsMT::TBatch<T>* TypedBatch = static_cast<PCGExPointsMT::TBatch<T>*>(MainBatch);
+		OutProcessors.Append(TypedBatch->Processors);
 	}
 
 #pragma endregion
