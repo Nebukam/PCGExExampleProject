@@ -18,29 +18,11 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExFromNeighborsTangents : public UPCGExTang
 	GENERATED_BODY()
 
 public:
-	virtual void CopySettingsFrom(const UPCGExOperation* Other) override
-	{
-		Super::CopySettingsFrom(Other);
-		if (const UPCGExFromNeighborsTangents* TypedOther = Cast<UPCGExFromNeighborsTangents>(Other))
-		{
-		}
-	}
-
-	FORCEINLINE virtual void ProcessFirstPoint(const TArray<FPCGPoint>& InPoints, FVector& OutArrive, FVector& OutLeave) const override
-	{
-		const FVector Dir = (InPoints[1].Transform.GetLocation() - InPoints[0].Transform.GetLocation()).GetSafeNormal();
-		OutArrive = Dir;
-		OutLeave = Dir;
-	}
-
-	FORCEINLINE virtual void ProcessLastPoint(const TArray<FPCGPoint>& InPoints, FVector& OutArrive, FVector& OutLeave) const override
-	{
-		const FVector Dir = (InPoints[InPoints.Num() - 2].Transform.GetLocation() - InPoints[InPoints.Num() - 1].Transform.GetLocation()).GetSafeNormal() * -1;
-		OutArrive = Dir;
-		OutLeave = Dir;
-	}
-
-	FORCEINLINE virtual void ProcessPoint(const TArray<FPCGPoint>& InPoints, const int32 Index, const int32 NextIndex, const int32 PrevIndex, FVector& OutArrive, FVector& OutLeave) const override
+	FORCEINLINE virtual void ProcessPoint(
+		const TArray<FPCGPoint>& InPoints,
+		const int32 Index, const int32 NextIndex, const int32 PrevIndex,
+		const FVector& ArriveScale, FVector& OutArrive,
+		const FVector& LeaveScale, FVector& OutLeave) const override
 	{
 		const FVector PrevDir = (InPoints[PrevIndex].Transform.GetLocation() - InPoints[Index].Transform.GetLocation()) * -1;
 		const FVector NextDir = InPoints[NextIndex].Transform.GetLocation() - InPoints[Index].Transform.GetLocation();
