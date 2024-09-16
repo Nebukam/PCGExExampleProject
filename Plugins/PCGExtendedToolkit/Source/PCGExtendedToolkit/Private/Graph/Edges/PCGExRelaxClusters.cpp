@@ -26,7 +26,7 @@ bool FPCGExRelaxClustersElement::Boot(FPCGExContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(RelaxClusters)
 
-	PCGEX_OPERATION_BIND(Relaxing, UPCGExRelaxClusterOperation)
+	PCGEX_OPERATION_BIND(Relaxing, UPCGExForceDirectedRelax)
 
 	return true;
 }

@@ -297,6 +297,7 @@ namespace PCGExGraph
 		TArray<int32> ValidNodes;
 		ValidNodes.Reserve(Nodes.Num());
 
+		if (bPrunePoints)
 		{
 			TRACE_CPUPROFILER_EVENT_SCOPE(FCompileGraph::PrunePoints);
 
@@ -331,6 +332,11 @@ namespace PCGExGraph
 					ValidNodes.Add(Node.NodeIndex);
 				}
 			}
+		}
+		else
+		{
+			TRACE_CPUPROFILER_EVENT_SCOPE(FCompileGraph::NotPrunePoints);
+			for (const FNode& Node : Nodes) { if (Node.bValid) { ValidNodes.Add(Node.NodeIndex); } }
 		}
 
 		PointIO->InitializeNum(PointIO->GetNum(PCGExData::ESource::Out), true);

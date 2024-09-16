@@ -23,7 +23,7 @@ bool FPCGExSmoothElement::Boot(FPCGExContext* InContext) const
 	if (!FPCGExPathProcessorElement::Boot(InContext)) { return false; }
 
 	PCGEX_CONTEXT_AND_SETTINGS(Smooth)
-	PCGEX_OPERATION_BIND(SmoothingMethod, UPCGExSmoothingOperation)
+	PCGEX_OPERATION_BIND(SmoothingMethod, UPCGExMovingAverageSmoothing)
 
 	return true;
 }

@@ -83,11 +83,11 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExAttributeToTagDetails
 	{
 	}
 
-	/** Use reference point index to tag output data. */
+	/** Use attribute value to tag output data. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(InlineEditConditionToggle))
 	bool bAddIndexTag = false;
 
-	/** Prefix added to the reference point index */
+	/** Use attribute value to tag output data. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(EditCondition="bAddIndexTag"))
 	FString IndexTagPrefix = TEXT("IndexTag:");
 
