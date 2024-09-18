@@ -53,15 +53,6 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExGraphBuilderDetails
 	{
 	}
 
-	explicit FPCGExGraphBuilderDetails(const bool PrunePoints)
-		: bPruneIsolatedPoints(PrunePoints)
-	{
-	}
-
-	/** Removes roaming points from the output, and keeps only points that are part of an cluster. */
-	//UPROPERTY(BlueprintReadWrite, Category = Settings, EditAnywhere, meta = (PCG_Overridable))
-	bool bPruneIsolatedPoints = true;
-
 	/** Don't output Clusters if they have less points than a specified amount. */
 	UPROPERTY(BlueprintReadWrite, Category = Settings, EditAnywhere, meta = (PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteEdgePosition = true;
@@ -390,14 +381,20 @@ namespace PCGExGraph
 			}
 		}
 
+		void ReserveForEdges(const int32 UpcomingAdditionCount);
+
+		bool InsertEdgeUnsafe(int32 A, int32 B, FIndexedEdge& OutEdge, int32 IOIndex);
 		bool InsertEdge(const int32 A, const int32 B, FIndexedEdge& OutEdge, const int32 IOIndex = -1);
+
+		bool InsertEdgeUnsafe(const FIndexedEdge& Edge);
 		bool InsertEdge(const FIndexedEdge& Edge);
-		void InsertEdges(const TSet<uint64>& InEdges, int32 InIOIndex);
-		void InsertEdges(const TArray<uint64>& InEdges, int32 InIOIndex);
-		void InsertEdges(const TArray<FUnsignedEdge>& InEdges, int32 InIOIndex);
-		void InsertEdges(const TArray<FIndexedEdge>& InEdges);
 
 		void InsertEdgesUnsafe(const TSet<uint64>& InEdges, int32 InIOIndex);
+		void InsertEdges(const TSet<uint64>& InEdges, int32 InIOIndex);
+
+		void InsertEdges(const TArray<uint64>& InEdges, int32 InIOIndex);
+		int32 InsertEdges(const TArray<FIndexedEdge>& InEdges);
+
 
 		TArrayView<FNode> AddNodes(const int32 NumNewNodes);
 
@@ -467,8 +464,6 @@ namespace PCGExGraph
 
 			EdgesIO = new PCGExData::FPointIOCollection(InPointIO->GetContext());
 			EdgesIO->DefaultOutputLabel = OutputEdgesLabel;
-
-			bPrunePoints = OutputDetails->bPruneIsolatedPoints;
 		}
 
 		void CompileAsync(PCGExMT::FTaskManager* AsyncManager, FGraphMetadataDetails* MetadataDetails = nullptr);

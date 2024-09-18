@@ -69,6 +69,8 @@ namespace PCGExGraph
 	protected:
 		bool bRunning = false;
 
+		int32 NewEdgesNum = 0;
+
 		FPCGExBlendingDetails DefaultPointsBlendingDetails;
 		FPCGExBlendingDetails DefaultEdgesBlendingDetails;
 
@@ -80,7 +82,12 @@ namespace PCGExGraph
 		PCGExDataBlending::FMetadataBlender* MetadataBlender = nullptr;
 
 		void FindPointEdgeIntersections();
+		void FindPointEdgeIntersectionsFound();
+		void FindPointEdgeIntersectionsComplete();
+
 		void FindEdgeEdgeIntersections();
+		void OnEdgeEdgeIntersectionsFound();
+		void OnEdgeEdgeIntersectionsComplete();
 		void WriteClusters();
 	};
 }

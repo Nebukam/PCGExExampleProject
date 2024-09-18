@@ -26,7 +26,7 @@ bool FPCGExRelaxClustersElement::Boot(FPCGExContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(RelaxClusters)
 
-	PCGEX_OPERATION_BIND(Relaxing, UPCGExForceDirectedRelax)
+	PCGEX_OPERATION_BIND(Relaxing, UPCGExRelaxClusterOperation)
 
 	return true;
 }
@@ -130,7 +130,7 @@ namespace PCGExRelaxClusters
 		RelaxOperation->ReadBuffer = PrimaryBuffer;
 		RelaxOperation->WriteBuffer = SecondaryBuffer;
 
-		PCGEX_ASYNC_GROUP(AsyncManagerPtr, IterationGroup)
+		PCGEX_ASYNC_GROUP_CHECKED(AsyncManagerPtr, IterationGroup)
 		IterationGroup->SetOnCompleteCallback([&]() { StartRelaxIteration(); });
 		IterationGroup->StartRanges<FRelaxRangeTask>(
 			NumNodes, GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize(),

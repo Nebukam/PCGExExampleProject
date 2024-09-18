@@ -16,7 +16,7 @@ namespace PCGExProbing
 	struct FCandidate;
 }
 
-UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Mean Measure"))
+UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Probe Target Mode"))
 enum class EPCGExProbeTargetMode : uint8
 {
 	Target       = 0 UMETA(DisplayName = "Target", ToolTip="Target index is used as-is to create a connection"),
@@ -61,7 +61,7 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExProbeIndex : public UPCGExProbeOperation
 public:
 	virtual bool RequiresDirectProcessing() override;
 	virtual bool PrepareForPoints(const PCGExData::FPointIO* InPointIO) override;
-	virtual void ProcessNode(const int32 Index, const FPCGPoint& Point, TSet<uint64>* Stacks, const FVector& ST, TSet<uint64>* OutEdges) override;
+	virtual void ProcessNode(const int32 Index, const FPCGPoint& Point, TSet<FInt32Vector>* Coincidence, const FVector& ST, TSet<uint64>* OutEdges) override;
 
 	FPCGExProbeConfigIndex Config;
 	PCGExData::TCache<int32>* TargetCache;

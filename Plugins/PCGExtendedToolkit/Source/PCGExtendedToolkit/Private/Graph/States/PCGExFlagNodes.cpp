@@ -138,16 +138,14 @@ namespace PCGExFlagNodes
 		StateFlags = nullptr;
 	}
 
-	bool FProcessorBatch::PrepareProcessing()
+	void FProcessorBatch::OnProcessingPreparationComplete()
 	{
 		PCGEX_TYPED_CONTEXT_AND_SETTINGS(FlagNodes)
-
-		if (!TBatch::PrepareProcessing()) { return false; }
 
 		PCGEx::TAttributeWriter<int64>* Writer = VtxDataFacade->GetWriter(Settings->FlagAttribute, Settings->InitialFlags, false, false);
 		StateFlags = &Writer->Values;
 
-		return true;
+		TBatch<FProcessor>::OnProcessingPreparationComplete();
 	}
 
 	bool FProcessorBatch::PrepareSingle(FProcessor* ClusterProcessor)

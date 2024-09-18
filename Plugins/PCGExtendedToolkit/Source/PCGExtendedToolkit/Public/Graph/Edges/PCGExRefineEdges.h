@@ -15,6 +15,7 @@ namespace PCGExRefineEdges
 	class FProcessorBatch;
 	const FName SourceVtxFilters = FName("VtxFilters");
 	const FName SourceEdgeFilters = FName("EdgeFilters");
+	const FName SourceSanitizeEdgeFilters = FName("SanitizeFilters");
 }
 
 namespace PCGExHeuristics
@@ -34,6 +35,7 @@ enum class EPCGExRefineSanitization : uint8
 	None     = 0 UMETA(DisplayName = "None", ToolTip="No sanitization."),
 	Shortest = 1 UMETA(DisplayName = "Shortest", ToolTip="If a node has no edge left, restore the shortest one."),
 	Longest  = 2 UMETA(DisplayName = "Longest", ToolTip="If a node has no edge left, restore the longest one."),
+	Filters  = 3 UMETA(DisplayName = "Filters", ToolTip="Use filters to find edges that must be preserved."),
 };
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Edges")
@@ -70,7 +72,7 @@ public:
 	EPCGExRefineSanitization Sanitization = EPCGExRefineSanitization::None;
 
 	/** Graph & Edges output properties */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, DisplayName="Cluster Output Settings", EditCondition="bOutputOnlyEdgesAsPoints", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, DisplayName="Cluster Output Settings", EditCondition="!bOutputOnlyEdgesAsPoints", EditConditionHides))
 	FPCGExGraphBuilderDetails GraphBuilderDetails;
 
 private:
@@ -85,6 +87,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExRefineEdgesContext final : public FPCGEx
 
 	TArray<UPCGExFilterFactoryBase*> VtxFilterFactories;
 	TArray<UPCGExFilterFactoryBase*> EdgeFilterFactories;
+	TArray<UPCGExFilterFactoryBase*> SanitizationFilterFactories;
 
 	UPCGExEdgeRefineOperation* Refinement = nullptr;
 };
@@ -110,7 +113,11 @@ namespace PCGExRefineEdges
 		friend class FFilterRangeTask;
 
 	protected:
+		const UPCGExRefineEdgesSettings* LocalSettings = nullptr;
+		FPCGExRefineEdgesContext* LocalTypedContext = nullptr;
+
 		PCGExPointFilter::TManager* EdgeFilterManager = nullptr;
+		PCGExPointFilter::TManager* SanitizationFilterManager = nullptr;
 		EPCGExRefineSanitization Sanitization = EPCGExRefineSanitization::None;
 
 		virtual PCGExCluster::FCluster* HandleCachedCluster(const PCGExCluster::FCluster* InClusterRef) override;
@@ -127,29 +134,15 @@ namespace PCGExRefineEdges
 		virtual ~FProcessor() override;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
-		void StartRefinement();
 		virtual void ProcessSingleNode(const int32 Index, PCGExCluster::FNode& Node, const int32 LoopIdx, const int32 Count) override;
+
+		virtual void PrepareSingleLoopScopeForEdges(const uint32 StartIndex, const int32 Count) override;
 		virtual void ProcessSingleEdge(const int32 EdgeIndex, PCGExGraph::FIndexedEdge& Edge, const int32 LoopIdx, const int32 Count) override;
 		void Sanitize();
 		void InsertEdges() const;
 		virtual void CompleteWork() override;
 
 		UPCGExEdgeRefineOperation* Refinement = nullptr;
-	};
-
-	class FFilterRangeTask : public PCGExMT::FPCGExTask
-	{
-	public:
-		FFilterRangeTask(PCGExData::FPointIO* InPointIO,
-		                 FProcessor* InProcessor):
-			FPCGExTask(InPointIO),
-			Processor(InProcessor)
-		{
-		}
-
-		FProcessor* Processor = nullptr;
-		uint64 Scope = 0;
-		virtual bool ExecuteTask() override;
 	};
 
 	class FSanitizeRangeTask : public PCGExMT::FPCGExTask
@@ -166,20 +159,4 @@ namespace PCGExRefineEdges
 		uint64 Scope = 0;
 		virtual bool ExecuteTask() override;
 	};
-
-	/*
-	class FProcessorBatch final : public PCGExClusterMT::TBatch<FProcessor>
-	{
-		friend class FProcessor;
-				
-	public:
-		FProcessorBatch(FPCGContext* InContext, PCGExData::FPointIO* InVtx, TArrayView<PCGExData::FPointIO*> InEdges);
-		virtual ~FProcessorBatch() override;
-
-		virtual bool PrepareProcessing() override;
-		virtual bool PrepareSingle(FProcessor* ClusterProcessor) override;
-		//virtual void CompleteWork() override;
-		virtual void Write() override;
-	};
-	*/
 }

@@ -56,6 +56,14 @@ public:
 	EPCGExFilterDataAction Action = EPCGExFilterDataAction::Keep;
 
 	/**  */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
+	double TargetBoundsExpansion = 10;
+
+	/**  */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
+	bool bExpandSearchOutsideTargetBounds = true;
+
+	/**  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, EditCondition="Action == EPCGExFilterDataAction::Tag"))
 	FName KeepTag = NAME_None;
 
@@ -65,7 +73,7 @@ public:
 
 	/** TBD */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	FPCGExAttributeToTagDetails TargetAttributesToPathTags;
+	FPCGExAttributeToTagDetails TargetAttributesToTags;
 
 	/** Which Seed attributes to forward on paths. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
@@ -86,7 +94,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPickClosestClustersContext final : publi
 	FString KeepTag = TEXT("");
 	FString OmitTag = TEXT("");
 
-	FPCGExAttributeToTagDetails TargetAttributesToPathTags;
+	FPCGExAttributeToTagDetails TargetAttributesToTags;
 	PCGExData::FDataForwardHandler* TargetForwardHandler = nullptr;
 
 	virtual void OnBatchesProcessingDone() override;
@@ -127,6 +135,7 @@ namespace PCGExPickClosestClusters
 		virtual ~FProcessor() override;
 
 		virtual bool Process(PCGExMT::FTaskManager* AsyncManager) override;
+		void Search();
 		virtual void CompleteWork() override;
 	};
 
@@ -138,7 +147,7 @@ namespace PCGExPickClosestClusters
 	{
 	public:
 		FProcessorBatch(FPCGContext* InContext, PCGExData::FPointIO* InVtx, TArrayView<PCGExData::FPointIO*> InEdges):
-			PCGExClusterMT::TBatch<FProcessor>(InContext, InVtx, InEdges)
+			TBatch<FProcessor>(InContext, InVtx, InEdges)
 		{
 		}
 
