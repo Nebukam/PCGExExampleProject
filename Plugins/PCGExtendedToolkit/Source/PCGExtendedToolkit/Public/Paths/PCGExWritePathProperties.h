@@ -50,11 +50,6 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 public:
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
-
-
 	/** Output Path Length. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output - Path", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWritePathLength = false;
@@ -255,7 +250,7 @@ namespace PCGExWritePathProperties
 
 		TArray<FPointDetails> Details;
 
-		bool bClosedPath = false;
+		bool bClosedLoop = false;
 
 		FVector UpConstant = FVector::ZeroVector;
 		PCGExData::TCache<FVector>* UpGetter = nullptr;

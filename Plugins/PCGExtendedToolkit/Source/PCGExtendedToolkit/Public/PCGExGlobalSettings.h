@@ -19,6 +19,25 @@ enum class EPCGExAsyncPriority : uint8
 	Default  = 6 UMETA(DisplayName = "Default", ToolTip="Position component."),
 };
 
+UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Data Blending Type (With Defaults)"))
+enum class EPCGExDataBlendingTypeDefault : uint8
+{
+	Default     = 20 UMETA(DisplayName = "Default", ToolTip="Use the node' default"),
+	None        = 0 UMETA(DisplayName = "None", ToolTip="No blending is applied, keep the original value."),
+	Average     = 1 UMETA(DisplayName = "Average", ToolTip="Average all sampled values."),
+	Weight      = 2 UMETA(DisplayName = "Weight", ToolTip="Weights based on distance to blend targets. If the results are unexpected, try 'Lerp' instead"),
+	Min         = 3 UMETA(DisplayName = "Min", ToolTip="Component-wise MIN operation"),
+	Max         = 4 UMETA(DisplayName = "Max", ToolTip="Component-wise MAX operation"),
+	Copy        = 5 UMETA(DisplayName = "Copy", ToolTip = "Copy incoming data"),
+	Sum         = 6 UMETA(DisplayName = "Sum", ToolTip = "Sum"),
+	WeightedSum = 7 UMETA(DisplayName = "Weighted Sum", ToolTip = "Sum of all the data, weighted"),
+	Lerp        = 8 UMETA(DisplayName = "Lerp", ToolTip="Uses weight as lerp. If the results are unexpected, try 'Weight' instead."),
+	Subtract    = 9 UMETA(DisplayName = "Subtract", ToolTip="Subtract."),
+	UnsignedMin = 10 UMETA(DisplayName = "Unsigned Min", ToolTip="Component-wise MIN on unsigned value, but keeps the sign on written data."),
+	UnsignedMax = 11 UMETA(DisplayName = "Unsigned Max", ToolTip="Component-wise MAX on unsigned value, but keeps the sign on written data."),
+	AbsoluteMin = 12 UMETA(DisplayName = "Unsigned Min", ToolTip="Component-wise MIN on unsigned value, but keeps the sign on written data."),
+	AbsoluteMax = 13 UMETA(DisplayName = "Unsigned Max", ToolTip="Component-wise MAX on unsigned value, but keeps the sign on written data."),
+};
 
 UCLASS(DefaultConfig, config = Editor, defaultconfig)
 class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExGlobalSettings : public UObject
@@ -57,6 +76,52 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Async")
 	EPCGExAsyncPriority DefaultWorkPriority = EPCGExAsyncPriority::Normal;
 	EPCGExAsyncPriority GetDefaultWorkPriority() const { return DefaultWorkPriority == EPCGExAsyncPriority::Default ? EPCGExAsyncPriority::Normal : DefaultWorkPriority; }
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Simple Types", meta=(DisplayName="Boolean"))
+	EPCGExDataBlendingTypeDefault DefaultBooleanBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Simple Types", meta=(DisplayName="Float"))
+	EPCGExDataBlendingTypeDefault DefaultFloatBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Simple Types", meta=(DisplayName="Double"))
+	EPCGExDataBlendingTypeDefault DefaultDoubleBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Simple Types", meta=(DisplayName="Integer32"))
+	EPCGExDataBlendingTypeDefault DefaultInteger32BlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Simple Types", meta=(DisplayName="Integer64"))
+	EPCGExDataBlendingTypeDefault DefaultInteger64BlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Vector Types", meta=(DisplayName="Vector2"))
+	EPCGExDataBlendingTypeDefault DefaultVector2BlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Vector Types", meta=(DisplayName="Vector"))
+	EPCGExDataBlendingTypeDefault DefaultVectorBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Vector Types", meta=(DisplayName="Vector4"))
+	EPCGExDataBlendingTypeDefault DefaultVector4BlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Complex Types", meta=(DisplayName="Quaternion"))
+	EPCGExDataBlendingTypeDefault DefaultQuaternionBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Complex Types", meta=(DisplayName="Transform"))
+	EPCGExDataBlendingTypeDefault DefaultTransformBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Complex Types", meta=(DisplayName="Rotator"))
+	EPCGExDataBlendingTypeDefault DefaultRotatorBlendMode = EPCGExDataBlendingTypeDefault::Default;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Text Types", meta=(DisplayName="String"))
+	EPCGExDataBlendingTypeDefault DefaultStringBlendMode = EPCGExDataBlendingTypeDefault::Copy;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Text Types", meta=(DisplayName="Name"))
+	EPCGExDataBlendingTypeDefault DefaultNameBlendMode = EPCGExDataBlendingTypeDefault::Copy;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Soft Paths Types", meta=(DisplayName="SoftObjectPath"))
+	EPCGExDataBlendingTypeDefault DefaultSoftObjectPathBlendMode = EPCGExDataBlendingTypeDefault::Copy;
+
+	UPROPERTY(EditAnywhere, config, Category = "Blending|Attribute Types Defaults|Soft Paths Types", meta=(DisplayName="SoftClassPath"))
+	EPCGExDataBlendingTypeDefault DefaultSoftClassPathBlendMode = EPCGExDataBlendingTypeDefault::Copy;
+
 
 	UPROPERTY(EditAnywhere, config, Category = "Node Colors")
 	FLinearColor NodeColorDebug = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);

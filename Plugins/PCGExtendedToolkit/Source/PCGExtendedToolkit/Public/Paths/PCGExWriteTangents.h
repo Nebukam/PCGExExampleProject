@@ -33,10 +33,6 @@ protected:
 public:
 	virtual FName GetPointFilterLabel() const override;
 
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	FName ArriveName = "ArriveTangent";
 
@@ -46,10 +42,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta=(PCG_Overridable, ShowOnlyInnerProperties, NoResetToDefault))
 	TObjectPtr<UPCGExTangentsOperation> Tangents;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta=(PCG_Overridable, ShowOnlyInnerProperties, NoResetToDefault, EditCondition="!bClosedPath"))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta=(PCG_Overridable, ShowOnlyInnerProperties, NoResetToDefault, EditCondition="!bClosedLoop"))
 	TObjectPtr<UPCGExTangentsOperation> StartTangents;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta=(PCG_Overridable, ShowOnlyInnerProperties, NoResetToDefault, EditCondition="!bClosedPath"))
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta=(PCG_Overridable, ShowOnlyInnerProperties, NoResetToDefault, EditCondition="!bClosedLoop"))
 	TObjectPtr<UPCGExTangentsOperation> EndTangents;
 
 
@@ -104,7 +100,7 @@ namespace PCGExWriteTangents
 		const UPCGExWriteTangentsSettings* LocalSettings = nullptr;
 		FPCGExWriteTangentsContext* LocalTypedContext = nullptr;
 
-		bool bClosedPath = false;
+		bool bClosedLoop = false;
 		int32 LastIndex = 0;
 
 		PCGExData::TCache<FVector>* ArriveScaleReader = nullptr;

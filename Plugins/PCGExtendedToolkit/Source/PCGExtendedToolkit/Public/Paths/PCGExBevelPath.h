@@ -65,10 +65,6 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 public:
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
-
 	/** Type of Bevel operation */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_NotOverridable))
 	EPCGExBevelMode Mode = EPCGExBevelMode::Radius;
@@ -240,7 +236,7 @@ namespace PCGExBevelPath
 		TArray<FBevel*> Bevels;
 		TArray<int32> StartIndices;
 
-		bool bClosedPath = false;
+		bool bClosedLoop = false;
 		bool bSubdivide = false;
 		bool bSubdivideCount = false;
 		bool bArc = false;

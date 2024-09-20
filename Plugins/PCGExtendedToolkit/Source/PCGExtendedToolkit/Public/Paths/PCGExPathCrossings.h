@@ -43,10 +43,6 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 public:
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
-
 	/** If enabled, crossings are only computed per path, against themselves only. Note: this ignores the "bEnableSelfIntersection" from details below. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, ClampMin=0))
 	bool bSelfIntersectionOnly = false;
@@ -162,7 +158,7 @@ namespace PCGExPathCrossings
 		const UPCGExPathCrossingsSettings* LocalSettings = nullptr;
 		FPCGExPathCrossingsContext* LocalTypedContext = nullptr;
 
-		bool bClosedPath = false;
+		bool bClosedLoop = false;
 		bool bSelfIntersectionOnly = false;
 
 		int32 NumPoints = 0;
@@ -182,6 +178,7 @@ namespace PCGExPathCrossings
 		TSet<FName> ProtectedAttributes;
 		UPCGExSubPointsBlendOperation* Blending = nullptr;
 
+		TSet<int32> CrossIOIndices;
 		PCGExData::FIdxCompoundList* CompoundList = nullptr;
 		PCGExDataBlending::FCompoundBlender* CompoundBlender = nullptr;
 

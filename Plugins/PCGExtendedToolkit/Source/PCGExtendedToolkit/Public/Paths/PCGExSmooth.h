@@ -35,10 +35,6 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 public:
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	bool bPreserveStart = false;
 
@@ -117,7 +113,7 @@ namespace PCGExSmooth
 
 		PCGExDataBlending::FMetadataBlender* MetadataBlender = nullptr;
 		UPCGExSmoothingOperation* TypedOperation = nullptr;
-		bool bClosedPath = false;
+		bool bClosedLoop = false;
 
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints): FPointsProcessor(InPoints)

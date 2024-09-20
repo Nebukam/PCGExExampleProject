@@ -46,16 +46,11 @@ public:
 protected:
 	virtual FPCGElementPtr CreateElement() const override;
 	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
-	virtual TArray<FPCGPinProperties> OutputPinProperties() const override;
 	//~End UPCGSettings
 
 public:
 	PCGEX_NODE_POINT_FILTER(PCGExPointFilter::SourcePointFiltersLabel, "Filters", PCGExFactories::PointFilters, false)
 	virtual PCGExData::EInit GetMainOutputInitMode() const override;
-
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	EPCGExCollectionSource CollectionSource = EPCGExCollectionSource::Asset;
@@ -70,6 +65,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Distribution", meta=(PCG_Overridable, ShowOnlyInnerProperties))
 	FPCGExAssetDistributionDetails DistributionSettings;
 
+	/** The name of the attribute to write asset path to.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Distribution", meta=(PCG_Overridable))
+	FName AssetPathAttributeName = "AssetPath";
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Target Actor", meta = (PCG_Overridable))
 	TSoftObjectPtr<AActor> TargetActor;
 
@@ -108,6 +107,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, EditCondition="bApplyCustomTangents"))
 	bool bJustifyToOne = false;
 
+	/** Update point scale so staged asset fits within its bounds */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Additional Outputs", meta=(PCG_Overridable))
+	EPCGExWeightOutputMode WeightToAttribute = EPCGExWeightOutputMode::NoOutput;
+
+	/** The name of the attribute to write asset weight to.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Additional Output", meta=(PCG_Overridable, EditCondition="WeightToAttribute!=EPCGExWeightOutputMode::NoOutput && WeightToAttribute!=EPCGExWeightOutputMode::NormalizedToDensity && WeightToAttribute!=EPCGExWeightOutputMode::NormalizedInvertedToDensity"))
+	FName WeightAttributeName = "AssetWeight";
+	
 	/** Specify a list of functions to be called on the target actor after spline mesh creation. Functions need to be parameter-less and with "CallInEditor" flag enabled. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
 	TArray<FName> PostProcessFunctionNames;
@@ -145,7 +152,11 @@ namespace PCGExPathSplineMesh
 		FPCGExPathSplineMeshContext* LocalTypedContext = nullptr;
 		const UPCGExPathSplineMeshSettings* LocalSettings = nullptr;
 
-		bool bClosedPath = false;
+		bool bOutputWeight = false;
+		bool bOneMinusWeight = false;
+		bool bNormalizedWeight = false;
+		
+		bool bClosedLoop = false;
 		bool bApplyScaleToFit = false;
 
 		int32 LastIndex = 0;
@@ -158,6 +169,15 @@ namespace PCGExPathSplineMesh
 
 		PCGEx::TAttributeIO<FVector>* ArriveReader = nullptr;
 		PCGEx::TAttributeIO<FVector>* LeaveReader = nullptr;
+
+		PCGEx::TAttributeWriter<int32>* WeightWriter = nullptr;
+		PCGEx::TAttributeWriter<double>* NormalizedWeightWriter = nullptr;
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION > 3
+		PCGEx::TAttributeWriter<FSoftObjectPath>* PathWriter = nullptr;
+#else
+		PCGEx:: TAttributeWriter<FString>* PathWriter = nullptr;
+#endif
 
 		TArray<PCGExPaths::FSplineMeshSegment> Segments;
 		//TArray<USplineMeshComponent*> SplineMeshComponents;

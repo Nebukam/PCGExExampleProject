@@ -37,10 +37,6 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 public:
-	/** Consider paths to be closed -- processing will wrap between first and last points. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	bool bClosedPath = false;
-
 	/** . */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	bool bOmitSinglePointOutputs = true;
@@ -76,7 +72,7 @@ namespace PCGExPathIntersections
 {
 	class FProcessor final : public PCGExPointsMT::FPointsProcessor
 	{
-		bool bClosedPath = false;
+		bool bClosedLoop = false;
 		int32 LastIndex = 0;
 		PCGExGeo::FPointBoxCloud* Cloud = nullptr;
 		PCGExGeo::FSegmentation* Segmentation = nullptr;
