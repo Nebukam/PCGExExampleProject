@@ -33,7 +33,6 @@ bool FPCGExSampleSurfaceGuidedElement::Boot(FPCGExContext* InContext) const
 	PCGEX_CONTEXT_AND_SETTINGS(SampleSurfaceGuided)
 
 	PCGEX_FOREACH_FIELD_SURFACEGUIDED(PCGEX_OUTPUT_VALIDATE_NAME)
-	PCGEX_FOREACH_FIELD_SURFACEGUIDED_ACTOR(PCGEX_OUTPUT_VALIDATE_NAME)
 
 	Context->bUseInclude = Settings->SurfaceSource == EPCGExSurfaceSource::ActorReferences;
 	if (Context->bUseInclude)
@@ -106,7 +105,7 @@ namespace PCGExSampleSurfaceGuided
 		SurfacesForward = TypedContext->bUseInclude ? Settings->AttributesForwarding.TryGetHandler(TypedContext->ActorReferenceDataFacade, PointDataFacade) : nullptr;
 
 		// Must be set before process for filters
-		PointDataFacade->bSupportsDynamic = true;
+		PointDataFacade->bSupportsScopedGet = TypedContext->bScopedAttributeGet;
 
 		if (!FPointsProcessor::Process(AsyncManager)) { return false; }
 
@@ -121,7 +120,6 @@ namespace PCGExSampleSurfaceGuided
 		{
 			PCGExData::FFacade* OutputFacade = PointDataFacade;
 			PCGEX_FOREACH_FIELD_SURFACEGUIDED(PCGEX_OUTPUT_INIT)
-			PCGEX_FOREACH_FIELD_SURFACEGUIDED_ACTOR(PCGEX_OUTPUT_INIT_DEFAULT)
 		}
 
 		if (Settings->bUseLocalMaxDistance)
@@ -156,16 +154,15 @@ namespace PCGExSampleSurfaceGuided
 			PCGEX_OUTPUT_VALUE(Normal, Index, Direction*-1)
 			PCGEX_OUTPUT_VALUE(LookAt, Index, Direction)
 			PCGEX_OUTPUT_VALUE(Distance, Index, MaxDistance)
-			PCGEX_OUTPUT_VALUE(IsInside, Index, false)
-			PCGEX_OUTPUT_VALUE(Success, Index, false)
-
-			PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT(""))
-			PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT(""))
+			//PCGEX_OUTPUT_VALUE(IsInside, Index, false)
+			//PCGEX_OUTPUT_VALUE(Success, Index, false)
+			//PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT(""))
+			//PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT(""))
 		};
 
 		if (!PointFilterCache[Index])
 		{
-			SamplingFailed();
+			if (LocalSettings->bProcessFilteredOutAsFails) { SamplingFailed(); }
 			return;
 		}
 
@@ -194,15 +191,23 @@ namespace PCGExSampleSurfaceGuided
 			PCGEX_OUTPUT_VALUE(IsInside, Index, FVector::DotProduct(Direction, HitResult.ImpactNormal) > 0)
 			PCGEX_OUTPUT_VALUE(Success, Index, bSuccess)
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
 			if (const AActor* HitActor = HitResult.GetActor())
 			{
 				HitIndex = LocalTypedContext->IncludedActors.Find(HitActor);
 				PCGEX_OUTPUT_VALUE(ActorReference, Index, HitActor->GetPathName())
 			}
-			else { PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT("")) }
 
 			if (const UPhysicalMaterial* PhysMat = HitResult.PhysMaterial.Get()) { PCGEX_OUTPUT_VALUE(PhysMat, Index, PhysMat->GetPathName()) }
-			else { PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT("")) }
+#else
+			if (const AActor* HitActor = HitResult.GetActor())
+			{
+				HitIndex = LocalTypedContext->IncludedActors.Find(HitActor);
+				PCGEX_OUTPUT_VALUE(ActorReference, Index, FSoftObjectPath(HitActor->GetPathName()))
+			}
+
+			if (const UPhysicalMaterial* PhysMat = HitResult.PhysMaterial.Get()) { PCGEX_OUTPUT_VALUE(PhysMat, Index, FSoftObjectPath(PhysMat->GetPathName())) }
+#endif
 
 			if (SurfacesForward && HitIndex) { SurfacesForward->Forward(*HitIndex, Index); }
 

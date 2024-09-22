@@ -14,13 +14,13 @@
 #include "PCGExSampleNearestPoint.generated.h"
 
 #define PCGEX_FOREACH_FIELD_NEARESTPOINT(MACRO)\
-MACRO(Success, bool)\
-MACRO(Transform, FTransform)\
-MACRO(LookAtTransform, FTransform)\
-MACRO(Distance, double)\
-MACRO(SignedDistance, double)\
-MACRO(Angle, double)\
-MACRO(NumSamples, int32)
+MACRO(Success, bool, false)\
+MACRO(Transform, FTransform, FTransform::Identity)\
+MACRO(LookAtTransform, FTransform, FTransform::Identity)\
+MACRO(Distance, double, 0)\
+MACRO(SignedDistance, double, 0)\
+MACRO(Angle, double, 0)\
+MACRO(NumSamples, int32, 0)
 
 namespace PCGExDataBlending
 {
@@ -279,6 +279,12 @@ public:
 	/** If enabled, add the specified tag to the output data if no points were sampled. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, EditCondition="bTagIfHasNoSuccesses"))
 	FString HasNoSuccessesTag = TEXT("HasNoSuccesses");
+
+	//
+
+	/** If enabled, mark filtered out points as "failed". Otherwise, just skip the processing altogether. Only uncheck this if you want to ensure existing attribute values are preserved. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_NotOverridable), AdvancedDisplay)
+	bool bProcessFilteredOutAsFails = true;
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestPointContext final : public FPCGExPointsProcessorContext

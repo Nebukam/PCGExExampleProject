@@ -38,7 +38,6 @@ bool FPCGExSampleNearestSurfaceElement::Boot(FPCGExContext* InContext) const
 	PCGEX_CONTEXT_AND_SETTINGS(SampleNearestSurface)
 
 	PCGEX_FOREACH_FIELD_NEARESTSURFACE(PCGEX_OUTPUT_VALIDATE_NAME)
-	PCGEX_FOREACH_FIELD_NEARESTSURFACE_ACTOR(PCGEX_OUTPUT_VALIDATE_NAME)
 
 	Context->bUseInclude = Settings->SurfaceSource == EPCGExSurfaceSource::ActorReferences;
 	if (Context->bUseInclude)
@@ -128,14 +127,13 @@ namespace PCGExSampleNearestSurface
 		SurfacesForward = TypedContext->bUseInclude ? Settings->AttributesForwarding.TryGetHandler(TypedContext->ActorReferenceDataFacade, PointDataFacade) : nullptr;
 
 		// Must be set before process for filters
-		PointDataFacade->bSupportsDynamic = true;
+		PointDataFacade->bSupportsScopedGet = TypedContext->bScopedAttributeGet;
 
 		if (!FPointsProcessor::Process(AsyncManager)) { return false; }
 
 		{
 			PCGExData::FFacade* OutputFacade = PointDataFacade;
 			PCGEX_FOREACH_FIELD_NEARESTSURFACE(PCGEX_OUTPUT_INIT)
-			PCGEX_FOREACH_FIELD_NEARESTSURFACE_ACTOR(PCGEX_OUTPUT_INIT_DEFAULT)
 		}
 
 		if (Settings->bUseLocalMaxDistance)
@@ -170,16 +168,16 @@ namespace PCGExSampleNearestSurface
 			PCGEX_OUTPUT_VALUE(Normal, Index, Direction*-1) // TODO: expose "precise normal" in which case we line trace to location
 			PCGEX_OUTPUT_VALUE(LookAt, Index, Direction)
 			PCGEX_OUTPUT_VALUE(Distance, Index, MaxDistance)
-			PCGEX_OUTPUT_VALUE(IsInside, Index, false)
-			PCGEX_OUTPUT_VALUE(Success, Index, false)
-
-			PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT(""))
-			PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT(""))
+			//PCGEX_OUTPUT_VALUE(IsInside, Index, false)
+			//PCGEX_OUTPUT_VALUE(Success, Index, false)
+			//PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT(""))
+			//PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT(""))
 		};
 
 		if (!PointFilterCache[Index])
 		{
-			SamplingFailed();
+			
+			if (LocalSettings->bProcessFilteredOutAsFails) { SamplingFailed(); }
 			return;
 		}
 
@@ -245,26 +243,27 @@ namespace PCGExSampleNearestSurface
 							HitLocation = HitResult.Location;
 							bIsInside = IsInsideWriter ? FVector::DotProduct(Direction, HitResult.ImpactNormal) > 0 : false;
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
 							if (const AActor* HitActor = HitResult.GetActor()) { PCGEX_OUTPUT_VALUE(ActorReference, Index, HitActor->GetPathName()) }
-							else { PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT("")) }
-
 							if (const UPhysicalMaterial* PhysMat = HitResult.PhysMaterial.Get()) { PCGEX_OUTPUT_VALUE(PhysMat, Index, PhysMat->GetPathName()) }
-							else { PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT("")) }
+#else
+							if (const AActor* HitActor = HitResult.GetActor()) { PCGEX_OUTPUT_VALUE(ActorReference, Index, FSoftObjectPath(HitActor->GetPathName())) }
+							if (const UPhysicalMaterial* PhysMat = HitResult.PhysMaterial.Get()) { PCGEX_OUTPUT_VALUE(PhysMat, Index, FSoftObjectPath(PhysMat->GetPathName())) }
+#endif
 						}
 					}
 					else
 					{
-						PCGEX_OUTPUT_VALUE(ActorReference, Index, HitComp->GetOwner()->GetPathName())
 						UPhysicalMaterial* PhysMat = HitComp->GetBodyInstance()->GetSimplePhysicalMaterial();
-
+						
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
+						PCGEX_OUTPUT_VALUE(ActorReference, Index, HitComp->GetOwner()->GetPathName())
 						if (PhysMat) { PCGEX_OUTPUT_VALUE(PhysMat, Index, PhysMat->GetPathName()) }
-						else { PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT("")) }
+#else
+						PCGEX_OUTPUT_VALUE(ActorReference, Index, FSoftObjectPath(HitComp->GetOwner()->GetPathName()))						
+						if (PhysMat) { PCGEX_OUTPUT_VALUE(PhysMat, Index, FSoftObjectPath(PhysMat->GetPathName())) }
+#endif
 					}
-				}
-				else
-				{
-					PCGEX_OUTPUT_VALUE(ActorReference, Index, TEXT(""))
-					PCGEX_OUTPUT_VALUE(PhysMat, Index, TEXT(""))
 				}
 
 				PCGEX_OUTPUT_VALUE(Location, Index, HitLocation)

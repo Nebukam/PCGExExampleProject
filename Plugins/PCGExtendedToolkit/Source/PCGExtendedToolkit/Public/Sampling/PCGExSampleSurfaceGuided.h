@@ -13,18 +13,27 @@
 
 #include "PCGExSampleSurfaceGuided.generated.h"
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 3
 #define PCGEX_FOREACH_FIELD_SURFACEGUIDED(MACRO)\
-MACRO(Success, bool)\
-MACRO(Location, FVector)\
-MACRO(LookAt, FVector)\
-MACRO(Normal, FVector)\
-MACRO(Distance, double)\
-MACRO(IsInside, bool)
-
-#define PCGEX_FOREACH_FIELD_SURFACEGUIDED_ACTOR(MACRO)\
-MACRO(ActorReference, FString)\
-MACRO(PhysMat, FString)
-
+MACRO(Success, bool, false)\
+MACRO(Location, FVector, FVector::ZeroVector)\
+MACRO(LookAt, FVector, FVector::OneVector)\
+MACRO(Normal, FVector, FVector::OneVector)\
+MACRO(Distance, double, 0)\
+MACRO(IsInside, bool, false)\
+MACRO(ActorReference, FString, TEXT(""))\
+MACRO(PhysMat, FString, TEXT(""))
+#else
+#define PCGEX_FOREACH_FIELD_SURFACEGUIDED(MACRO)\
+MACRO(Success, bool, false)\
+MACRO(Location, FVector, FVector::ZeroVector)\
+MACRO(LookAt, FVector, FVector::OneVector)\
+MACRO(Normal, FVector, FVector::OneVector)\
+MACRO(Distance, double, 0)\
+MACRO(IsInside, bool, false)\
+MACRO(ActorReference, FSoftObjectPath, FSoftObjectPath())\
+MACRO(PhysMat, FSoftObjectPath, FSoftObjectPath())
+#endif
 
 class UPCGExFilterFactoryBase;
 
@@ -165,6 +174,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, EditCondition="bTagIfHasNoSuccesses"))
 	FString HasNoSuccessesTag = TEXT("HasNoSuccesses");
+
+	//
+
+	/** If enabled, mark filtered out points as "failed". Otherwise, just skip the processing altogether. Only uncheck this if you want to ensure existing attribute values are preserved. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_NotOverridable), AdvancedDisplay)
+	bool bProcessFilteredOutAsFails = true;
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleSurfaceGuidedContext final : public FPCGExPointsProcessorContext
@@ -181,7 +196,6 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleSurfaceGuidedContext final : publi
 	FPCGExCollisionDetails CollisionSettings;
 
 	PCGEX_FOREACH_FIELD_SURFACEGUIDED(PCGEX_OUTPUT_DECL_TOGGLE)
-	PCGEX_FOREACH_FIELD_SURFACEGUIDED_ACTOR(PCGEX_OUTPUT_DECL_TOGGLE)
 };
 
 class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleSurfaceGuidedElement final : public FPCGExPointsProcessorElement
@@ -210,7 +224,6 @@ namespace PCGExSampleSurfaceGuided
 		const UPCGExSampleSurfaceGuidedSettings* LocalSettings = nullptr;
 
 		PCGEX_FOREACH_FIELD_SURFACEGUIDED(PCGEX_OUTPUT_DECL)
-		PCGEX_FOREACH_FIELD_SURFACEGUIDED_ACTOR(PCGEX_OUTPUT_DECL)
 
 		int8 bAnySuccess = 0;
 

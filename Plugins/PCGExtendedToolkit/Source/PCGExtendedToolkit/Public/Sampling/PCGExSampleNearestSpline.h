@@ -13,18 +13,26 @@
 #include "PCGExSampleNearestSpline.generated.h"
 
 #define PCGEX_FOREACH_FIELD_NEARESTPOLYLINE(MACRO)\
-MACRO(Success, bool)\
-MACRO(Transform, FTransform)\
-MACRO(LookAtTransform, FTransform)\
-MACRO(Distance, double)\
-MACRO(SignedDistance, double)\
-MACRO(Angle, double)\
-MACRO(Time, double)\
-MACRO(NumInside, int32)\
-MACRO(NumSamples, int32)\
-MACRO(ClosedLoop, bool)
+MACRO(Success, bool, false)\
+MACRO(Transform, FTransform, FTransform::Identity)\
+MACRO(LookAtTransform, FTransform, FTransform::Identity)\
+MACRO(Distance, double, 0)\
+MACRO(SignedDistance, double, 0)\
+MACRO(Angle, double, 0)\
+MACRO(Time, double, 0)\
+MACRO(NumInside, int32, 0)\
+MACRO(NumSamples, int32, 0)\
+MACRO(ClosedLoop, bool, false)
 
 class UPCGExFilterFactoryBase;
+
+UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Surface Source"))
+enum class EPCGExSplineSamplingIncludeMode : uint8
+{
+	All            = 0 UMETA(DisplayName = "All", ToolTip="Sample all input splines"),
+	ClosedLoopOnly = 1 UMETA(DisplayName = "Closed loops only", ToolTip="Sample only closed loops"),
+	OpenSplineOnly = 2 UMETA(DisplayName = "Open splines only", ToolTip="Sample only open splines"),
+};
 
 namespace PCGExPolyLine
 {
@@ -60,7 +68,7 @@ namespace PCGExPolyLine
 		FSampleInfos Closest;
 		FSampleInfos Farthest;
 
-		FORCEINLINE void UpdateCompound(const FSampleInfos& Infos)
+		FORCEINLINE void UpdateCompound(const FSampleInfos& Infos, bool& IsNewClosest, bool& IsNewFarthest)
 		{
 			UpdateCount++;
 
@@ -68,12 +76,14 @@ namespace PCGExPolyLine
 			{
 				Closest = Infos;
 				SampledRangeMin = Infos.Distance;
+				IsNewClosest = true;
 			}
 
 			if (Infos.Distance > SampledRangeMax)
 			{
 				Farthest = Infos;
 				SampledRangeMax = Infos.Distance;
+				IsNewFarthest = true;
 			}
 
 			SampledRangeWidth = SampledRangeMax - SampledRangeMin;
@@ -119,9 +129,13 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 public:
+	/** Sample inputs.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
+	EPCGExSplineSamplingIncludeMode SampleInputs = EPCGExSplineSamplingIncludeMode::All;
+
 	/** Sampling method.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
-	EPCGExSampleMethod SampleMethod = EPCGExSampleMethod::WithinRange; 
+	EPCGExSampleMethod SampleMethod = EPCGExSampleMethod::WithinRange;
 
 	/** Minimum target range. Used as fallback if LocalRangeMin is enabled but missing. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, ClampMin=0))
@@ -225,6 +239,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, DisplayName=" └─ Axis", EditCondition="bWriteSignedDistance", EditConditionHides, HideEditConditionToggle))
 	EPCGExAxis SignAxis = EPCGExAxis::Forward;
 
+	/** Only sign the distance if at least one sampled spline is a bClosedLoop spline. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, DisplayName=" └─ Only if Closed Spline", EditCondition="bWriteSignedDistance && SampleInputs==EPCGExSplineSamplingIncludeMode::All", EditConditionHides, HideEditConditionToggle))
+	bool bOnlySignIfClosed = false;
+
 	/** Write the sampled angle. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteAngle = false;
@@ -257,6 +275,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="NumInside", PCG_Overridable, EditCondition="bWriteNumInside"))
 	FName NumInsideAttributeName = FName("NumInside");
 
+	/** Only increment num inside count when comes from a bClosedLoop spline. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, DisplayName=" └─ Only if Closed Spline", EditCondition="bWriteNumInside && SampleInputs==EPCGExSplineSamplingIncludeMode::All", EditConditionHides, HideEditConditionToggle))
+	bool bOnlyIncrementInsideNumIfClosed = false;
+
 	/** Write the sampled distance. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteNumSamples = false;
@@ -272,7 +294,7 @@ public:
 	/** Name of the 'bool' attribute to write whether a closed spline was sampled or not.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Output", meta=(DisplayName="ClosedLoop", PCG_Overridable, EditCondition="bWriteClosedLoop"))
 	FName ClosedLoopAttributeName = FName("ClosedLoop");
-	
+
 	//
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, InlineEditConditionToggle))
@@ -288,6 +310,12 @@ public:
 	/** If enabled, add the specified tag to the output data if no spline was found within range.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, EditCondition="bTagIfHasNoSuccesses"))
 	FString HasNoSuccessesTag = TEXT("HasNoSuccesses");
+
+	//
+
+	/** If enabled, mark filtered out points as "failed". Otherwise, just skip the processing altogether. Only uncheck this if you want to ensure existing attribute values are preserved. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_NotOverridable), AdvancedDisplay)
+	bool bProcessFilteredOutAsFails = true;
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestSplineContext final : public FPCGExPointsProcessorContext
@@ -331,6 +359,9 @@ namespace PCGExSampleNearestSpline
 
 		FVector SafeUpVector = FVector::UpVector;
 		int8 bAnySuccess = 0;
+
+		bool bOnlySignIfClosed = false;
+		bool bOnlyIncrementInsideNumIfClosed = false;
 
 		PCGEX_FOREACH_FIELD_NEARESTPOLYLINE(PCGEX_OUTPUT_DECL)
 

@@ -13,14 +13,14 @@
 
 #include "PCGExSampleInsideBounds.generated.h"
 
-#define PCGEX_FOREACH_FIELD_InsideBounds(MACRO)\
-MACRO(Success, bool)\
-MACRO(Transform, FTransform)\
-MACRO(LookAtTransform, FTransform)\
-MACRO(Distance, double)\
-MACRO(SignedDistance, double)\
-MACRO(Angle, double)\
-MACRO(NumSamples, int32)
+#define PCGEX_FOREACH_FIELD_INSIDEBOUNDS(MACRO)\
+MACRO(Success, bool, false)\
+MACRO(Transform, FTransform, FTransform::Identity)\
+MACRO(LookAtTransform, FTransform, FTransform::Identity)\
+MACRO(Distance, double, 0)\
+MACRO(SignedDistance, double, 0)\
+MACRO(Angle, double, 0)\
+MACRO(NumSamples, int32, 0)
 
 namespace PCGExDataBlending
 {
@@ -47,6 +47,7 @@ namespace PCGExInsideBounds
 		FTargetInfos(const int32 InIndex, const double InDistance):
 			Index(InIndex), Distance(InDistance)
 		{
+			
 		}
 
 		int32 Index = -1;
@@ -277,6 +278,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Tagging", meta=(PCG_Overridable, EditCondition="bTagIfHasNoSuccesses"))
 	FString HasNoSuccessesTag = TEXT("HasNoSuccesses");
+
+	//
+	
+	/** If enabled, mark filtered out points as "failed". Otherwise, just skip the processing altogether. Only uncheck this if you want to ensure existing attribute values are preserved. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_NotOverridable), AdvancedDisplay)
+	bool bProcessFilteredOutAsFails = true;
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleInsideBoundsContext final : public FPCGExPointsProcessorContext
@@ -294,7 +301,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleInsideBoundsContext final : public
 
 	TObjectPtr<UCurveFloat> WeightCurve = nullptr;
 
-	PCGEX_FOREACH_FIELD_InsideBounds(PCGEX_OUTPUT_DECL_TOGGLE)
+	PCGEX_FOREACH_FIELD_INSIDEBOUNDS(PCGEX_OUTPUT_DECL_TOGGLE)
 };
 
 class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleInsideBoundsElement final : public FPCGExPointsProcessorElement
@@ -329,7 +336,7 @@ namespace PCGExSampleInsideBoundss
 
 		int8 bAnySuccess = 0;
 
-		PCGEX_FOREACH_FIELD_InsideBounds(PCGEX_OUTPUT_DECL)
+		PCGEX_FOREACH_FIELD_INSIDEBOUNDS(PCGEX_OUTPUT_DECL)
 
 	public:
 		explicit FProcessor(PCGExData::FPointIO* InPoints)

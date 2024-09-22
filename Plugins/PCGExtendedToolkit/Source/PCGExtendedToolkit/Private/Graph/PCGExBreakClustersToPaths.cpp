@@ -199,9 +199,9 @@ namespace PCGExBreakClustersToPaths
 
 	void FProcessorBatch::OnProcessingPreparationComplete()
 	{
-		VtxDataFacade->bSupportsDynamic = true;
-
 		PCGEX_TYPED_CONTEXT_AND_SETTINGS(BreakClustersToPaths)
+		
+		VtxDataFacade->bSupportsScopedGet = TypedContext->bScopedAttributeGet;
 
 		DirectionSettings = Settings->DirectionSettings;
 		if (!DirectionSettings.Init(Context, VtxDataFacade))
