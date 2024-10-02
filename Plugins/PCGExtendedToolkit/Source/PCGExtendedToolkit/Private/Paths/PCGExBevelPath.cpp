@@ -89,7 +89,7 @@ bool FPCGExBevelPathElement::ExecuteInternal(FPCGContext* InContext) const
 			{
 				if (Entry->GetNum() < 3)
 				{
-					Entry->InitializeOutput(PCGExData::EInit::DuplicateInput);
+					Entry->InitializeOutput(Context, PCGExData::EInit::DuplicateInput);
 					Settings->InitOutputFlags(Entry);
 					bHasInvalidInputs = true;
 					return false;
@@ -338,12 +338,13 @@ namespace PCGExBevelPath
 				}
 			};
 
-		Preparation->StartRanges(
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx)
-			{
-				if (!PointFilterCache[Index]) { return; }
-				Bevels[Index] = MakeShared<FBevel>(Index, this); // no need for SharedThis
-			}, PointDataFacade->GetNum(), 64);
+		Preparation->OnIterationCallback = [&](const int32 Index, const int32 Count, const int32 LoopIdx)
+		{
+			if (!PointFilterCache[Index]) { return; }
+			Bevels[Index] = MakeShared<FBevel>(Index, this); // no need for SharedThis
+		};
+
+		Preparation->StartIterations(PointDataFacade->GetNum(), 64);
 
 		return true;
 	}
@@ -446,12 +447,12 @@ namespace PCGExBevelPath
 
 		if (NumBevels == 0)
 		{
-			PointIO->InitializeOutput(PCGExData::EInit::DuplicateInput);
+			PointIO->InitializeOutput(Context, PCGExData::EInit::DuplicateInput);
 			Settings->InitOutputFlags(PointIO);
 			return;
 		}
 
-		PointIO->InitializeOutput(PCGExData::EInit::NewOutput);
+		PointIO->InitializeOutput(Context, PCGExData::EInit::NewOutput);
 		Settings->InitOutputFlags(PointIO);
 
 		// Build output points
@@ -486,12 +487,13 @@ namespace PCGExBevelPath
 
 		PCGEX_ASYNC_GROUP_CHKD_VOID(AsyncManager, WriteFlagsTask)
 		WriteFlagsTask->OnCompleteCallback = [&]() { PointDataFacade->Write(AsyncManager); };
-		WriteFlagsTask->StartRanges(
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx)
-			{
-				if (!PointFilterCache[Index]) { return; }
-				WriteFlags(Index);
-			}, PointDataFacade->GetNum(), GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize());
+		WriteFlagsTask->OnIterationCallback = [&](const int32 Index, const int32 Count, const int32 LoopIdx)
+		{
+			if (!PointFilterCache[Index]) { return; }
+			WriteFlags(Index);
+		};
+
+		WriteFlagsTask->StartIterations(PointDataFacade->GetNum(), GetDefault<UPCGExGlobalSettings>()->GetPointsBatchChunkSize());
 
 		FPointsProcessor::Write();
 	}

@@ -68,12 +68,13 @@ namespace PCGExGraph
 			return false;
 		}
 
-		CompoundPointsBlender = MakeUnique<PCGExDataBlending::FCompoundBlender>(&DefaultPointsBlendingDetails, InCarryOverDetails);
+		CompoundPointsBlender = MakeShared<PCGExDataBlending::FCompoundBlender>(&DefaultPointsBlendingDetails, InCarryOverDetails);
 
 		TArray<FPCGPoint>& MutablePoints = CompoundFacade->GetOut()->GetMutablePoints();
-		CompoundFacade->Source->InitializeNum(NumCompoundNodes, true);
+		MutablePoints.SetNum(NumCompoundNodes);
+
 		CompoundPointsBlender->AddSources(InFacades);
-		CompoundPointsBlender->PrepareMerge(CompoundFacade, CompoundGraph->PointsCompounds, nullptr); // TODO : Check if we want to ignore specific attributes
+		CompoundPointsBlender->PrepareMerge(CompoundFacade, CompoundGraph->PointsCompounds, nullptr); // TODO : Check if we want to ignore specific attributes // Answer : yes, cluster IDs etc
 
 		Context->SetAsyncState(State_ProcessingCompound);
 
@@ -103,20 +104,21 @@ namespace PCGExGraph
 				InternalStartExecution();
 			};
 
-		ProcessNodesGroup->StartRanges(
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx)
-			{
-				FCompoundNode* CompoundNode = CompoundGraph->Nodes[Index].Get();
-				PCGMetadataEntryKey Key = MutablePoints[Index].MetadataEntry;
-				MutablePoints[Index] = CompoundNode->Point; // Copy "original" point properties, in case  there's only one
+		ProcessNodesGroup->OnIterationCallback = [&](const int32 Index, const int32 Count, const int32 LoopIdx)
+		{
+			FCompoundNode* CompoundNode = CompoundGraph->Nodes[Index].Get();
+			PCGMetadataEntryKey Key = MutablePoints[Index].MetadataEntry;
+			MutablePoints[Index] = CompoundNode->Point; // Copy "original" point properties, in case  there's only one
 
-				FPCGPoint& Point = MutablePoints[Index];
-				Point.MetadataEntry = Key; // Restore key
+			FPCGPoint& Point = MutablePoints[Index];
+			Point.MetadataEntry = Key; // Restore key
 
-				Point.Transform.SetLocation(
-					CompoundNode->UpdateCenter(CompoundGraph->PointsCompounds.Get(), Context->MainPoints.Get()));
-				CompoundPointsBlender->MergeSingle(Index, PCGExDetails::GetDistanceDetails(PointPointIntersectionDetails));
-			}, NumCompoundNodes, GetDefault<UPCGExGlobalSettings>()->ClusterDefaultBatchChunkSize, false, false);
+			Point.Transform.SetLocation(
+				CompoundNode->UpdateCenter(CompoundGraph->PointsCompounds.Get(), Context->MainPoints.Get()));
+			CompoundPointsBlender->MergeSingle(Index, PCGExDetails::GetDistanceDetails(PointPointIntersectionDetails));
+		};
+
+		ProcessNodesGroup->StartIterations(NumCompoundNodes, GetDefault<UPCGExGlobalSettings>()->ClusterDefaultBatchChunkSize, false, false);
 
 
 		return true;
@@ -126,7 +128,7 @@ namespace PCGExGraph
 	{
 		if (bDoPointEdge)
 		{
-			FindEdgeEdgeIntersections();
+			FindPointEdgeIntersections();
 			return;
 		}
 
@@ -141,12 +143,15 @@ namespace PCGExGraph
 
 	bool FCompoundProcessor::Execute()
 	{
+		UE_LOG(LogTemp, Warning, TEXT(" FCompoundProcessor::Execute"))
+		
 		if (!bRunning) { return false; }
 
 		if (Context->IsState(State_ProcessingCompound)) { return false; }
 
 		if (Context->IsState(State_ProcessingPointEdgeIntersections))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("State_ProcessingPointEdgeIntersections"))
 			PCGEX_ASYNC_WAIT
 			if (bDoEdgeEdge) { FindEdgeEdgeIntersections(); }
 			else { WriteClusters(); }
@@ -155,6 +160,7 @@ namespace PCGExGraph
 
 		if (Context->IsState(State_ProcessingEdgeEdgeIntersections))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("State_ProcessingEdgeEdgeIntersections"))
 			PCGEX_ASYNC_WAIT
 			WriteClusters();
 			return false;
@@ -162,6 +168,7 @@ namespace PCGExGraph
 
 		if (Context->IsState(State_WritingClusters))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("State_WritingClusters"))
 			PCGEX_ASYNC_WAIT
 			return true;
 		}
@@ -183,14 +190,13 @@ namespace PCGExGraph
 		Context->SetAsyncState(State_ProcessingPointEdgeIntersections);
 
 		FindPointEdgeGroup->OnCompleteCallback = [&]() { FindPointEdgeIntersectionsFound(); };
-		FindPointEdgeGroup->StartRanges(
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx)
-			{
-				const FIndexedEdge& Edge = GraphBuilder->Graph->Edges[Index];
-				if (!Edge.bValid) { return; }
-				FindCollinearNodes(PointEdgeIntersections.Get(), Index, CompoundFacade->Source->GetOut());
-			},
-			GraphBuilder->Graph->Edges.Num(), GetDefault<UPCGExGlobalSettings>()->ClusterDefaultBatchChunkSize);
+		FindPointEdgeGroup->OnIterationCallback = [&](const int32 Index, const int32 Count, const int32 LoopIdx)
+		{
+			const FIndexedEdge& Edge = GraphBuilder->Graph->Edges[Index];
+			if (!Edge.bValid) { return; }
+			FindCollinearNodes(PointEdgeIntersections.Get(), Index, CompoundFacade->Source->GetOut());
+		};
+		FindPointEdgeGroup->StartIterations(GraphBuilder->Graph->Edges.Num(), GetDefault<UPCGExGlobalSettings>()->ClusterDefaultBatchChunkSize);
 	}
 
 	void FCompoundProcessor::FindPointEdgeIntersectionsFound()
@@ -235,7 +241,7 @@ namespace PCGExGraph
 
 				MetadataBlender->PrepareForData(CompoundFacade.ToSharedRef(), PCGExData::ESource::Out);
 
-				BlendPointEdgeGroup->OnCompleteCallback = [&]() { FindPointEdgeIntersectionsComplete(); };
+				BlendPointEdgeGroup->OnCompleteCallback = [&]() { OnPointEdgeIntersectionsComplete(); };
 				BlendPointEdgeGroup->OnIterationRangeStartCallback =
 					[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx)
 					{
@@ -256,9 +262,9 @@ namespace PCGExGraph
 		///
 	}
 
-	void FCompoundProcessor::FindPointEdgeIntersectionsComplete()
+	void FCompoundProcessor::OnPointEdgeIntersectionsComplete()
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(FCompoundProcessor::FindPointEdgeIntersectionsComplete);
+		UE_LOG(LogTemp, Warning, TEXT("OnPointEdgeIntersectionsComplete"))
 		if (MetadataBlender) { CompoundFacade->Write(Context->GetAsyncManager()); }
 	}
 
@@ -356,7 +362,7 @@ namespace PCGExGraph
 					{
 						if (!MetadataBlender) { return; }
 						const TSharedRef<PCGExDataBlending::FMetadataBlender> Blender = MetadataBlender.ToSharedRef();
-
+						
 						const int32 MaxIndex = StartIndex + Count;
 						for (int i = StartIndex; i < MaxIndex; i++)
 						{
@@ -371,7 +377,7 @@ namespace PCGExGraph
 
 	void FCompoundProcessor::OnEdgeEdgeIntersectionsComplete()
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(FCompoundProcessor::OnEdgeEdgeIntersectionsComplete);
+		UE_LOG(LogTemp, Warning, TEXT("OnEdgeEdgeIntersectionsComplete"))
 		CompoundFacade->Write(Context->GetAsyncManager());
 	}
 
@@ -382,7 +388,7 @@ namespace PCGExGraph
 		Context->SetAsyncState(State_WritingClusters);
 		GraphBuilder->OnCompilationEndCallback = [&](const TSharedRef<FGraphBuilder>& InBuilder, const bool bSuccess)
 		{
-			if (!bSuccess) { CompoundFacade->Source->InitializeOutput(PCGExData::EInit::NoOutput); }
+			if (!bSuccess) { CompoundFacade->Source->InitializeOutput(Context, PCGExData::EInit::NoOutput); }
 			else { GraphBuilder->OutputEdgesToContext(); }
 		};
 		GraphBuilder->CompileAsync(Context->GetAsyncManager(), true, &GraphMetadataDetails);

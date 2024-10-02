@@ -24,23 +24,20 @@ namespace PCGExPointsMT
 #define PCGEX_ASYNC_MT_LOOP_TPL(_ID, _INLINE_CONDITION, _BODY)\
 	if (_INLINE_CONDITION)  { \
 		PCGEX_ASYNC_GROUP_CHKD_VOID(AsyncManager, _ID##Inlined) \
-		_ID##Inlined->StartRanges( \
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx) { \
-				const TSharedRef<T>& Processor = Processors[Index]; _BODY \
-			}, Processors.Num(), 1, true, false);\
+		_ID##Inlined->OnIterationCallback = [&](const int32 Index, const int32 Count, const int32 LoopIdx) { \
+		const TSharedRef<T>& Processor = Processors[Index]; _BODY }; \
+		_ID##Inlined->StartIterations( Processors.Num(), 1, true, false);\
 	} else {\
 		PCGEX_ASYNC_GROUP_CHKD_VOID(AsyncManager, _ID##NonTrivial)\
-		_ID##NonTrivial->StartRanges(\
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx) {\
-				const TSharedRef<T>& Processor = Processors[Index];\
-				if (Processor->IsTrivial()) { return; } _BODY \
-			}, Processors.Num(), 1, false, false);\
+		_ID##NonTrivial->OnIterationCallback = [&](const int32 Index, const int32 Count, const int32 LoopIdx) {\
+		const TSharedRef<T>& Processor = Processors[Index];\
+		if (Processor->IsTrivial()) { return; } _BODY 	}; \
+		_ID##NonTrivial->StartIterations(Processors.Num(), 1, false, false);\
 		if(!TrivialProcessors.IsEmpty()){\
 		PCGEX_ASYNC_GROUP_CHKD_VOID(AsyncManager, _ID##Trivial) \
-		_ID##Trivial->StartRanges(\
-			[&](const int32 Index, const int32 Count, const int32 LoopIdx){ \
-				const TSharedRef<T>& Processor = TrivialProcessors[Index]; _BODY \
-			}, TrivialProcessors.Num(), 32, false, false); }\
+		_ID##Trivial->OnIterationCallback =[&](const int32 Index, const int32 Count, const int32 LoopIdx){ \
+		const TSharedRef<T>& Processor = TrivialProcessors[Index]; _BODY }; \
+		_ID##Trivial->StartIterations( TrivialProcessors.Num(), 32, false, false); }\
 	}
 
 #define PCGEX_ASYNC_MT_LOOP_VALID_PROCESSORS(_ID, _INLINE_CONDITION, _BODY) PCGEX_ASYNC_MT_LOOP_TPL(_ID, _INLINE_CONDITION, if(Processor->bIsProcessorValid){ _BODY })
@@ -128,6 +125,9 @@ namespace PCGExPointsMT
 		void StartParallelLoopForPoints(const PCGExData::ESource Source = PCGExData::ESource::Out, const int32 PerLoopIterations = -1)
 		{
 			CurrentProcessingSource = Source;
+
+			if (!PointDataFacade->IsDataValid(CurrentProcessingSource)) { return; }
+			
 			const int32 NumPoints = PointDataFacade->Source->GetNum(Source);
 
 			if (IsTrivial())
@@ -158,6 +158,8 @@ namespace PCGExPointsMT
 
 		virtual void ProcessPoints(const int32 StartIndex, const int32 Count, const int32 LoopIdx)
 		{
+			if (!PointDataFacade->IsDataValid(CurrentProcessingSource)) { return; }
+			
 			PrepareSingleLoopScopeForPoints(StartIndex, Count);
 			TArray<FPCGPoint>& Points = PointDataFacade->Source->GetMutableData(CurrentProcessingSource)->GetMutablePoints();
 			for (int i = 0; i < Count; ++i)
