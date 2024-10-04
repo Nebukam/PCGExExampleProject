@@ -79,14 +79,14 @@ FString UPCGExVtxPropertySpecialNeighborsSettings::GetDisplayName() const
 
 UPCGExVtxPropertyOperation* UPCGExVtxPropertySpecialNeighborsFactory::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExVtxPropertySpecialNeighbors* NewOperation = InContext->NewManagedObject<UPCGExVtxPropertySpecialNeighbors>();
+	UPCGExVtxPropertySpecialNeighbors* NewOperation = InContext->ManagedObjects->New<UPCGExVtxPropertySpecialNeighbors>();
 	PCGEX_VTX_EXTRA_CREATE
 	return NewOperation;
 }
 
 UPCGExParamFactoryBase* UPCGExVtxPropertySpecialNeighborsSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExVtxPropertySpecialNeighborsFactory* NewFactory = NewObject<UPCGExVtxPropertySpecialNeighborsFactory>();
+	UPCGExVtxPropertySpecialNeighborsFactory* NewFactory = InContext->ManagedObjects->New<UPCGExVtxPropertySpecialNeighborsFactory>();
 	NewFactory->Config = Config;
 	return Super::CreateFactory(InContext, NewFactory);
 }

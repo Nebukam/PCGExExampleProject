@@ -15,11 +15,11 @@
 
 #define PCGEX_BITMASK_TRANSMUTE_CREATE_FACTORY(_NAME, _BODY) \
 	UPCGExParamFactoryBase* UPCGEx##_NAME##ProviderSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const{ \
-	UPCGEx##_NAME##Factory* NewFactory = NewObject<UPCGEx##_NAME##Factory>(); _BODY if(!Super::CreateFactory(InContext, NewFactory)){ PCGEX_DELETE_UOBJECT(NewFactory) } return NewFactory; }
+	UPCGEx##_NAME##Factory* NewFactory = NewObject<UPCGEx##_NAME##Factory>(); _BODY if(!Super::CreateFactory(InContext, NewFactory)){ InContext->ManagedObjects->Destroy(NewFactory); } return NewFactory; }
 
 #define PCGEX_BITMASK_TRANSMUTE_CREATE_OPERATION(_NAME, _BODY) \
 	UPCGExConditionalActionOperation* UPCGEx##_NAME##Factory::CreateOperation(FPCGExContext* InContext) const{ \
-	UPCGEx##_NAME##Operation* NewOperation = InContext->NewManagedObject<UPCGEx##_NAME##Operation>(this->GetOuter()); \
+	UPCGEx##_NAME##Operation* NewOperation = InContext->ManagedObjects->New<UPCGEx##_NAME##Operation>(this->GetOuter()); \
 	NewOperation->TypedFactory = const_cast<UPCGEx##_NAME##Factory*>(this); \
 	NewOperation->Factory = NewOperation->TypedFactory; \
 	_BODY \

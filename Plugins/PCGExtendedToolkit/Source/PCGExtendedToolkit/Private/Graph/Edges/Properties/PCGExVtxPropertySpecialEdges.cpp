@@ -93,14 +93,14 @@ FString UPCGExVtxPropertySpecialEdgesSettings::GetDisplayName() const
 
 UPCGExVtxPropertyOperation* UPCGExVtxPropertySpecialEdgesFactory::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExVtxPropertySpecialEdges* NewOperation = InContext->NewManagedObject<UPCGExVtxPropertySpecialEdges>();
+	UPCGExVtxPropertySpecialEdges* NewOperation = InContext->ManagedObjects->New<UPCGExVtxPropertySpecialEdges>();
 	PCGEX_VTX_EXTRA_CREATE
 	return NewOperation;
 }
 
 UPCGExParamFactoryBase* UPCGExVtxPropertySpecialEdgesSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExVtxPropertySpecialEdgesFactory* NewFactory = NewObject<UPCGExVtxPropertySpecialEdgesFactory>();
+	UPCGExVtxPropertySpecialEdgesFactory* NewFactory = InContext->ManagedObjects->New<UPCGExVtxPropertySpecialEdgesFactory>();
 	NewFactory->Config = Config;
 	return Super::CreateFactory(InContext, NewFactory);
 }

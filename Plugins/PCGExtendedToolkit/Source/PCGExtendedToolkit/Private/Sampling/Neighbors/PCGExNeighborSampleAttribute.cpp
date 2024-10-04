@@ -81,7 +81,7 @@ FString UPCGExNeighborSampleAttributeSettings::GetDisplayName() const
 
 UPCGExNeighborSampleOperation* UPCGExNeighborSamplerFactoryAttribute::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExNeighborSampleAttribute* NewOperation = InContext->NewManagedObject<UPCGExNeighborSampleAttribute>();
+	UPCGExNeighborSampleAttribute* NewOperation = InContext->ManagedObjects->New<UPCGExNeighborSampleAttribute>();
 	PCGEX_SAMPLER_CREATE
 
 	NewOperation->SourceAttributes = Config.SourceAttributes;
@@ -92,7 +92,7 @@ UPCGExNeighborSampleOperation* UPCGExNeighborSamplerFactoryAttribute::CreateOper
 
 UPCGExParamFactoryBase* UPCGExNeighborSampleAttributeSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExNeighborSamplerFactoryAttribute* SamplerFactory = NewObject<UPCGExNeighborSamplerFactoryAttribute>();
+	UPCGExNeighborSamplerFactoryAttribute* SamplerFactory = InContext->ManagedObjects->New<UPCGExNeighborSamplerFactoryAttribute>();
 	SamplerFactory->Config = Config;
 
 	return Super::CreateFactory(InContext, SamplerFactory);

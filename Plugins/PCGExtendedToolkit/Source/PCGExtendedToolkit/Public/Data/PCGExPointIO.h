@@ -15,17 +15,6 @@
 
 #include "Metadata/Accessors/PCGAttributeAccessorKeys.h"
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5
-#define PCGEX_DELETE_UPCGDATA(_VALUE) \
-if(_VALUE){ \
-	PCGEX_UNROOT(_VALUE) \
-	if(_VALUE->Metadata){ PCGEX_UNROOT(_VALUE->Metadata) } \
-	_VALUE->MarkAsGarbage(); \
-	_VALUE = nullptr; }
-#else
-#define PCGEX_DELETE_UPCGDATA(_VALUE) _VALUE = nullptr; // Handled by 5.5 AsyncObjects 
-#endif
-
 namespace PCGExData
 {
 	enum class EInit : uint8
@@ -134,11 +123,11 @@ namespace PCGExData
 		template <typename T>
 		void InitializeOutput(FPCGExContext* InContext, const EInit InitOut = EInit::NoOutput)
 		{
-			if (Out && Out != In) { Context->DeleteManagedObject(Out); }
+			if (Out && Out != In) { Context->ManagedObjects->Destroy(Out); }
 
 			if (InitOut == EInit::NewOutput)
 			{
-				T* TypedOut = InContext->NewManagedObject<T>();
+				T* TypedOut = InContext->ManagedObjects->New<T>();
 
 				Out = Cast<UPCGPointData>(TypedOut);
 				check(Out)
@@ -147,7 +136,7 @@ namespace PCGExData
 				const UPCGExPointData* TypedPointData = Cast<UPCGExPointData>(In);
 				UPCGExPointData* TypedOutPointData = Cast<UPCGExPointData>(TypedOut);
 				if (TypedPointData && TypedOutPointData) { TypedOutPointData->InitializeFromPCGExData(TypedPointData, EInit::NewOutput); }
-
+				
 				return;
 			}
 
@@ -158,7 +147,7 @@ namespace PCGExData
 
 				if (!TypedIn)
 				{
-					T* TypedOut = InContext->NewManagedObject<T>();
+					T* TypedOut = InContext->ManagedObjects->New<T>();
 
 					if (UPCGExPointData* TypedPointData = Cast<UPCGExPointData>(TypedOut)) { TypedPointData->CopyFrom(In); }
 					else { TypedOut->InitializeFromData(In); } // This is a potentially failed duplicate
@@ -167,19 +156,9 @@ namespace PCGExData
 				}
 				else
 				{
-					FGCScopeGuard GCGuarded;
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 5
-					Out = Cast<UPCGPointData>(In->DuplicateData(true));
-#else
-					{
-						PCGEX_ENFORCE_CONTEXT_ASYNC(Context)
-						FWriteScopeLock WriteScopeLock(Context->ManagedObjectLock); // Ugh
-						Out = Cast<UPCGPointData>(In->DuplicateData(Context, true));
-					}
-#endif
-					Out->AddToRoot();
+					Out = Context->ManagedObjects->Duplicate<UPCGPointData>(In);
 				}
-
+				
 				return;
 			}
 

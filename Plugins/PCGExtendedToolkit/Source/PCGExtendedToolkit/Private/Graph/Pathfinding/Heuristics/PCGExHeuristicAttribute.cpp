@@ -58,7 +58,7 @@ void UPCGExHeuristicAttribute::PrepareForCluster(const PCGExCluster::FCluster* I
 
 UPCGExHeuristicOperation* UPCGExHeuristicsFactoryAttribute::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExHeuristicAttribute* NewOperation = InContext->NewManagedObject<UPCGExHeuristicAttribute>();
+	UPCGExHeuristicAttribute* NewOperation = InContext->ManagedObjects->New<UPCGExHeuristicAttribute>();
 	PCGEX_FORWARD_HEURISTIC_CONFIG
 	NewOperation->Attribute = Config.Attribute;
 	return NewOperation;
@@ -66,7 +66,7 @@ UPCGExHeuristicOperation* UPCGExHeuristicsFactoryAttribute::CreateOperation(FPCG
 
 UPCGExParamFactoryBase* UPCGExCreateHeuristicAttributeSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExHeuristicsFactoryAttribute* NewFactory = NewObject<UPCGExHeuristicsFactoryAttribute>();
+	UPCGExHeuristicsFactoryAttribute* NewFactory = InContext->ManagedObjects->New<UPCGExHeuristicsFactoryAttribute>();
 	PCGEX_FORWARD_HEURISTIC_FACTORY
 	return Super::CreateFactory(InContext, NewFactory);
 }

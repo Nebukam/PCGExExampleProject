@@ -20,14 +20,14 @@ void UPCGExHeuristicAzimuth::PrepareForCluster(const PCGExCluster::FCluster* InC
 
 UPCGExHeuristicOperation* UPCGExHeuristicsFactoryAzimuth::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExHeuristicAzimuth* NewOperation = InContext->NewManagedObject<UPCGExHeuristicAzimuth>();
+	UPCGExHeuristicAzimuth* NewOperation = InContext->ManagedObjects->New<UPCGExHeuristicAzimuth>();
 	PCGEX_FORWARD_HEURISTIC_CONFIG
 	return NewOperation;
 }
 
 UPCGExParamFactoryBase* UPCGExHeuristicsAzimuthProviderSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExHeuristicsFactoryAzimuth* NewFactory = NewObject<UPCGExHeuristicsFactoryAzimuth>();
+	UPCGExHeuristicsFactoryAzimuth* NewFactory = InContext->ManagedObjects->New<UPCGExHeuristicsFactoryAzimuth>();
 	PCGEX_FORWARD_HEURISTIC_FACTORY
 	return Super::CreateFactory(InContext, NewFactory);
 }

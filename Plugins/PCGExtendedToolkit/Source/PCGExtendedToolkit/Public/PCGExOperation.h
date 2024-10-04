@@ -23,7 +23,7 @@ class FPCGMetadataAttributeBase;
  * 
  */
 UCLASS(Abstract, DefaultToInstanced, EditInlineNew, BlueprintType, Blueprintable)
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExOperation : public UObject
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExOperation : public UObject, public IPCGExManagedObjectInterface
 {
 	GENERATED_BODY()
 	//~Begin UPCGExOperation interface
@@ -34,7 +34,7 @@ public:
 	virtual void UpdateUserFacingInfos();
 #endif
 
-	virtual void Cleanup();
+	virtual void Cleanup() override;
 	virtual void CopySettingsFrom(const UPCGExOperation* Other);
 
 	TSharedPtr<PCGExData::FFacade> PrimaryDataFacade;
@@ -43,7 +43,7 @@ public:
 	template <typename T>
 	T* CopyOperation() const
 	{
-		T* TypedInstance = Context->NewManagedObject<T>(this->GetOuter(), this->GetClass());
+		T* TypedInstance = Context->ManagedObjects->New<T>(GetTransientPackage(), this->GetClass());
 
 		check(TypedInstance)
 

@@ -8,14 +8,29 @@
 #include "PCGElement.h"
 #include "PCGExMacros.h"
 #include "PCGModule.h"
+#include "Data/PCGSpatialData.h"
 #include "Metadata/PCGMetadataAttributeTraits.h"
 
 #include "PCGExHelpers.generated.h"
 
-#define PCGEX_ENFORCE_CONTEXT_ASYNC(_CONTEXT)\
+#define PCGEX_FORCE_CONTEXT_ASYNCSTATE(_CONTEXT)\
 	bool bRestoreTo = _CONTEXT->AsyncState.bIsRunningOnMainThread;\
 	ON_SCOPE_EXIT { _CONTEXT->AsyncState.bIsRunningOnMainThread = bRestoreTo; };\
 	_CONTEXT->AsyncState.bIsRunningOnMainThread = IsInGameThread(); // dirty trick
+
+UINTERFACE(MinimalAPI)
+class UPCGExManagedObjectInterface : public UInterface
+{
+	GENERATED_BODY()
+};
+
+class IPCGExManagedObjectInterface
+{
+	GENERATED_BODY()
+
+public:
+	virtual void Cleanup() = 0;
+};
 
 namespace PCGExHelpers
 {
@@ -102,6 +117,101 @@ private:
 
 namespace PCGEx
 {
+	struct /*PCGEXTENDEDTOOLKIT_API*/ FManagedObjects
+	{
+		mutable FRWLock ManagedObjectLock;
+
+		FPCGContext* Context = nullptr;
+		TSet<UObject*> ManagedObjects;
+
+		explicit FManagedObjects(FPCGContext* InContext):
+			Context(InContext)
+		{
+		}
+
+		~FManagedObjects();
+
+		void Flush();
+
+		void Add(UObject* InObject);
+		void Remove(UObject* InObject);
+
+		template <class T, typename... Args>
+		T*
+		New(Args&&... InArgs)
+		{
+			T* Object = nullptr;
+			if (!IsInGameThread())
+			{
+				{
+					FGCScopeGuard Scope;
+					Object = NewObject<T>(std::forward<Args>(InArgs)...);
+				}
+				check(Object);
+			}
+			else
+			{
+				Object = NewObject<T>(std::forward<Args>(InArgs)...);
+			}
+
+			Add(Object);
+			return Object;
+		}
+
+		template <class T, typename... Args>
+		T* Duplicate(const UPCGData* InData)
+		{
+			T* Object = nullptr;
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5
+
+			if (!IsInGameThread())
+			{
+				{
+					FWriteScopeLock WriteScopeLock(ManagedObjectLock);
+					PCGEX_FORCE_CONTEXT_ASYNCSTATE(Context)
+					Object = Cast<T>(InData->DuplicateData(Context, true));
+					DuplicateObjects.Add(Object);
+				}
+				check(Object);
+			}
+			else
+			{
+				FWriteScopeLock WriteScopeLock(ManagedObjectLock);
+				Object = Cast<T>(InData->DuplicateData(Context, true));
+			}
+
+			DuplicateObjects.Add(Object);
+
+#else
+			if (!IsInGameThread())
+			{
+				{
+					FGCScopeGuard Scope;
+					FWriteScopeLock WriteScopeLock(ManagedObjectLock);
+					Object = Cast<T>(InData->DuplicateData(true));
+				}
+				check(Object);
+			}
+			else
+			{
+				FWriteScopeLock WriteScopeLock(ManagedObjectLock);
+				Object = Cast<T>(InData->DuplicateData(true));
+			}
+			
+#endif
+
+			Add(Object);
+			return Object;
+		}
+
+		void Destroy(UObject* InObject);
+
+	protected:
+		TSet<UObject*> DuplicateObjects;
+		void RecursivelyClearAsyncFlag(UObject* InObject);
+	};
+
 #pragma region Metadata Type
 
 	template <typename T>

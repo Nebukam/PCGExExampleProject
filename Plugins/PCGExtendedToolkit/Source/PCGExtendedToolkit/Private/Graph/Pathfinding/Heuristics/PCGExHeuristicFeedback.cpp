@@ -19,7 +19,7 @@ void UPCGExHeuristicFeedback::Cleanup()
 
 UPCGExHeuristicOperation* UPCGExHeuristicsFactoryFeedback::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExHeuristicFeedback* NewOperation = InContext->NewManagedObject<UPCGExHeuristicFeedback>();
+	UPCGExHeuristicFeedback* NewOperation = InContext->ManagedObjects->New<UPCGExHeuristicFeedback>();
 	PCGEX_FORWARD_HEURISTIC_CONFIG
 	NewOperation->NodeScale = Config.VisitedPointsWeightFactor;
 	NewOperation->EdgeScale = Config.VisitedEdgesWeightFactor;
@@ -28,7 +28,7 @@ UPCGExHeuristicOperation* UPCGExHeuristicsFactoryFeedback::CreateOperation(FPCGE
 
 UPCGExParamFactoryBase* UPCGExHeuristicFeedbackProviderSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExHeuristicsFactoryFeedback* NewFactory = NewObject<UPCGExHeuristicsFactoryFeedback>();
+	UPCGExHeuristicsFactoryFeedback* NewFactory = InContext->ManagedObjects->New<UPCGExHeuristicsFactoryFeedback>();
 	PCGEX_FORWARD_HEURISTIC_FACTORY
 	return Super::CreateFactory(InContext, NewFactory);
 }

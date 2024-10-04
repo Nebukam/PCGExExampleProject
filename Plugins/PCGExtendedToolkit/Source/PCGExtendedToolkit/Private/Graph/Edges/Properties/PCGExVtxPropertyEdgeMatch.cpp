@@ -125,7 +125,7 @@ FString UPCGExVtxPropertyEdgeMatchSettings::GetDisplayName() const
 
 UPCGExVtxPropertyOperation* UPCGExVtxPropertyEdgeMatchFactory::CreateOperation(FPCGExContext* InContext) const
 {
-	UPCGExVtxPropertyEdgeMatch* NewOperation = InContext->NewManagedObject<UPCGExVtxPropertyEdgeMatch>();
+	UPCGExVtxPropertyEdgeMatch* NewOperation = InContext->ManagedObjects->New<UPCGExVtxPropertyEdgeMatch>();
 	PCGEX_VTX_EXTRA_CREATE
 
 	if (!FilterFactories.IsEmpty())
@@ -145,7 +145,7 @@ TArray<FPCGPinProperties> UPCGExVtxPropertyEdgeMatchSettings::InputPinProperties
 
 UPCGExParamFactoryBase* UPCGExVtxPropertyEdgeMatchSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
 {
-	UPCGExVtxPropertyEdgeMatchFactory* NewFactory = NewObject<UPCGExVtxPropertyEdgeMatchFactory>();
+	UPCGExVtxPropertyEdgeMatchFactory* NewFactory = InContext->ManagedObjects->New<UPCGExVtxPropertyEdgeMatchFactory>();
 	NewFactory->Config = Config;
 	NewFactory->Config.Sanitize();
 	GetInputFactories(

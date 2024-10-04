@@ -27,7 +27,7 @@ namespace PCGExHeuristics
 
 	THeuristicsHandler::~THeuristicsHandler()
 	{
-		for (UPCGExHeuristicOperation* Op : Operations) { PCGEX_DELETE_OPERATION(ExecutionContext, Op) }
+		for (UPCGExHeuristicOperation* Op : Operations) { ExecutionContext->ManagedObjects->Destroy(Op); }
 
 		Operations.Empty();
 		Feedbacks.Empty();
@@ -68,7 +68,7 @@ namespace PCGExHeuristics
 		if (Operations.IsEmpty())
 		{
 			PCGE_LOG_C(Warning, GraphAndLog, InContext, FTEXT("Missing valid heuristics. Will use Shortest Distance as default. (Local feedback heuristics don't count)"));
-			UPCGExHeuristicDistance* DefaultHeuristics = InContext->NewManagedObject<UPCGExHeuristicDistance>();
+			UPCGExHeuristicDistance* DefaultHeuristics = InContext->ManagedObjects->New<UPCGExHeuristicDistance>();
 			DefaultHeuristics->ReferenceWeight = ReferenceWeight;
 			Operations.Add(DefaultHeuristics);
 		}
