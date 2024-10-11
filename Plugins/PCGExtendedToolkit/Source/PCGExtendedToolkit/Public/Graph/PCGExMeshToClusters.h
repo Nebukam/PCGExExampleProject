@@ -7,8 +7,6 @@
 #include "PCGExPointsProcessor.h"
 #include "Data/PCGExDataForward.h"
 
-
-#include "Geometry/PCGExGeo.h"
 #include "Geometry/PCGExGeoMesh.h"
 
 #include "PCGExMeshToClusters.generated.h"
@@ -95,7 +93,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshToClustersContext final : FPCGExPoin
 	FPCGExGraphBuilderDetails GraphBuilderDetails;
 	FPCGExTransformDetails TransformDetails;
 
-	TUniquePtr<PCGExGeo::FGeoStaticMeshMap> StaticMeshMap;
+	TSharedPtr<PCGExGeo::FGeoStaticMeshMap> StaticMeshMap;
 	TArray<int32> MeshIdx;
 
 	TSharedPtr<PCGExData::FPointIOCollection> RootVtx;

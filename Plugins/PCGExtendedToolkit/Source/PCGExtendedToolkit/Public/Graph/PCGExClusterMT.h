@@ -27,7 +27,7 @@ namespace PCGExClusterMT
 	class FStartClusterBatchProcessing final : public PCGExMT::FPCGExTask
 	{
 	public:
-		FStartClusterBatchProcessing(const TSharedPtr<PCGExData::FPointIO>& InPointIO, TSharedPtr<T> InTarget, bool bScoped) : FPCGExTask(InPointIO), Target(InTarget), bScopedIndexLookupBuild(bScoped)
+		FStartClusterBatchProcessing(const TSharedPtr<PCGExData::FPointIO>& InPointIO, TSharedPtr<T> InTarget, const bool bScoped) : FPCGExTask(InPointIO), Target(InTarget), bScopedIndexLookupBuild(bScoped)
 		{
 		}
 
@@ -83,8 +83,8 @@ namespace PCGExClusterMT
 		TWeakPtr<FClusterProcessorBatchBase> ParentBatch;
 		TSharedPtr<PCGExMT::FTaskManager> GetAsyncManager() { return AsyncManager; }
 
-		const TSharedRef<PCGExData::FFacade> VtxDataFacade;
-		const TSharedRef<PCGExData::FFacade> EdgeDataFacade;
+		TSharedRef<PCGExData::FFacade> VtxDataFacade;
+		TSharedRef<PCGExData::FFacade> EdgeDataFacade;
 
 		bool bAllowEdgesDataFacadeScopedGet = false;
 
@@ -127,7 +127,7 @@ namespace PCGExClusterMT
 
 		void SetRequiresHeuristics(const bool bRequired = false) { bRequiresHeuristics = bRequired; }
 
-		virtual bool Process(TSharedPtr<PCGExMT::FTaskManager> InAsyncManager)
+		virtual bool Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager)
 		{
 			AsyncManager = InAsyncManager;
 
@@ -185,7 +185,7 @@ namespace PCGExClusterMT
 			ParallelLoopForNodes->OnIterationRangePrepareCallback = [&](const TArray<uint64>& Loops) { PrepareLoopScopesForNodes(Loops); };
 			ParallelLoopForNodes->OnIterationRangeStartCallback =
 				[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx) { ProcessNodes(StartIndex, Count, LoopIdx); };
-			ParallelLoopForNodes->PrepareRangesOnly(NumNodes, PLI, bInlineProcessNodes);
+			ParallelLoopForNodes->StartRangePrepareOnly(NumNodes, PLI, bInlineProcessNodes);
 		}
 
 		virtual void PrepareLoopScopesForNodes(const TArray<uint64>& Loops)
@@ -233,7 +233,7 @@ namespace PCGExClusterMT
 			ParallelLoopForEdges->OnIterationRangePrepareCallback = [&](const TArray<uint64>& Loops) { PrepareLoopScopesForEdges(Loops); };
 			ParallelLoopForEdges->OnIterationRangeStartCallback =
 				[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx) { ProcessEdges(StartIndex, Count, LoopIdx); };
-			ParallelLoopForEdges->PrepareRangesOnly(NumEdges, PLI, bInlineProcessEdges);
+			ParallelLoopForEdges->StartRangePrepareOnly(NumEdges, PLI, bInlineProcessEdges);
 		}
 
 		virtual void PrepareLoopScopesForEdges(const TArray<uint64>& Loops)
@@ -280,7 +280,7 @@ namespace PCGExClusterMT
 			ParallelLoopForRanges->OnIterationRangePrepareCallback = [&](const TArray<uint64>& Loops) { PrepareLoopScopesForRanges(Loops); };
 			ParallelLoopForRanges->OnIterationRangeStartCallback =
 				[&](const int32 StartIndex, const int32 Count, const int32 LoopIdx) { ProcessRange(StartIndex, Count, LoopIdx); };
-			ParallelLoopForRanges->PrepareRangesOnly(NumIterations, PLI, bInlineProcessRange);
+			ParallelLoopForRanges->StartRangePrepareOnly(NumIterations, PLI, bInlineProcessRange);
 		}
 
 		virtual void PrepareLoopScopesForRanges(const TArray<uint64>& Loops)
@@ -321,6 +321,7 @@ namespace PCGExClusterMT
 
 		virtual void Cleanup()
 		{
+			bIsProcessorValid = false;
 		}
 	};
 
@@ -409,7 +410,7 @@ namespace PCGExClusterMT
 		template <typename T>
 		T* GetContext() { return static_cast<T*>(ExecutionContext); }
 
-		virtual void PrepareProcessing(TSharedPtr<PCGExMT::FTaskManager> AsyncManagerPtr, const bool bScopedIndexLookupBuild)
+		virtual void PrepareProcessing(const TSharedPtr<PCGExMT::FTaskManager> AsyncManagerPtr, const bool bScopedIndexLookupBuild)
 		{
 			AsyncManager = AsyncManagerPtr;
 			const int32 NumVtx = VtxDataFacade->GetNum();
@@ -472,7 +473,7 @@ namespace PCGExClusterMT
 							ExpectedAdjacency[i] = B;
 						}
 					};
-				BuildEndpointLookupTask->PrepareRangesOnly(VtxDataFacade->GetNum(), 4096);
+				BuildEndpointLookupTask->StartRangePrepareOnly(VtxDataFacade->GetNum(), 4096);
 			}
 		}
 

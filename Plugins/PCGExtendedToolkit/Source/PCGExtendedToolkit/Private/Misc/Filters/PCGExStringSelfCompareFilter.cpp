@@ -7,21 +7,21 @@
 #define LOCTEXT_NAMESPACE "PCGExCompareFilterDefinition"
 #define PCGEX_NAMESPACE CompareFilterDefinition
 
-TSharedPtr<PCGExPointFilter::TFilter> UPCGExStringSelfCompareFilterFactory::CreateFilter() const
+TSharedPtr<PCGExPointFilter::FFilter> UPCGExStringSelfCompareFilterFactory::CreateFilter() const
 {
 	return MakeShared<PCGExPointsFilter::TStringSelfComparisonFilter>(this);
 }
 
 bool PCGExPointsFilter::TStringSelfComparisonFilter::Init(const FPCGContext* InContext, const TSharedPtr<PCGExData::FFacade> InPointDataFacade)
 {
-	if (!TFilter::Init(InContext, InPointDataFacade)) { return false; }
+	if (!FFilter::Init(InContext, InPointDataFacade)) { return false; }
 
 	bOffset = TypedFilterFactory->Config.IndexMode == EPCGExIndexMode::Offset;
 	MaxIndex = PointDataFacade->Source->GetNum() - 1;
 
 	if (MaxIndex < 0) { return false; }
 
-	OperandA = MakeUnique<PCGEx::TAttributeBroadcaster<FString>>();
+	OperandA = MakeShared<PCGEx::TAttributeBroadcaster<FString>>();
 	if (!OperandA->Prepare(TypedFilterFactory->Config.OperandA, PointDataFacade->Source))
 	{
 		PCGE_LOG_C(Error, GraphAndLog, InContext, FText::Format(FTEXT("Invalid Operand A attribute: \"{0}\"."), FText::FromName(TypedFilterFactory->Config.OperandA)));

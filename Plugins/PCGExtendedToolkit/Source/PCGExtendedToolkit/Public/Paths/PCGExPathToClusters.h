@@ -5,6 +5,8 @@
 
 #include "CoreMinimal.h"
 #include "PCGExPathProcessor.h"
+
+
 #include "Graph/PCGExUnionHelpers.h"
 
 #include "Graph/PCGExGraph.h"
@@ -98,14 +100,14 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPathToClustersContext final : FPCGExPath
 {
 	friend class FPCGExPathToClustersElement;
 
-	TArray<TSharedPtr<PCGExData::FFacade>> PathsFacades;
+	TArray<TSharedRef<PCGExData::FFacade>> PathsFacades;
 
 	FPCGExCarryOverDetails CarryOverDetails;
 
 	TSharedPtr<PCGExGraph::FUnionGraph> UnionGraph;
 	TSharedPtr<PCGExData::FFacade> UnionDataFacade;
 
-	TUniquePtr<PCGExGraph::FUnionProcessor> UnionProcessor;
+	TSharedPtr<PCGExGraph::FUnionProcessor> UnionProcessor;
 };
 
 class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPathToClustersElement final : public FPCGExPathProcessorElement
@@ -139,7 +141,7 @@ namespace PCGExPathToClusters
 
 		virtual ~FNonFusingProcessor() override;
 
-		virtual bool Process(TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
+		virtual bool Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
 		virtual void CompleteWork() override;
 	};
 
@@ -167,7 +169,7 @@ namespace PCGExPathToClusters
 
 		virtual ~FFusingProcessor() override;
 
-		virtual bool Process(TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
+		virtual bool Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
 		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount) override;
 	};
 

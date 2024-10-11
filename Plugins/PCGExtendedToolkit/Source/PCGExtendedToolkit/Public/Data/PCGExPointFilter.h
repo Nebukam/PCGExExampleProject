@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "PCGExData.h"
 #include "PCGExFactoryProvider.h"
+#include "Graph/PCGExCluster.h"
 
 
 #include "PCGExPointFilter.generated.h"
@@ -16,14 +17,9 @@ namespace PCGExGraph
 	struct FIndexedEdge;
 }
 
-namespace PCGExCluster
-{
-	struct FNode;
-}
-
 namespace PCGExPointFilter
 {
-	class TFilter;
+	class FFilter;
 }
 
 namespace PCGExFilters
@@ -34,7 +30,7 @@ namespace PCGExFilters
 		Point,
 		Group,
 		Node,
-		ClusterEdge,
+		Edge,
 	};
 }
 
@@ -52,7 +48,7 @@ public:
 	virtual bool Init(FPCGExContext* InContext);
 
 	int32 Priority = 0;
-	virtual TSharedPtr<PCGExPointFilter::TFilter> CreateFilter() const;
+	virtual TSharedPtr<PCGExPointFilter::FFilter> CreateFilter() const;
 };
 
 namespace PCGExPointFilter
@@ -70,10 +66,10 @@ namespace PCGExPointFilter
 	const FName OutputInsideFiltersLabel = FName("Inside");
 	const FName OutputOutsideFiltersLabel = FName("Outside");
 
-	class /*PCGEXTENDEDTOOLKIT_API*/ TFilter
+	class /*PCGEXTENDEDTOOLKIT_API*/ FFilter
 	{
 	public:
-		explicit TFilter(const TObjectPtr<const UPCGExFilterFactoryBase>& InFactory):
+		explicit FFilter(const TObjectPtr<const UPCGExFilterFactoryBase>& InFactory):
 			Factory(InFactory)
 		{
 		}
@@ -97,13 +93,26 @@ namespace PCGExPointFilter
 		virtual bool Test(const PCGExCluster::FNode& Node) const;
 		virtual bool Test(const PCGExGraph::FIndexedEdge& Edge) const;
 
-		virtual ~TFilter() = default;
+		virtual ~FFilter() = default;
 	};
 
-	class /*PCGEXTENDEDTOOLKIT_API*/ TManager
+	class /*PCGEXTENDEDTOOLKIT_API*/ FSimpleFilter : public FFilter
 	{
 	public:
-		explicit TManager(const TSharedPtr<PCGExData::FFacade>& InPointDataFacade);
+		explicit FSimpleFilter(const TObjectPtr<const UPCGExFilterFactoryBase>& InFactory):
+			FFilter(InFactory)
+		{
+		}
+
+		virtual bool Test(const int32 Index) const override;
+		virtual bool Test(const PCGExCluster::FNode& Node) const override final;
+		virtual bool Test(const PCGExGraph::FIndexedEdge& Edge) const override final;
+	};
+
+	class /*PCGEXTENDEDTOOLKIT_API*/ FManager : public TSharedFromThis<FManager>
+	{
+	public:
+		explicit FManager(const TSharedRef<PCGExData::FFacade>& InPointDataFacade);
 
 		bool bCacheResultsPerFilter = false;
 		bool bCacheResults = false;
@@ -111,7 +120,7 @@ namespace PCGExPointFilter
 
 		bool bValid = false;
 
-		TSharedPtr<PCGExData::FFacade> PointDataFacade;
+		TSharedRef<PCGExData::FFacade> PointDataFacade;
 
 		bool Init(const FPCGContext* InContext, const TArray<TObjectPtr<const UPCGExFilterFactoryBase>>& InFactories);
 
@@ -119,16 +128,16 @@ namespace PCGExPointFilter
 		virtual bool Test(const PCGExCluster::FNode& Node);
 		virtual bool Test(const PCGExGraph::FIndexedEdge& Edge);
 
-		virtual ~TManager()
+		virtual ~FManager()
 		{
 		}
 
 	protected:
-		TArray<TSharedPtr<TFilter>> ManagedFilters;
+		TArray<TSharedPtr<FFilter>> ManagedFilters;
 
-		virtual bool InitFilter(const FPCGContext* InContext, const TSharedPtr<TFilter>& Filter);
+		virtual bool InitFilter(const FPCGContext* InContext, const TSharedPtr<FFilter>& Filter);
 		virtual bool PostInit(const FPCGContext* InContext);
-		virtual void PostInitFilter(const FPCGContext* InContext, const TSharedPtr<TFilter>& InFilter);
+		virtual void PostInitFilter(const FPCGContext* InContext, const TSharedPtr<FFilter>& InFilter);
 
 		virtual void InitCache();
 	};

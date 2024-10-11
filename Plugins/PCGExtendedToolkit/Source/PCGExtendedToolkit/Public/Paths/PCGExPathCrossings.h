@@ -11,8 +11,6 @@
 #include "Data/Blending/PCGExUnionBlender.h"
 #include "Data/Blending/PCGExDataBlending.h"
 
-
-#include "Geometry/PCGExGeo.h"
 #include "SubPoints/DataBlending/PCGExSubPointsBlendOperation.h"
 #include "PCGExPathCrossings.generated.h"
 
@@ -142,7 +140,7 @@ namespace PCGExPathCrossings
 		TArray<double> Alphas;
 		TArray<FVector> CrossingDirections;
 
-		FCrossing(const int32 InIndex):
+		explicit FCrossing(const int32 InIndex):
 			Index(InIndex)
 		{
 		}
@@ -161,8 +159,8 @@ namespace PCGExPathCrossings
 		TArray<TSharedPtr<PCGExPaths::FPathEdge>> Edges;
 		TArray<TSharedPtr<FCrossing>> Crossings;
 
-		TUniquePtr<PCGExPointFilter::TManager> CanCutFilterManager;
-		TUniquePtr<PCGExPointFilter::TManager> CanBeCutFilterManager;
+		TSharedPtr<PCGExPointFilter::FManager> CanCutFilterManager;
+		TSharedPtr<PCGExPointFilter::FManager> CanBeCutFilterManager;
 
 		TArray<bool> CanCut;
 		TArray<bool> CanBeCut;
@@ -172,7 +170,7 @@ namespace PCGExPathCrossings
 
 		TSet<int32> CrossIOIndices;
 		TSharedPtr<PCGExData::FUnionMetadata> UnionMetadata;
-		TUniquePtr<PCGExDataBlending::FUnionBlender> UnionBlender;
+		TSharedPtr<PCGExDataBlending::FUnionBlender> UnionBlender;
 
 		using TEdgeOctree = TOctree2<PCGExPaths::FPathEdge*, PCGExPaths::FPathEdgeSemantics>;
 		TUniquePtr<TEdgeOctree> EdgeOctree;
@@ -193,7 +191,7 @@ namespace PCGExPathCrossings
 
 		const TEdgeOctree* GetEdgeOctree() const { return EdgeOctree.Get(); }
 
-		virtual bool Process(TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
+		virtual bool Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
 		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 LoopCount) override;
 		void FixPoint(const int32 Index);
 		void CrossBlendPoint(const int32 Index);

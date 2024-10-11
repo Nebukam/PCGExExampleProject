@@ -23,12 +23,12 @@ public:
 	TArray<uint64> Scopes;
 	TArray<TSharedPtr<PCGExData::FBufferBase>> Buffers;
 
-	FPCGExPointIOMerger(const TSharedRef<PCGExData::FFacade>& InUnionDataFacade);
+	explicit FPCGExPointIOMerger(const TSharedRef<PCGExData::FFacade>& InUnionDataFacade);
 	~FPCGExPointIOMerger();
 
 	void Append(const TSharedPtr<PCGExData::FPointIO>& InData);
 	void Append(const TArray<TSharedPtr<PCGExData::FPointIO>>& InData);
-	void Append(PCGExData::FPointIOCollection* InCollection);
+	void Append(const TSharedRef<PCGExData::FPointIOCollection>& InCollection);
 	void Merge(const TSharedPtr<PCGExMT::FTaskManager>& AsyncManager, const FPCGExCarryOverDetails* InCarryOverDetails);
 
 protected:

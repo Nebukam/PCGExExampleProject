@@ -63,7 +63,7 @@ namespace PCGExPointsToBounds
 	{
 	}
 
-	bool FProcessor::Process(TSharedPtr<PCGExMT::FTaskManager> InAsyncManager)
+	bool FProcessor::Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager)
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(PCGExPointsToBounds::Process);
 
@@ -124,7 +124,7 @@ namespace PCGExPointsToBounds
 
 		if (Settings->bBlendProperties)
 		{
-			MetadataBlender = MakeUnique<PCGExDataBlending::FMetadataBlender>(&Settings->BlendingSettings);
+			MetadataBlender = MakeShared<PCGExDataBlending::FMetadataBlender>(&Settings->BlendingSettings);
 			MetadataBlender->PrepareForData(PointDataFacade);
 
 			const PCGExData::FPointRef Target = PointDataFacade->Source->GetOutPointRef(0);

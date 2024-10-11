@@ -1,7 +1,7 @@
 ﻿// Copyright Timothé Lapetite 2024
 // Released under the MIT license https://opensource.org/license/MIT/
 
-#include "Graph/Filters/Nodes/PCGExNeighborsCountFilter.h"
+#include "Graph/Filters/Nodes/PCGExNodeNeighborsCountFilter.h"
 
 
 #include "Graph/PCGExGraph.h"
@@ -9,7 +9,7 @@
 #define LOCTEXT_NAMESPACE "PCGExNodeNeighborsCountFilter"
 #define PCGEX_NAMESPACE NodeNeighborsCountFilter
 
-TSharedPtr<PCGExPointFilter::TFilter> UPCGExNeighborsCountFilterFactory::CreateFilter() const
+TSharedPtr<PCGExPointFilter::FFilter> UPCGExNodeNeighborsCountFilterFactory::CreateFilter() const
 {
 	return MakeShared<PCGExNodeNeighborsCount::FNeighborsCountFilter>(this);
 }
@@ -17,9 +17,9 @@ TSharedPtr<PCGExPointFilter::TFilter> UPCGExNeighborsCountFilterFactory::CreateF
 
 namespace PCGExNodeNeighborsCount
 {
-	bool FNeighborsCountFilter::Init(const FPCGContext* InContext, const TSharedPtr<PCGExCluster::FCluster>& InCluster, const TSharedPtr<PCGExData::FFacade>& InPointDataFacade, const TSharedPtr<PCGExData::FFacade>& InEdgeDataFacade)
+	bool FNeighborsCountFilter::Init(const FPCGContext* InContext, const TSharedRef<PCGExCluster::FCluster>& InCluster, const TSharedRef<PCGExData::FFacade>& InPointDataFacade, const TSharedRef<PCGExData::FFacade>& InEdgeDataFacade)
 	{
-		if (!TFilter::Init(InContext, InCluster, InPointDataFacade, InEdgeDataFacade)) { return false; }
+		if (!FFilter::Init(InContext, InCluster, InPointDataFacade, InEdgeDataFacade)) { return false; }
 
 		if (TypedFilterFactory->Config.CompareAgainst == EPCGExFetchType::Attribute)
 		{
@@ -43,10 +43,10 @@ namespace PCGExNodeNeighborsCount
 	}
 }
 
-PCGEX_CREATE_FILTER_FACTORY(NeighborsCount)
+PCGEX_CREATE_FILTER_FACTORY(NodeNeighborsCount)
 
 #if WITH_EDITOR
-FString UPCGExNeighborsCountFilterProviderSettings::GetDisplayName() const
+FString UPCGExNodeNeighborsCountFilterProviderSettings::GetDisplayName() const
 {
 	FString DisplayName = "Neighbors Count" + PCGExCompare::ToString(Config.Comparison);
 

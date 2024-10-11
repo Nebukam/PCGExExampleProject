@@ -99,6 +99,7 @@ namespace PCGExData
 						// 'template' spec required for clang on mac, not sure why.
 						// ReSharper disable once CppRedundantTemplateKeyword
 						const FPCGMetadataAttribute<T>* SourceAtt = SourceDataFacade->GetIn()->Metadata->template GetConstTypedAttribute<T>(Identity.Name);
+						if (!SourceAtt) { return; }
 
 						TSharedPtr<TBuffer<T>> Writer = InTargetDataFacade->GetWritable<T>(SourceAtt, true);
 
@@ -121,6 +122,8 @@ namespace PCGExData
 					// 'template' spec required for clang on mac, not sure why.
 					// ReSharper disable once CppRedundantTemplateKeyword
 					const FPCGMetadataAttribute<T>* SourceAtt = SourceDataFacade->GetIn()->Metadata->template GetConstTypedAttribute<T>(Identity.Name);
+					if (!SourceAtt) { return; }
+
 					InTargetDataFacade->Source->DeleteAttribute(Identity.Name);
 					FPCGMetadataAttribute<T>* Mark = InTargetDataFacade->Source->FindOrCreateAttribute<T>(
 						Identity.Name,

@@ -58,23 +58,23 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExStringCompareFilterFactory : public UPCGE
 public:
 	FPCGExStringCompareFilterConfig Config;
 
-	virtual TSharedPtr<PCGExPointFilter::TFilter> CreateFilter() const override;
+	virtual TSharedPtr<PCGExPointFilter::FFilter> CreateFilter() const override;
 };
 
 namespace PCGExPointsFilter
 {
-	class /*PCGEXTENDEDTOOLKIT_API*/ TStringCompareFilter final : public PCGExPointFilter::TFilter
+	class /*PCGEXTENDEDTOOLKIT_API*/ TStringCompareFilter final : public PCGExPointFilter::FSimpleFilter
 	{
 	public:
 		explicit TStringCompareFilter(const TObjectPtr<const UPCGExStringCompareFilterFactory>& InFactory)
-			: TFilter(InFactory), TypedFilterFactory(InFactory)
+			: FSimpleFilter(InFactory), TypedFilterFactory(InFactory)
 		{
 		}
 
 		const TObjectPtr<const UPCGExStringCompareFilterFactory> TypedFilterFactory;
 
-		TUniquePtr<PCGEx::TAttributeBroadcaster<FString>> OperandA;
-		TUniquePtr<PCGEx::TAttributeBroadcaster<FString>> OperandB;
+		TSharedPtr<PCGEx::TAttributeBroadcaster<FString>> OperandA;
+		TSharedPtr<PCGEx::TAttributeBroadcaster<FString>> OperandB;
 
 		virtual bool Init(const FPCGContext* InContext, const TSharedPtr<PCGExData::FFacade> InPointDataFacade) override;
 		FORCEINLINE virtual bool Test(const int32 PointIndex) const override

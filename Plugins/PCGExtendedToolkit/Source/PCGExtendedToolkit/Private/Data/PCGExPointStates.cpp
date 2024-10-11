@@ -4,7 +4,7 @@
 #include "Data/PCGExPointStates.h"
 
 
-TSharedPtr<PCGExPointFilter::TFilter> UPCGExPointStateFactoryBase::CreateFilter() const
+TSharedPtr<PCGExPointFilter::FFilter> UPCGExPointStateFactoryBase::CreateFilter() const
 {
 	return Super::CreateFilter();
 }
@@ -22,9 +22,9 @@ namespace PCGExPointStates
 
 	bool FState::Init(const FPCGContext* InContext, const TSharedPtr<PCGExData::FFacade> InPointDataFacade)
 	{
-		if (!TFilter::Init(InContext, InPointDataFacade)) { return false; }
+		if (!FFilter::Init(InContext, InPointDataFacade)) { return false; }
 
-		Manager = MakeUnique<PCGExPointFilter::TManager>(InPointDataFacade);
+		Manager = MakeShared<PCGExPointFilter::FManager>(InPointDataFacade.ToSharedRef());
 		Manager->bCacheResults = true;
 		return true;
 	}
@@ -46,18 +46,18 @@ namespace PCGExPointStates
 		// TODO : Implement
 	}
 
-	FStateManager::FStateManager(const TSharedPtr<TArray<int64>>& InFlags, const TSharedPtr<PCGExData::FFacade>& InPointDataFacade)
-		: TManager(InPointDataFacade)
+	FStateManager::FStateManager(const TSharedPtr<TArray<int64>>& InFlags, const TSharedRef<PCGExData::FFacade>& InPointDataFacade)
+		: FManager(InPointDataFacade)
 	{
 		FlagsCache = InFlags;
 	}
 
-	void FStateManager::PostInitFilter(const FPCGContext* InContext, const TSharedPtr<PCGExPointFilter::TFilter>& InFilter)
+	void FStateManager::PostInitFilter(const FPCGContext* InContext, const TSharedPtr<PCGExPointFilter::FFilter>& InFilter)
 	{
 		const TSharedPtr<FState> State = StaticCastSharedPtr<FState>(InFilter);
 		State->InitInternalManager(InContext, State->StateFactory->FilterFactories);
 
-		TManager::PostInitFilter(InContext, InFilter);
+		FManager::PostInitFilter(InContext, InFilter);
 
 		States.Add(State);
 	}

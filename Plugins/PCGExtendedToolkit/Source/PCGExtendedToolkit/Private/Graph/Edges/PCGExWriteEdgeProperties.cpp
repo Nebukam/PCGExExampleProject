@@ -5,9 +5,6 @@
 
 #include "Data/Blending/PCGExMetadataBlender.h"
 
-
-#include "Kismet/KismetMathLibrary.h"
-
 #define LOCTEXT_NAMESPACE "PCGExEdgesToPaths"
 #define PCGEX_NAMESPACE WriteEdgeProperties
 
@@ -116,7 +113,7 @@ namespace PCGExWriteEdgeProperties
 
 		if (Settings->bEndpointsBlending)
 		{
-			MetadataBlender = MakeUnique<PCGExDataBlending::FMetadataBlender>(const_cast<FPCGExBlendingDetails*>(&Settings->BlendingSettings));
+			MetadataBlender = MakeShared<PCGExDataBlending::FMetadataBlender>(const_cast<FPCGExBlendingDetails*>(&Settings->BlendingSettings));
 			MetadataBlender->PrepareForData(EdgeDataFacade, VtxDataFacade, PCGExData::ESource::In);
 		}
 
@@ -295,7 +292,7 @@ namespace PCGExWriteEdgeProperties
 					VtxDataFacade->Fetch(StartIndex, Count);
 				};
 
-			FetchVtxTask->PrepareRangesOnly(VtxDataFacade->GetNum(), PLI);
+			FetchVtxTask->StartRangePrepareOnly(VtxDataFacade->GetNum(), PLI);
 		}
 	}
 }

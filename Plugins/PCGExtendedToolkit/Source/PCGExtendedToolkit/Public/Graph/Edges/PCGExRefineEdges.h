@@ -8,6 +8,7 @@
 
 #include "Graph/PCGExClusterMT.h"
 #include "Graph/PCGExEdgesProcessor.h"
+#include "Graph/Filters/PCGExClusterFilter.h"
 #include "Refining/PCGExEdgeRefineOperation.h"
 
 #include "PCGExRefineEdges.generated.h"
@@ -101,8 +102,8 @@ namespace PCGExRefineEdges
 		friend class FFilterRangeTask;
 
 	protected:
-		TUniquePtr<PCGExPointFilter::TManager> EdgeFilterManager;
-		TUniquePtr<PCGExPointFilter::TManager> SanitizationFilterManager;
+		TSharedPtr<PCGExClusterFilter::FManager> EdgeFilterManager;
+		TSharedPtr<PCGExClusterFilter::FManager> SanitizationFilterManager;
 		EPCGExRefineSanitization Sanitization = EPCGExRefineSanitization::None;
 
 		virtual TSharedPtr<PCGExCluster::FCluster> HandleCachedCluster(const TSharedRef<PCGExCluster::FCluster>& InClusterRef) override;
@@ -130,7 +131,18 @@ namespace PCGExRefineEdges
 		UPCGExEdgeRefineOperation* Refinement = nullptr;
 	};
 
-	class FSanitizeRangeTask : public PCGExMT::FPCGExTask
+	class FProcessorBatch final : public PCGExClusterMT::TBatch<FProcessor>
+	{
+	public:
+		FProcessorBatch(FPCGExContext* InContext, const TSharedRef<PCGExData::FPointIO>& InVtx, const TArrayView<TSharedRef<PCGExData::FPointIO>> InEdges)
+			: TBatch<FProcessor>(InContext, InVtx, InEdges)
+		{
+		}
+
+		virtual void OnProcessingPreparationComplete() override;
+	};
+
+	class FSanitizeRangeTask final : public PCGExMT::FPCGExTask
 	{
 	public:
 		FSanitizeRangeTask(const TSharedPtr<PCGExData::FPointIO>& InPointIO,
