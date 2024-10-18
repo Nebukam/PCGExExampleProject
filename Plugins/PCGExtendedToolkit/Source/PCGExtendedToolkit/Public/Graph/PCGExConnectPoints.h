@@ -17,7 +17,7 @@ class UPCGExProbeOperation;
 /**
  * 
  */
-UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Path")
+UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Clusters")
 class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExConnectPointsSettings : public UPCGExPointsProcessorSettings
 {
 	GENERATED_BODY()
@@ -169,6 +169,7 @@ namespace PCGExConnectPoints
 		virtual bool Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
 		void OnPreparationComplete();
 		virtual void PrepareLoopScopesForPoints(const TArray<uint64>& Loops) override;
+		virtual void PrepareSingleLoopScopeForPoints(const uint32 StartIndex, const int32 Count) override;
 		virtual void ProcessSinglePoint(const int32 Index, FPCGPoint& Point, const int32 LoopIdx, const int32 Count) override;
 		virtual void CompleteWork() override;
 		virtual void Write() override;

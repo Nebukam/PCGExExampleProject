@@ -35,12 +35,42 @@ void UPCGExBoundsFilterFactory::BeginDestroy()
 bool PCGExPointsFilter::TBoundsFilter::Init(const FPCGContext* InContext, const TSharedPtr<PCGExData::FFacade> InPointDataFacade)
 {
 	if (!FFilter::Init(InContext, InPointDataFacade)) { return false; }
-	return Cloud ? true : false;
-}
+	if (!Cloud) { return false; }
 
-bool PCGExPointsFilter::TBoundsFilter::Test(const int32 PointIndex) const
-{
-	return Cloud->ContainsMinusEpsilon(PointDataFacade->Source->GetInPoint(PointIndex).Transform.GetLocation()) ? TypedFilterFactory->Config.bCheckIfInside : !TypedFilterFactory->Config.bCheckIfInside;
+	BoundsTarget = TypedFilterFactory->Config.BoundsTarget;
+
+#define PCGEX_FOREACH_BOUNDTYPE(_NAME)\
+if(TypedFilterFactory->Config.bInvert){\
+	switch (TypedFilterFactory->Config.BoundsSource) { default: \
+	case EPCGExPointBoundsSource::ScaledBounds: BoundCheck = [&](const FPCGPoint& Point) { return !Cloud->_NAME<EPCGExPointBoundsSource::ScaledBounds>(Point); }; break;\
+	case EPCGExPointBoundsSource::DensityBounds: BoundCheck = [&](const FPCGPoint& Point) { return !Cloud->_NAME<EPCGExPointBoundsSource::DensityBounds>(Point); }; break;\
+	case EPCGExPointBoundsSource::Bounds: BoundCheck = [&](const FPCGPoint& Point) { return !Cloud->_NAME<EPCGExPointBoundsSource::Bounds>(Point); }; break;}\
+	}else{\
+	switch (TypedFilterFactory->Config.BoundsSource) { default: \
+	case EPCGExPointBoundsSource::ScaledBounds: BoundCheck = [&](const FPCGPoint& Point) { return Cloud->_NAME<EPCGExPointBoundsSource::ScaledBounds>(Point); }; break;\
+	case EPCGExPointBoundsSource::DensityBounds: BoundCheck = [&](const FPCGPoint& Point) { return Cloud->_NAME<EPCGExPointBoundsSource::DensityBounds>(Point); }; break;\
+	case EPCGExPointBoundsSource::Bounds: BoundCheck = [&](const FPCGPoint& Point) { return Cloud->_NAME<EPCGExPointBoundsSource::Bounds>(Point); }; break;} }
+
+	switch (TypedFilterFactory->Config.CheckType)
+	{
+	default:
+	case EPCGExBoundsCheckType::Intersects:
+		PCGEX_FOREACH_BOUNDTYPE(Intersect)
+		break;
+	case EPCGExBoundsCheckType::IsInside:
+		PCGEX_FOREACH_BOUNDTYPE(IsInside)
+		break;
+	case EPCGExBoundsCheckType::IsInsideOrOn:
+		PCGEX_FOREACH_BOUNDTYPE(IsInsideOrOn)
+		break;
+	case EPCGExBoundsCheckType::IsInsideOrIntersects:
+		PCGEX_FOREACH_BOUNDTYPE(IsInsideOrIntersects)
+		break;
+	}
+
+#undef PCGEX_FOREACH_BOUNDTYPE
+
+	return true;
 }
 
 TArray<FPCGPinProperties> UPCGExBoundsFilterProviderSettings::InputPinProperties() const
@@ -55,7 +85,14 @@ PCGEX_CREATE_FILTER_FACTORY(Bounds)
 #if WITH_EDITOR
 FString UPCGExBoundsFilterProviderSettings::GetDisplayName() const
 {
-	return Config.bCheckIfInside ? TEXT("Inside") : TEXT("Outside");
+	switch (Config.CheckType)
+	{
+	default:
+	case EPCGExBoundsCheckType::Intersects: return TEXT("Intersects");
+	case EPCGExBoundsCheckType::IsInside: return TEXT("Is Inside");
+	case EPCGExBoundsCheckType::IsInsideOrOn: return TEXT("Is Inside or On");
+	case EPCGExBoundsCheckType::IsInsideOrIntersects: return TEXT("Is Inside or Intersects");
+	}
 }
 #endif
 

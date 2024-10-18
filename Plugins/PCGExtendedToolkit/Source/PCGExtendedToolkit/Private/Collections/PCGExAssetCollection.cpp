@@ -9,14 +9,14 @@
 
 namespace PCGExAssetCollection
 {
-	void FCategory::RegisterStaging(const int32 Index, const FPCGExAssetStagingData* InStaging)
+	void FCategory::RegisterEntry(const int32 Index, const FPCGExAssetCollectionEntry* InEntry)
 	{
-		StagingDatas.Add(InStaging);
+		Entries.Add(InEntry);
 
 		Indices.Add(Index);
 
-		Weights.Add(InStaging->Weight);
-		WeightSum += InStaging->Weight;
+		Weights.Add(InEntry->Weight);
+		WeightSum += InEntry->Weight;
 	}
 
 	void FCategory::Compile()
@@ -45,15 +45,7 @@ bool FPCGExAssetCollectionEntry::Validate(const UPCGExAssetCollection* ParentCol
 
 void FPCGExAssetCollectionEntry::UpdateStaging(const UPCGExAssetCollection* OwningCollection, const bool bRecursive)
 {
-	Staging.bIsSubCollection = bIsSubCollection;
-	Staging.Weight = Weight;
-	Staging.Category = Category;
-	Staging.Variations = Variations;
 	if (bIsSubCollection) { Staging.Bounds = FBox(ForceInitToZero); }
-}
-
-void FPCGExAssetCollectionEntry::SetAssetPath(FSoftObjectPath InPath)
-{
 }
 
 void FPCGExAssetCollectionEntry::OnSubCollectionLoaded()
@@ -62,21 +54,21 @@ void FPCGExAssetCollectionEntry::OnSubCollectionLoaded()
 
 namespace PCGExAssetCollection
 {
-	void FCache::RegisterStaging(const int32 Index, const FPCGExAssetStagingData* InStaging)
+	void FCache::RegisterEntry(const int32 Index, const FPCGExAssetCollectionEntry* InEntry)
 	{
 		// Register to main category
-		Main->RegisterStaging(Index, InStaging);
+		Main->RegisterEntry(Index, InEntry);
 
 		// Register to sub categories
-		if (const TSharedPtr<FCategory>* CategoryPtr = Categories.Find(InStaging->Category); !CategoryPtr)
+		if (const TSharedPtr<FCategory>* CategoryPtr = Categories.Find(InEntry->Category); !CategoryPtr)
 		{
-			const TSharedPtr<FCategory> Category = MakeShared<FCategory>(InStaging->Category);
-			Categories.Add(InStaging->Category, Category);
-			Category->RegisterStaging(Index, InStaging);
+			const TSharedPtr<FCategory> Category = MakeShared<FCategory>(InEntry->Category);
+			Categories.Add(InEntry->Category, Category);
+			Category->RegisterEntry(Index, InEntry);
 		}
 		else
 		{
-			(*CategoryPtr)->RegisterStaging(Index, InStaging);
+			(*CategoryPtr)->RegisterEntry(Index, InEntry);
 		}
 	}
 
@@ -146,7 +138,7 @@ void UPCGExAssetCollection::EDITOR_RefreshDisplayNames()
 void UPCGExAssetCollection::EDITOR_RebuildStagingData()
 {
 	Modify(true);
-	RebuildStagingData(false);
+	EDITOR_SanitizeAndRebuildStagingData(false);
 	MarkPackageDirty();
 	//CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS);
 }
@@ -154,7 +146,7 @@ void UPCGExAssetCollection::EDITOR_RebuildStagingData()
 void UPCGExAssetCollection::EDITOR_RebuildStagingData_Recursive()
 {
 	Modify(true);
-	RebuildStagingData(true);
+	EDITOR_SanitizeAndRebuildStagingData(true);
 	MarkPackageDirty();
 	//CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS);
 }
@@ -176,6 +168,10 @@ void UPCGExAssetCollection::EDITOR_RebuildStagingData_Project()
 		if (UPCGExAssetCollection* Collection = Cast<UPCGExAssetCollection>(AssetData.GetAsset())) { Collection->EDITOR_RebuildStagingData(); }
 	}
 }
+
+void UPCGExAssetCollection::EDITOR_SanitizeAndRebuildStagingData(const bool bRecursive)
+{
+}
 #endif
 
 
@@ -190,96 +186,52 @@ void UPCGExAssetCollection::BuildCache()
 	/* per-class implementation, forwards Entries to protected method */
 }
 
-UPCGExAssetCollection* UPCGExAssetCollection::GetCollectionFromAttributeSet(FPCGExContext* InContext, const UPCGParamData* InAttributeSet, const FPCGExAssetAttributeSetDetails& Details, const bool bBuildStaging) const
-{
-	return nullptr;
-}
-
-UPCGExAssetCollection* UPCGExAssetCollection::GetCollectionFromAttributeSet(FPCGExContext* InContext, const FName InputPin, const FPCGExAssetAttributeSetDetails& Details, const bool bBuildStaging) const
-{
-	return nullptr;
-}
-
 void UPCGExAssetCollection::GetAssetPaths(TSet<FSoftObjectPath>& OutPaths, const PCGExAssetCollection::ELoadingFlags Flags) const
 {
 }
 
+
+bool FPCGExRoamingAssetCollectionDetails::Validate(FPCGExContext* InContext) const
+{
+	if (!AssetCollectionType)
+	{
+		PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Collection type is not set."));
+		return false;
+	}
+
+	return true;
+}
+
+UPCGExAssetCollection* FPCGExRoamingAssetCollectionDetails::TryBuildCollection(FPCGExContext* InContext, const UPCGParamData* InAttributeSet, const bool bBuildStaging) const
+{
+	if (!AssetCollectionType) { return nullptr; }
+	UPCGExAssetCollection* Collection = InContext->ManagedObjects->New<UPCGExAssetCollection>(GetTransientPackage(), AssetCollectionType, NAME_None);
+	if (!Collection) { return nullptr; }
+
+	if (!Collection->BuildFromAttributeSet(InContext, InAttributeSet, *this, bBuildStaging))
+	{
+		InContext->ManagedObjects->Destroy(Collection);
+		return nullptr;
+	}
+
+	return Collection;
+}
+
+UPCGExAssetCollection* FPCGExRoamingAssetCollectionDetails::TryBuildCollection(FPCGExContext* InContext, const FName InputPin, const bool bBuildStaging) const
+{
+	if (!AssetCollectionType) { return nullptr; }
+	UPCGExAssetCollection* Collection = InContext->ManagedObjects->New<UPCGExAssetCollection>(GetTransientPackage(), AssetCollectionType, NAME_None);
+	if (!Collection) { return nullptr; }
+
+	if (!Collection->BuildFromAttributeSet(InContext, InputPin, *this, bBuildStaging))
+	{
+		InContext->ManagedObjects->Destroy(Collection);
+		return nullptr;
+	}
+
+	return Collection;
+}
+
 namespace PCGExAssetCollection
 {
-	FDistributionHelper::FDistributionHelper(
-		UPCGExAssetCollection* InCollection,
-		const FPCGExAssetDistributionDetails& InDetails):
-		Collection(InCollection),
-		Details(InDetails)
-	{
-	}
-
-	bool FDistributionHelper::Init(
-		const FPCGContext* InContext,
-		const TSharedRef<PCGExData::FFacade>& InDataFacade)
-	{
-		MaxIndex = Collection->LoadCache()->Main->Order.Num() - 1;
-
-		if (Details.Distribution == EPCGExDistribution::Index)
-		{
-			if (Details.IndexSettings.bRemapIndexToCollectionSize)
-			{
-				// Non-dynamic since we want min-max to start with :(
-				IndexGetter = InDataFacade->GetBroadcaster<int32>(Details.IndexSettings.IndexSource, true);
-				MaxInputIndex = IndexGetter ? static_cast<double>(IndexGetter->Max) : 0;
-			}
-			else
-			{
-				IndexGetter = InDataFacade->GetScopedBroadcaster<int32>(Details.IndexSettings.IndexSource);
-			}
-
-			if (!IndexGetter)
-			{
-				PCGE_LOG_C(Warning, GraphAndLog, InContext, FTEXT("Invalid Index attribute used"));
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	void FDistributionHelper::GetStaging(const FPCGExAssetStagingData*& OutStaging, const int32 PointIndex, const int32 Seed) const
-	{
-		if (Details.Distribution == EPCGExDistribution::WeightedRandom)
-		{
-			Collection->GetStagingWeightedRandom(OutStaging, Seed);
-		}
-		else if (Details.Distribution == EPCGExDistribution::Random)
-		{
-			Collection->GetStagingRandom(OutStaging, Seed);
-		}
-		else
-		{
-			double PickedIndex = IndexGetter->Read(PointIndex);
-			if (Details.IndexSettings.bRemapIndexToCollectionSize)
-			{
-				PickedIndex = MaxInputIndex == 0 ? 0 : PCGExMath::Remap(PickedIndex, 0, MaxInputIndex, 0, MaxIndex);
-				switch (Details.IndexSettings.TruncateRemap)
-				{
-				case EPCGExTruncateMode::Round:
-					PickedIndex = FMath::RoundToInt(PickedIndex);
-					break;
-				case EPCGExTruncateMode::Ceil:
-					PickedIndex = FMath::CeilToDouble(PickedIndex);
-					break;
-				case EPCGExTruncateMode::Floor:
-					PickedIndex = FMath::FloorToDouble(PickedIndex);
-					break;
-				default:
-				case EPCGExTruncateMode::None:
-					break;
-				}
-			}
-
-			Collection->GetStaging(
-				OutStaging,
-				PCGExMath::SanitizeIndex(static_cast<int32>(PickedIndex), MaxIndex, Details.IndexSettings.IndexSafety),
-				Seed, Details.IndexSettings.PickMode);
-		}
-	}
 }

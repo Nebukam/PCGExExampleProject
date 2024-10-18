@@ -21,7 +21,7 @@ namespace PCGExGraph
 
 namespace PCGExCluster
 {
-	struct FCluster;
+	class FCluster;
 }
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Graph Value Source"))
@@ -548,7 +548,7 @@ namespace PCGExGraph
 		void CompileAsync(const TSharedPtr<PCGExMT::FTaskManager>& InAsyncManager, const bool bWriteNodeFacade, FGraphMetadataDetails* MetadataDetails = nullptr);
 		void Compile(const TSharedPtr<PCGExMT::FTaskManager>& InAsyncManager, const bool bWriteNodeFacade, FGraphMetadataDetails* MetadataDetails = nullptr);
 
-		void OutputEdgesToContext() const;
+		void StageEdgesOutputs() const;
 
 		~FGraphBuilder()
 		{

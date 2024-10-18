@@ -28,7 +28,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExEdgeEndpointsCompareStrFilterConfig
 
 	/** Comparison check */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Comparison"))
-	EPCGExStringComparison StringComparison = EPCGExStringComparison::StrictlyEqual;
+	EPCGExStringComparison Comparison = EPCGExStringComparison::StrictlyEqual;
 
 	/** */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
@@ -84,11 +84,13 @@ public:
 	//~Begin UPCGSettings
 #if WITH_EDITOR
 	PCGEX_NODE_INFOS_CUSTOM_SUBTITLE(
-		EdgeEndpointsCompareStrFilterFactory, "Cluster Filter : Neighbors Count (Edge)", "Check against the edge' endpoints neighbor count.",
+		EdgeEndpointsCompareStrFilterFactory, "Cluster Filter : Endpoints Compare (String)", "Compare the value of an attribute on each of the edge endpoint.",
 		PCGEX_FACTORY_NAME_PRIORITY)
 	virtual FLinearColor GetNodeTitleColor() const override { return GetDefault<UPCGExGlobalSettings>()->NodeColorClusterFilter; }
 #endif
 	//~End UPCGSettings
+
+	virtual FName GetMainOutputLabel() const override { return PCGExPointFilter::OutputFilterLabelEdge; }
 
 	/** Test Config.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, ShowOnlyInnerProperties))

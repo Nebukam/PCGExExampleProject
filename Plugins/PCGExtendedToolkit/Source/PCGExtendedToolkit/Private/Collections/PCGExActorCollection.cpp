@@ -29,7 +29,7 @@ void FPCGExActorCollectionEntry::UpdateStaging(const UPCGExAssetCollection* Owni
 	Super::UpdateStaging(OwningCollection, bRecursive);
 }
 
-void FPCGExActorCollectionEntry::SetAssetPath(FSoftObjectPath InPath)
+void FPCGExActorCollectionEntry::SetAssetPath(const FSoftObjectPath& InPath)
 {
 	Actor = TSoftObjectPtr<AActor>(InPath);
 }
@@ -37,12 +37,6 @@ void FPCGExActorCollectionEntry::SetAssetPath(FSoftObjectPath InPath)
 void FPCGExActorCollectionEntry::OnSubCollectionLoaded()
 {
 	SubCollectionPtr = Cast<UPCGExActorCollection>(BaseSubCollectionPtr);
-}
-
-void UPCGExActorCollection::RebuildStagingData(const bool bRecursive)
-{
-	for (FPCGExActorCollectionEntry& Entry : Entries) { Entry.UpdateStaging(this, bRecursive); }
-	Super::RebuildStagingData(bRecursive);
 }
 
 #if WITH_EDITOR
@@ -55,16 +49,6 @@ void UPCGExActorCollection::EDITOR_RefreshDisplayNames()
 	}
 }
 #endif
-
-UPCGExAssetCollection* UPCGExActorCollection::GetCollectionFromAttributeSet(FPCGExContext* InContext, const UPCGParamData* InAttributeSet, const FPCGExAssetAttributeSetDetails& Details, const bool bBuildStaging) const
-{
-	return GetCollectionFromAttributeSetTpl<UPCGExActorCollection>(InContext, InAttributeSet, Details, bBuildStaging);
-}
-
-UPCGExAssetCollection* UPCGExActorCollection::GetCollectionFromAttributeSet(FPCGExContext* InContext, const FName InputPin, const FPCGExAssetAttributeSetDetails& Details, const bool bBuildStaging) const
-{
-	return GetCollectionFromAttributeSetTpl<UPCGExActorCollection>(InContext, InputPin, Details, bBuildStaging);
-}
 
 void UPCGExActorCollection::GetAssetPaths(TSet<FSoftObjectPath>& OutPaths, const PCGExAssetCollection::ELoadingFlags Flags) const
 {
@@ -88,9 +72,4 @@ void UPCGExActorCollection::GetAssetPaths(TSet<FSoftObjectPath>& OutPaths, const
 		if (bCollectionOnly) { continue; }
 		if (!Entry.Actor.Get()) { OutPaths.Add(Entry.Actor.ToSoftObjectPath()); }
 	}
-}
-
-void UPCGExActorCollection::BuildCache()
-{
-	Super::BuildCache(Entries);
 }

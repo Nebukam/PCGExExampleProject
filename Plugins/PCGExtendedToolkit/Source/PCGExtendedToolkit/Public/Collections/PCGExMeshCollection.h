@@ -4,6 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PCGExComponentDescriptors.h"
 #include "PCGExAssetCollection.h"
 #include "Engine/DataAsset.h"
 #include "ISMPartition/ISMComponentDescriptor.h"
@@ -23,7 +24,15 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshCollectionEntry : public FPCGExAsset
 	}
 
 	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides))
-	FSoftISMComponentDescriptor Descriptor;
+	TSoftObjectPtr<UStaticMesh> StaticMesh = nullptr;
+
+	/** Config used when this entry is consumed as an instanced static mesh */
+	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides))
+	FSoftISMComponentDescriptor ISMDescriptor;
+
+	/** Config used when this entry is consumed as a regular static mesh primitive (i.e Spline Mesh)*/
+	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides))
+	FPCGExStaticMeshComponentDescriptor SMDescriptor;
 
 	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="bIsSubCollection", EditConditionHides))
 	TSoftObjectPtr<UPCGExMeshCollection> SubCollection;
@@ -33,7 +42,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshCollectionEntry : public FPCGExAsset
 	bool Matches(const FPCGMeshInstanceList& InstanceList) const
 	{
 		// TODO : This is way too weak
-		return InstanceList.Descriptor.StaticMesh == Descriptor.StaticMesh;
+		return InstanceList.Descriptor.StaticMesh == ISMDescriptor.StaticMesh;
 	}
 
 	bool SameAs(const FPCGExMeshCollectionEntry& Other) const
@@ -42,12 +51,16 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshCollectionEntry : public FPCGExAsset
 			SubCollectionPtr == Other.SubCollectionPtr &&
 			Weight == Other.Weight &&
 			Category == Other.Category &&
-			Descriptor.StaticMesh == Other.Descriptor.StaticMesh;
+			StaticMesh == Other.StaticMesh;
 	}
 
 	virtual bool Validate(const UPCGExAssetCollection* ParentCollection) override;
 	virtual void UpdateStaging(const UPCGExAssetCollection* OwningCollection, const bool bRecursive) override;
-	virtual void SetAssetPath(FSoftObjectPath InPath) override;
+	virtual void SetAssetPath(const FSoftObjectPath& InPath) override;
+
+#if WITH_EDITOR
+	virtual void EDITOR_Sanitize() override;
+#endif
 
 protected:
 	virtual void OnSubCollectionLoaded() override;
@@ -62,37 +75,13 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExMeshCollection : public UPCGExAssetCollec
 	friend class UPCGExMeshSelectorBase;
 
 public:
-	virtual void RebuildStagingData(const bool bRecursive) override;
-
 #if WITH_EDITOR
 	virtual void EDITOR_RefreshDisplayNames() override;
 #endif
 
-	FORCEINLINE virtual bool GetStagingAt(const FPCGExAssetStagingData*& OutStaging, const int32 Index) const override
-	{
-		return GetStagingAtTpl(OutStaging, Entries, Index);
-	}
+	PCGEX_ASSET_COLLECTION_BOILERPLATE(UPCGExMeshCollection, FPCGExMeshCollectionEntry)
 
-	FORCEINLINE virtual bool GetStaging(const FPCGExAssetStagingData*& OutStaging, const int32 Index, const int32 Seed, const EPCGExIndexPickMode PickMode) const override
-	{
-		return GetStagingTpl(OutStaging, Entries, Index, Seed, PickMode);
-	}
-
-	FORCEINLINE virtual bool GetStagingRandom(const FPCGExAssetStagingData*& OutStaging, const int32 Seed) const override
-	{
-		return GetStagingRandomTpl(OutStaging, Entries, Seed);
-	}
-
-	FORCEINLINE virtual bool GetStagingWeightedRandom(const FPCGExAssetStagingData*& OutStaging, const int32 Seed) const override
-	{
-		return GetStagingWeightedRandomTpl(OutStaging, Entries, Seed);
-	}
-
-	virtual UPCGExAssetCollection* GetCollectionFromAttributeSet(FPCGExContext* InContext, const UPCGParamData* InAttributeSet, const FPCGExAssetAttributeSetDetails& Details, const bool bBuildStaging) const override;
-	virtual UPCGExAssetCollection* GetCollectionFromAttributeSet(FPCGExContext* InContext, const FName InputPin, const FPCGExAssetAttributeSetDetails& Details, const bool bBuildStaging) const override;
 	virtual void GetAssetPaths(TSet<FSoftObjectPath>& OutPaths, const PCGExAssetCollection::ELoadingFlags Flags) const override;
-
-	virtual void BuildCache() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta=(TitleProperty="DisplayName"))
 	TArray<FPCGExMeshCollectionEntry> Entries;

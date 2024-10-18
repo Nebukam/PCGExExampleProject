@@ -79,9 +79,10 @@ public:
 	virtual void OnComplete();
 	bool TryComplete(const bool bForce = false);
 
+	virtual void ResumeExecution();
+
 protected:
 	bool bWaitingForAsyncCompletion = false;
-	virtual void ResumeExecution();
 	PCGEx::AsyncState CurrentState;
 
 #pragma endregion
@@ -110,7 +111,13 @@ protected:
 
 #pragma endregion
 
+#pragma region Managed Components
+
 public:
+	void AttachManageComponent(AActor* InParent, USceneComponent* InComponent, const FAttachmentTransformRules& AttachmentRules) const;
+
+#pragma endregion
+
 	bool CanExecute() const;
 	bool CancelExecution(const FString& InReason);
 

@@ -126,6 +126,8 @@ public:
 	virtual FLinearColor GetNodeTitleColor() const override { return GetDefault<UPCGExGlobalSettings>()->NodeColorClusterFilter; }
 #endif
 
+	virtual FName GetMainOutputLabel() const override { return PCGExPointFilter::OutputFilterLabelNode; }
+
 	/** Test Config.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, ShowOnlyInnerProperties))
 	FPCGExNodeEdgeDirectionFilterConfig Config;

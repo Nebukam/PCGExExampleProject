@@ -251,10 +251,11 @@ namespace PCGExPaths
 		bool bSmoothInterpRollScale = true;
 		bool bUseDegrees = true;
 		FVector UpVector = FVector::UpVector;
+		TSet<FName> Tags;
 
 		ESplineMeshAxis::Type SplineMeshAxis = ESplineMeshAxis::Type::X;
 
-		const FPCGExAssetStagingData* AssetStaging = nullptr;
+		const FPCGExMeshCollectionEntry* MeshEntry = nullptr;
 		FSplineMeshParams Params;
 
 		void ApplySettings(USplineMeshComponent* Component) const
@@ -277,7 +278,7 @@ namespace PCGExPaths
 			Component->SetStartOffset(Params.StartOffset, false);
 			Component->SetEndOffset(Params.EndOffset, false);
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION > 3
+#if PCGEX_ENGINE_VERSION > 503
 			Component->SplineParams.NaniteClusterBoundsScale = Params.NaniteClusterBoundsScale;
 #endif
 
@@ -292,7 +293,7 @@ namespace PCGExPaths
 		bool ApplyMesh(USplineMeshComponent* Component) const
 		{
 			check(Component)
-			UStaticMesh* StaticMesh = AssetStaging->TryGet<UStaticMesh>(); //LoadSynchronous<UStaticMesh>();
+			UStaticMesh* StaticMesh = MeshEntry->Staging.TryGet<UStaticMesh>(); //LoadSynchronous<UStaticMesh>();
 
 			if (!StaticMesh) { return false; }
 

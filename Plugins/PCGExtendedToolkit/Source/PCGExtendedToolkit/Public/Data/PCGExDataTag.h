@@ -85,12 +85,28 @@ namespace PCGExData
 			for (const TPair<FString, FString>& Tag : Tags) { InTags.Add((Tag.Key + TagSeparator + Tag.Value)); }
 		}
 
+		void Dump(TArray<FName>& InTags) const
+		{
+			TArray<FName> NameDump = ToFNameList();
+			InTags.Reserve(InTags.Num() + NameDump.Num());
+			InTags.Append(NameDump);
+		}
+
 		TSet<FString> ToSet()
 		{
 			FReadScopeLock ReadScopeLock(TagsLock);
 			TSet<FString> Flattened;
 			Flattened.Append(RawTags);
 			for (const TPair<FString, FString>& Tag : Tags) { Flattened.Add((Tag.Key + TagSeparator + Tag.Value)); }
+			return Flattened;
+		}
+
+		TArray<FName> ToFNameList() const
+		{
+			FReadScopeLock ReadScopeLock(TagsLock);
+			TArray<FName> Flattened;
+			for (const FString& Key : RawTags) { Flattened.Add(FName(Key)); }
+			for (const TPair<FString, FString>& Tag : Tags) { Flattened.Add(FName((Tag.Key + TagSeparator + Tag.Value))); }
 			return Flattened;
 		}
 

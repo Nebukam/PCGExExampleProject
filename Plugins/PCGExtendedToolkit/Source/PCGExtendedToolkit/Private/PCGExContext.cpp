@@ -3,9 +3,12 @@
 
 #include "PCGExContext.h"
 
+#include "PCGComponent.h"
 #include "PCGExMacros.h"
+#include "PCGManagedResource.h"
 #include "Data/PCGSpatialData.h"
 #include "Engine/AssetManager.h"
+#include "Helpers/PCGHelpers.h"
 
 #define LOCTEXT_NAMESPACE "PCGExContext"
 
@@ -221,15 +224,54 @@ void FPCGExContext::LoadAssets()
 
 		if (!LoadHandle || !LoadHandle->IsActive())
 		{
-			// Huh
-			bAssetLoadError = true;
-			CancelExecution("Error loading assets.");
+			UnpauseContext();
+
+			if (!LoadHandle || !LoadHandle->HasLoadCompleted())
+			{
+				bAssetLoadError = true;
+				CancelExecution("Error loading assets.");
+			}
+			else
+			{
+				// Resources were already loaded
+			}
 		}
 	}
 	else
 	{
 		LoadHandle = UAssetManager::GetStreamableManager().RequestSyncLoad(RequiredAssets.Array());
 	}
+}
+
+void FPCGExContext::AttachManageComponent(AActor* InParent, USceneComponent* InComponent, const FAttachmentTransformRules& AttachmentRules) const
+{
+	UPCGComponent* SrcComp = SourceComponent.Get();
+
+	bool bIsPreviewMode = false;
+#if PCGEX_ENGINE_VERSION > 503
+	bIsPreviewMode = SrcComp->IsInPreviewMode();
+#endif
+
+	if (!ManagedObjects->Remove(InComponent))
+	{
+		// If the component is not managed internally, make sure it's cleared
+		InComponent->RemoveFromRoot();
+		InComponent->ClearInternalFlags(EInternalObjectFlags::Async);
+	}
+
+	InComponent->ComponentTags.Reserve(InComponent->ComponentTags.Num() + 2);
+	InComponent->ComponentTags.Add(SrcComp->GetFName());
+	InComponent->ComponentTags.Add(PCGHelpers::DefaultPCGTag);
+
+	UPCGManagedComponent* ManagedComponent = NewObject<UPCGManagedComponent>(SrcComp);
+	ManagedComponent->GeneratedComponent = InComponent;
+	SrcComp->AddToManagedResources(ManagedComponent);
+
+	InParent->Modify(!bIsPreviewMode);
+
+	InComponent->RegisterComponent();
+	InParent->AddInstanceComponent(InComponent);
+	InComponent->AttachToComponent(InParent->GetRootComponent(), AttachmentRules);
 }
 
 bool FPCGExContext::CanExecute() const
@@ -240,7 +282,7 @@ bool FPCGExContext::CanExecute() const
 bool FPCGExContext::CancelExecution(const FString& InReason)
 {
 	bExecutionCancelled = true;
-	UnpauseContext();
+	ResumeExecution();
 	if (!InReason.IsEmpty()) { PCGE_LOG_C(Error, GraphAndLog, this, FTEXT(InReason)); }
 	return true;
 }

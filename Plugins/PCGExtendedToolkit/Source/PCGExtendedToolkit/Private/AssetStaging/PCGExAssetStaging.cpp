@@ -2,8 +2,6 @@
 // Released under the MIT license https://opensource.org/license/MIT/
 
 #include "AssetStaging/PCGExAssetStaging.h"
-#include "Collections/PCGExInternalCollection.h"
-
 
 #define LOCTEXT_NAMESPACE "PCGExAssetStagingElement"
 #define PCGEX_NAMESPACE AssetStaging
@@ -24,29 +22,6 @@ TArray<FPCGPinProperties> UPCGExAssetStagingSettings::InputPinProperties() const
 	return PinProperties;
 }
 
-void FPCGExAssetStagingContext::RegisterAssetDependencies()
-{
-	FPCGExPointsProcessorContext::RegisterAssetDependencies();
-
-	PCGEX_SETTINGS_LOCAL(AssetStaging)
-
-	if (Settings->CollectionSource == EPCGExCollectionSource::Asset)
-	{
-		MainCollection = Settings->AssetCollection.LoadSynchronous();
-		if (MainCollection) { MainCollection->GetAssetPaths(RequiredAssets, PCGExAssetCollection::ELoadingFlags::RecursiveCollectionsOnly); }
-	}
-	else
-	{
-		// Only load assets for internal collections
-		// since we need them for staging
-		MainCollection = GetDefault<UPCGExInternalCollection>()->GetCollectionFromAttributeSet(
-			this, PCGExAssetCollection::SourceAssetCollection,
-			Settings->AttributeSetDetails, false);
-
-		if (MainCollection) { MainCollection->GetAssetPaths(RequiredAssets, PCGExAssetCollection::ELoadingFlags::Recursive); }
-	}
-}
-
 bool FPCGExAssetStagingElement::Boot(FPCGExContext* InContext) const
 {
 	if (!FPCGExPointsProcessorElement::Boot(InContext)) { return false; }
@@ -56,23 +31,22 @@ bool FPCGExAssetStagingElement::Boot(FPCGExContext* InContext) const
 	if (Settings->CollectionSource == EPCGExCollectionSource::Asset)
 	{
 		Context->MainCollection = Settings->AssetCollection.LoadSynchronous();
+		if (!Context->MainCollection)
+		{
+			PCGE_LOG(Error, GraphAndLog, FTEXT("Missing asset collection."));
+			return false;
+		}
 	}
 	else
 	{
-		if (Context->MainCollection)
+		Context->MainCollection = Settings->AttributeSetDetails.TryBuildCollection(Context, PCGExAssetCollection::SourceAssetCollection, false);
+		if (!Context->MainCollection)
 		{
-			// Internal collection, assets have been loaded at this point
-			Context->MainCollection->RebuildStagingData(true);
+			PCGE_LOG(Error, GraphAndLog, FTEXT("Failed to build collection from attribute set."));
+			return false;
 		}
 	}
 
-	if (!Context->MainCollection)
-	{
-		PCGE_LOG(Error, GraphAndLog, FTEXT("Missing asset collection."));
-		return false;
-	}
-
-	Context->MainCollection->LoadCache(); // Make sure to load the stuff
 
 	PCGEX_VALIDATE_NAME(Settings->AssetPathAttributeName)
 
@@ -84,13 +58,52 @@ bool FPCGExAssetStagingElement::Boot(FPCGExContext* InContext) const
 	return true;
 }
 
+
+void FPCGExAssetStagingContext::RegisterAssetDependencies()
+{
+	FPCGExPointsProcessorContext::RegisterAssetDependencies();
+
+	PCGEX_SETTINGS_LOCAL(AssetStaging)
+
+	if (Settings->CollectionSource == EPCGExCollectionSource::AttributeSet)
+	{
+		MainCollection->GetAssetPaths(RequiredAssets, PCGExAssetCollection::ELoadingFlags::Recursive);
+	}
+	else
+	{
+		MainCollection->GetAssetPaths(RequiredAssets, PCGExAssetCollection::ELoadingFlags::RecursiveCollectionsOnly);
+	}
+}
+
+
+void FPCGExAssetStagingElement::PostLoadAssetsDependencies(FPCGExContext* InContext) const
+{
+	FPCGExPointsProcessorElement::PostLoadAssetsDependencies(InContext);
+
+	PCGEX_CONTEXT_AND_SETTINGS(AssetStaging)
+
+	if (Settings->CollectionSource == EPCGExCollectionSource::AttributeSet)
+	{
+		// Internal collection, assets have been loaded at this point
+		Context->MainCollection->RebuildStagingData(true);
+	}
+}
+
+bool FPCGExAssetStagingElement::PostBoot(FPCGExContext* InContext) const
+{
+	PCGEX_CONTEXT_AND_SETTINGS(AssetStaging)
+
+	Context->MainCollection->LoadCache();
+
+	return FPCGExPointsProcessorElement::PostBoot(InContext);
+}
+
 bool FPCGExAssetStagingElement::ExecuteInternal(FPCGContext* InContext) const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FPCGExAssetStagingElement::Execute);
 
 	PCGEX_CONTEXT_AND_SETTINGS(AssetStaging)
 	PCGEX_EXECUTION_CHECK
-
 	PCGEX_ON_INITIAL_EXECUTION
 	{
 		if (!Context->StartBatchProcessingPoints<PCGExPointsMT::TBatch<PCGExAssetStaging::FProcessor>>(
@@ -130,7 +143,7 @@ namespace PCGExAssetStaging
 
 		NumPoints = PointDataFacade->GetNum();
 
-		Helper = MakeUnique<PCGExAssetCollection::FDistributionHelper>(Context->MainCollection, Settings->DistributionSettings);
+		Helper = MakeUnique<PCGExAssetCollection::TDistributionHelper<UPCGExAssetCollection, FPCGExAssetCollectionEntry>>(Context->MainCollection, Settings->DistributionSettings);
 		if (!Helper->Init(ExecutionContext, PointDataFacade)) { return false; }
 
 		bOutputWeight = Settings->WeightToAttribute != EPCGExWeightOutputMode::NoOutput;
@@ -146,7 +159,7 @@ namespace PCGExAssetStaging
 			NormalizedWeightWriter = PointDataFacade->GetWritable<double>(Settings->WeightAttributeName, true);
 		}
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION > 3
+#if PCGEX_ENGINE_VERSION > 503
 		PathWriter = PointDataFacade->GetWritable<FSoftObjectPath>(Settings->AssetPathAttributeName, true);
 #else
 		PathWriter = PointDataFacade->GetWritable<FString>(Settings->AssetPathAttributeName, true);
@@ -173,7 +186,7 @@ namespace PCGExAssetStaging
 				return;
 			}
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION > 3
+#if PCGEX_ENGINE_VERSION > 503
 			PathWriter->GetMutable(Index) = FSoftObjectPath{};
 #else
 			PathWriter->GetMutable(Index) = TEXT("");
@@ -192,15 +205,15 @@ namespace PCGExAssetStaging
 			return;
 		}
 
-		const FPCGExAssetStagingData* StagingData = nullptr;
+		const FPCGExAssetCollectionEntry* Entry = nullptr;
 
 		const int32 Seed = PCGExRandom::GetSeedFromPoint(
 			Helper->Details.SeedComponents, Point,
 			Helper->Details.LocalSeed, Settings, Context->SourceComponent.Get());
 
-		Helper->GetStaging(StagingData, Index, Seed);
+		Helper->GetEntry(Entry, Index, Seed);
 
-		if (!StagingData || !StagingData->Bounds.IsValid)
+		if (!Entry || !Entry->Staging.Bounds.IsValid)
 		{
 			InvalidPoint();
 			return;
@@ -208,28 +221,28 @@ namespace PCGExAssetStaging
 
 		if (bOutputWeight)
 		{
-			double Weight = bNormalizedWeight ? static_cast<double>(StagingData->Weight) / static_cast<double>(Context->MainCollection->LoadCache()->WeightSum) : StagingData->Weight;
+			double Weight = bNormalizedWeight ? static_cast<double>(Entry->Weight) / static_cast<double>(Context->MainCollection->LoadCache()->WeightSum) : Entry->Weight;
 			if (bOneMinusWeight) { Weight = 1 - Weight; }
 			if (WeightWriter) { WeightWriter->GetMutable(Index) = Weight; }
 			else if (NormalizedWeightWriter) { NormalizedWeightWriter->GetMutable(Index) = Weight; }
 			else { Point.Density = Weight; }
 		}
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION > 3
-		PathWriter->GetMutable(Index) = StagingData->Path;
+#if PCGEX_ENGINE_VERSION > 503
+		PathWriter->GetMutable(Index) = Entry->Staging.Path;
 #else
-		PathWriter->GetMutable(Index) = StagingData->Path.ToString();
+		PathWriter->GetMutable(Index) = Entry->Staging.Path.ToString();
 #endif
 
 
-		if (Variations.bEnabledBefore) { Variations.Apply(Point, StagingData->Variations, EPCGExVariationMode::Before); }
+		if (Variations.bEnabledBefore) { Variations.Apply(Point, Entry->Variations, EPCGExVariationMode::Before); }
 
-		const FBox& StBox = StagingData->Bounds;
+		const FBox& StBox = Entry->Staging.Bounds;
 		FVector OutScale = Point.Transform.GetScale3D();
 		const FBox InBounds = FBox(Point.BoundsMin * OutScale, Point.BoundsMax * OutScale);
 		FBox OutBounds = StBox;
 
-		Settings->ScaleToFit.Process(Point, StagingData->Bounds, OutScale, OutBounds);
+		Settings->ScaleToFit.Process(Point, Entry->Staging.Bounds, OutScale, OutBounds);
 
 		Point.BoundsMin = OutBounds.Min;
 		Point.BoundsMax = OutBounds.Max;
@@ -242,7 +255,7 @@ namespace PCGExAssetStaging
 		Point.Transform.AddToTranslation(Point.Transform.GetRotation().RotateVector(OutTranslation));
 		Point.Transform.SetScale3D(OutScale);
 
-		if (Variations.bEnabledAfter) { Variations.Apply(Point, StagingData->Variations, EPCGExVariationMode::After); }
+		if (Variations.bEnabledAfter) { Variations.Apply(Point, Entry->Variations, EPCGExVariationMode::After); }
 	}
 
 	void FProcessor::CompleteWork()
