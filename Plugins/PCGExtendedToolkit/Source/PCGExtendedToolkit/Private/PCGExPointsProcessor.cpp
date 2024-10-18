@@ -182,7 +182,7 @@ bool FPCGExPointsProcessorElement::PrepareDataInternal(FPCGContext* InContext) c
 	{
 		if (!Boot(Context))
 		{
-			DisabledPassThroughData(Context); // Not sure it's a good thing?
+			Context->OutputData.TaggedData.Empty(); // Ensure culling of subsequent nodes if boot fails
 			return Context->CancelExecution(TEXT(""));
 		}
 
