@@ -8,7 +8,7 @@
 
  > This project is currently WIP, come back regularily for updates!
 
-![image](https://github.com/user-attachments/assets/e85deca5-9496-4c5e-a3d1-717e436a199b)
+![image](https://github.com/user-attachments/assets/78a15eab-91aa-45bf-b24a-105fd578eefa)
 
 ## Important notes
 - #### The included PCGExtendedToolkit is the latest package published for 5.4.
