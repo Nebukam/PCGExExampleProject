@@ -165,7 +165,7 @@ namespace PCGExGeo
 
 	struct /*PCGEXTENDEDTOOLKIT_API*/ FPointBox
 	{
-		FTransform Transform;
+		FMatrix Matrix;
 		FMatrix InvMatrix;
 		FBoxSphereBounds Sphere;
 		FVector Extents;
@@ -175,8 +175,8 @@ namespace PCGExGeo
 		int32 Index;
 
 		explicit FPointBox(const FPCGPoint& InPoint, const int32 InIndex, const EPCGExPointBoundsSource BoundsSource, double Epsilon = DBL_EPSILON):
-			Transform(FTransform(InPoint.Transform.GetRotation(), InPoint.Transform.GetLocation(), FVector::One())),
-			InvMatrix(Transform.Inverse().ToMatrixNoScale()),
+			Matrix(InPoint.Transform.ToMatrixNoScale()),
+			InvMatrix(Matrix.Inverse()),
 			Index(InIndex)
 		{
 			const FBox PointBox = PCGExMath::GetLocalBounds(InPoint, BoundsSource);
@@ -186,13 +186,13 @@ namespace PCGExGeo
 			Box = FBox(Extents * -1, Extents);
 
 			EpsilonBox = Box.ExpandBy(-Epsilon);
-			Sphere = FBoxSphereBounds(Transform.GetLocation(), FVector(Len), Len);
+			Sphere = FBoxSphereBounds(InPoint.Transform.GetLocation(), FVector(Len), Len);
 		}
 
 #pragma region Position checks
 
-		FORCEINLINE bool IsInside(const FVector& Position) const { return Box.IsInside(Transform.InverseTransformPosition(Position)); }
-		FORCEINLINE bool IsInsideMinusEpsilon(const FVector& Position) const { return EpsilonBox.IsInside(Transform.InverseTransformPosition(Position)); }
+		FORCEINLINE bool IsInside(const FVector& Position) const { return Box.IsInside(Matrix.InverseTransformPosition(Position)); }
+		FORCEINLINE bool IsInsideMinusEpsilon(const FVector& Position) const { return EpsilonBox.IsInside(Matrix.InverseTransformPosition(Position)); }
 
 #pragma endregion
 
@@ -216,13 +216,21 @@ namespace PCGExGeo
 		FORCEINLINE bool IsInsideOrOn(const FPCGPoint& Point, const EPCGExPointBoundsSource BoundsSource) const
 		{
 			PCGEX_TRANSFORM_LOCALBOUNDS
+#if PCGEX_ENGINE_VERSION <= 503
+			return Box.IsInside(LocalBox);
+#else
 			return Box.IsInsideOrOn(LocalBox);
+#endif
 		}
 
 		FORCEINLINE bool IsInsideOrIntersects(const FPCGPoint& Point, const EPCGExPointBoundsSource BoundsSource) const
 		{
 			PCGEX_TRANSFORM_LOCALBOUNDS
+#if PCGEX_ENGINE_VERSION <= 503
+			return Box.IsInside(LocalBox) || Box.Intersect(LocalBox);
+#else
 			return Box.IsInsideOrOn(LocalBox) || Box.Intersect(LocalBox);
+#endif
 		}
 
 		template <EPCGExPointBoundsSource S = EPCGExPointBoundsSource::ScaledBounds>
@@ -243,14 +251,22 @@ namespace PCGExGeo
 		FORCEINLINE bool IsInsideOrOn(const FPCGPoint& Point) const
 		{
 			PCGEX_TRANSFORM_LOCALBOUNDS_T
+#if PCGEX_ENGINE_VERSION <= 503
+			return Box.IsInside(LocalBox);
+#else
 			return Box.IsInsideOrOn(LocalBox);
+#endif
 		}
 
 		template <EPCGExPointBoundsSource S = EPCGExPointBoundsSource::ScaledBounds>
 		FORCEINLINE bool IsInsideOrIntersects(const FPCGPoint& Point) const
 		{
 			PCGEX_TRANSFORM_LOCALBOUNDS_T
+#if PCGEX_ENGINE_VERSION <= 503
+			return Box.IsInside(LocalBox) || Box.Intersect(LocalBox);
+#else
 			return Box.IsInsideOrOn(LocalBox) || Box.Intersect(LocalBox);
+#endif
 		}
 
 #undef PCGEX_TRANSFORM_LOCALBOUNDS
@@ -260,7 +276,7 @@ namespace PCGExGeo
 
 		FORCEINLINE void Sample(const FVector& Position, FSample& OutSample) const
 		{
-			const FVector LocalPosition = Transform.InverseTransformPosition(Position);
+			const FVector LocalPosition = Matrix.InverseTransformPosition(Position);
 			OutSample.bIsInside = Box.IsInside(LocalPosition);
 			OutSample.Distances = LocalPosition;
 			OutSample.BoxIndex = Index;
@@ -311,8 +327,8 @@ namespace PCGExGeo
 			FVector& OutHitNormal2,
 			bool& bInverseDir) const
 		{
-			const FVector LocalStart = Transform.InverseTransformPosition(Start);
-			const FVector LocalEnd = Transform.InverseTransformPosition(End);
+			const FVector LocalStart = Matrix.InverseTransformPosition(Start);
+			const FVector LocalEnd = Matrix.InverseTransformPosition(End);
 
 			const bool bIsStartInside = Box.IsInside(LocalStart);
 			const bool bIsEndInside = Box.IsInside(LocalEnd);
@@ -332,8 +348,8 @@ namespace PCGExGeo
 			{
 				if (FMath::LineExtentBoxIntersection(Box, LocalStart, LocalEnd, FVector::ZeroVector, HitLocation, HitNormal, HitTime))
 				{
-					OutIntersection1 = Transform.TransformPosition(HitLocation);
-					OutHitNormal1 = Transform.TransformVector(HitNormal);
+					OutIntersection1 = Matrix.TransformPosition(HitLocation);
+					OutHitNormal1 = Matrix.TransformVector(HitNormal);
 					return OutIntersection1 != Start && OutIntersection1 != End;
 				}
 
@@ -344,8 +360,8 @@ namespace PCGExGeo
 			{
 				if (FMath::LineExtentBoxIntersection(Box, LocalEnd, LocalStart, FVector::ZeroVector, HitLocation, HitNormal, HitTime))
 				{
-					OutIntersection1 = Transform.TransformPosition(HitLocation);
-					OutHitNormal1 = Transform.TransformVector(HitNormal);
+					OutIntersection1 = Matrix.TransformPosition(HitLocation);
+					OutHitNormal1 = Matrix.TransformVector(HitNormal);
 					bInverseDir = true;
 					return OutIntersection1 != Start && OutIntersection1 != End;
 				}
@@ -355,8 +371,8 @@ namespace PCGExGeo
 
 			if (FMath::LineExtentBoxIntersection(Box, LocalStart, LocalEnd, FVector::ZeroVector, HitLocation, HitNormal, HitTime))
 			{
-				OutIntersection1 = Transform.TransformPosition(HitLocation);
-				OutHitNormal1 = Transform.TransformVector(HitNormal);
+				OutIntersection1 = Matrix.TransformPosition(HitLocation);
+				OutHitNormal1 = Matrix.TransformVector(HitNormal);
 				bHasValidIntersection = OutIntersection1 != Start && OutIntersection1 != End;
 			}
 
@@ -364,15 +380,15 @@ namespace PCGExGeo
 			{
 				if (!bHasValidIntersection)
 				{
-					OutIntersection1 = Transform.TransformPosition(HitLocation);
-					OutHitNormal1 = Transform.TransformVector(HitNormal);
+					OutIntersection1 = Matrix.TransformPosition(HitLocation);
+					OutHitNormal1 = Matrix.TransformVector(HitNormal);
 					bInverseDir = true;
 					bHasValidIntersection = OutIntersection1 != Start && OutIntersection1 != End;
 				}
 				else
 				{
-					OutIntersection2 = Transform.TransformPosition(HitLocation);
-					OutHitNormal2 = Transform.TransformVector(HitNormal);
+					OutIntersection2 = Matrix.TransformPosition(HitLocation);
+					OutHitNormal2 = Matrix.TransformVector(HitNormal);
 					bIsI2Valid = OutIntersection1 != OutIntersection2 && (OutIntersection2 != Start && OutIntersection2 != End);
 				}
 
@@ -436,7 +452,7 @@ namespace PCGExGeo
 			for (int i = 0; i < Points.Num(); i++)
 			{
 				TSharedPtr<FPointBox> NewPointBox = MakeShared<FPointBox>(Points[i], i, BoundsSource, Epsilon);
-				CloudBounds += NewPointBox->Box.TransformBy(NewPointBox->Transform);
+				CloudBounds += NewPointBox->Box.TransformBy(NewPointBox->Matrix);
 				Boxes[i] = NewPointBox;
 				Octree->AddElement(NewPointBox.Get());
 			}

@@ -25,7 +25,7 @@ namespace PCGExCluster
 }
 
 UENUM(BlueprintType, meta=(DisplayName="[PCGEx] Graph Value Source"))
-enum class EPCGExGraphValueSource : uint8
+enum class EPCGExClusterComponentSource : uint8
 {
 	Vtx  = 0 UMETA(DisplayName = "Point", Tooltip="Value is fetched from the point being evaluated."),
 	Edge = 1 UMETA(DisplayName = "Edge", Tooltip="Value is fetched from the edge connecting to the point being evaluated."),
@@ -521,6 +521,7 @@ namespace PCGExGraph
 
 		TSharedPtr<PCGExData::FPointIOCollection> EdgesIO;
 		TSharedPtr<PCGExData::FPointIOCollection> SourceEdgesIO;
+		TSharedPtr<TArray<int32>> OutputNodeIndices;
 
 		bool bCompiledSuccessfully = false;
 

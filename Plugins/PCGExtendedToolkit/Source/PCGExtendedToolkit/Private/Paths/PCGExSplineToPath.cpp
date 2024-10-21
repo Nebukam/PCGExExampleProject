@@ -30,6 +30,8 @@ bool FPCGExSplineToPathElement::Boot(FPCGExContext* InContext) const
 	PCGEX_FWD(TagForwarding)
 	Context->TagForwarding.Init();
 
+	Context->MainPoints = MakeShared<PCGExData::FPointIOCollection>(Context);
+	Context->MainPoints->DefaultOutputLabel = Settings->GetMainOutputLabel();
 
 	auto AddTags = [&](const TSet<FString>& SourceTags)
 	{
@@ -186,8 +188,8 @@ namespace PCGExSplineToPath
 
 			PCGEX_OUTPUT_VALUE(LengthAtPoint, LastIndex, TotalLength);
 			PCGEX_OUTPUT_VALUE(Alpha, LastIndex, 1);
-			PCGEX_OUTPUT_VALUE(ArriveTangent, LastIndex, Spline.SplineCurves.Position.Points[NumSegments+1].ArriveTangent);
-			PCGEX_OUTPUT_VALUE(LeaveTangent, LastIndex, Spline.SplineCurves.Position.Points[NumSegments+1].LeaveTangent);
+			PCGEX_OUTPUT_VALUE(ArriveTangent, LastIndex, Spline.SplineCurves.Position.Points[NumSegments].ArriveTangent);
+			PCGEX_OUTPUT_VALUE(LeaveTangent, LastIndex, Spline.SplineCurves.Position.Points[NumSegments].LeaveTangent);
 		}
 
 		PointDataFacade->Write(AsyncManager);
