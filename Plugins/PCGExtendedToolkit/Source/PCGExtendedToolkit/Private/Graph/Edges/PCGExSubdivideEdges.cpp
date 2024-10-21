@@ -5,6 +5,7 @@
 
 
 #include "Graph/Edges/Relaxing/PCGExRelaxClusterOperation.h"
+#include "Graph/Filters/PCGExClusterFilter.h"
 
 #define LOCTEXT_NAMESPACE "PCGExSubdivideEdges"
 #define PCGEX_NAMESPACE SubdivideEdges
@@ -21,6 +22,10 @@ bool FPCGExSubdivideEdgesElement::Boot(FPCGExContext* InContext) const
 
 	PCGEX_CONTEXT_AND_SETTINGS(SubdivideEdges)
 
+	if (Settings->bFlagSubVtx) { PCGEX_VALIDATE_NAME(Settings->SubVtxFlagName) }
+	if (Settings->bFlagSubEdge) { PCGEX_VALIDATE_NAME(Settings->SubEdgeFlagName) }
+	if (Settings->bWriteVtxAlpha) { PCGEX_VALIDATE_NAME(Settings->VtxAlphaAttributeName) }
+	
 	PCGEX_OPERATION_BIND(Blending, UPCGExSubPointsBlendOperation)
 
 	return true;
@@ -104,7 +109,6 @@ namespace PCGExSubdivideEdges
 		// - Edge end test
 		// - Edge itself test
 
-
 		Sub.Start = Cluster->GetPos(StartNode);
 		Sub.End = Cluster->GetPos(EndNode);
 		Sub.Dist = FVector::Distance(Sub.Start, Sub.End);
@@ -122,6 +126,10 @@ namespace PCGExSubdivideEdges
 	void FProcessorBatch::GatherRequiredVtxAttributes(PCGExData::FReadableBufferConfigList& ReadableBufferConfigList)
 	{
 		TBatchWithGraphBuilder<FProcessor>::GatherRequiredVtxAttributes(ReadableBufferConfigList);
+
+		PCGEX_TYPED_CONTEXT_AND_SETTINGS(SubdivideEdges)
+		
+		PCGExClusterFilter::GatherRequiredVtxAttributes(ExecutionContext, Context->FilterFactories, ReadableBufferConfigList);
 		DirectionSettings.GatherRequiredVtxAttributes(ExecutionContext, ReadableBufferConfigList);
 	}
 
