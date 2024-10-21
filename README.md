@@ -13,6 +13,35 @@
 ## Content Structure
 1. **Categories** is more of an invidual features showcase, that more-or-less match the documentation' structure.
 2. **Examples** are more involved use-cases, showcasing more complex synergies and useful node combinations.
+```
+Content  
+|----- Categories  
+|   ├── Clusters  
+|   |  ├── Connect Points  
+|   |  ├── Custom Graph  
+|   |  ├── Diagrams  
+|   |  ├── Edge Refinement  
+|   |  ├── Fusing  
+|   |  ├── Hulls  
+|   |  ├── Misc  
+|   |  └── States  
+|   └── Staging  
+|   ├── Filter Ecosystem
+|   ├── Misc
+|   ├── Pathfinding
+|   |  ├── Contours
+|   |  ├── External Goal
+|   |  ├── Heuristics
+|   |  ├── Misc
+|   |  └── Plotting
+|   ├── Paths
+|   ├── Sampling
+|   └── Staging
+|----- Examples
+|   ├── Blob Contours
+|   ├── Mini City
+|   └── Mini Dungeon
+```
 
 ## Important notes
 - #### The included PCGExtendedToolkit version is usually the most up-to-date branch, the available release is a few update behind.
