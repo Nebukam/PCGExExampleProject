@@ -4,6 +4,7 @@
 #include "Paths/PCGExSplineToPath.h"
 
 #include "VectorTypes.h"
+#include "Misc/PCGExRefreshSeed.h"
 #include "Sampling/PCGExSampleNearestSpline.h"
 
 #define LOCTEXT_NAMESPACE "PCGExSplineToPathElement"
@@ -145,6 +146,7 @@ namespace PCGExSplineToPath
 
 		auto ApplyTransform = [&](FPCGPoint& Point, const FTransform& Transform)
 		{
+			
 			if (Settings->TransformDetails.bInheritRotation && Settings->TransformDetails.bInheritScale)
 			{
 				Point.Transform = Transform;
@@ -163,6 +165,8 @@ namespace PCGExSplineToPath
 			{
 				Point.Transform.SetLocation(Transform.GetLocation());
 			}
+
+			Point.Seed = PCGExRandom::ComputeSeed(Point);
 		};
 
 		for (int i = 0; i < NumSegments; i++)
