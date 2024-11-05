@@ -26,7 +26,7 @@
 #### Plot pipe pathfinding
 ![image](https://github.com/user-attachments/assets/27118da4-f05c-46e4-9ab0-7c52f431f1f8)
 
-#### Finding cluster & blob contour
+#### Blob perimeter
 ![image](https://github.com/user-attachments/assets/6768e62a-f845-4e30-b903-18a3b6e0f10a)  
 
 #### Mini City layout
