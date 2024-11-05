@@ -8,7 +8,8 @@
 
  > This project is always being updated, come back regularily!
 
-![image](https://github.com/user-attachments/assets/4301827d-5099-47e5-b7a3-3653e70481e4)
+![image](https://github.com/user-attachments/assets/426a1f07-28de-4f8a-ad46-58a210af1b95)
+
 
 
 ## Content Structure
