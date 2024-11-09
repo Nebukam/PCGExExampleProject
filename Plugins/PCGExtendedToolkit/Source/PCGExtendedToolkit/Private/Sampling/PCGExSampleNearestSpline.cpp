@@ -3,7 +3,7 @@
 
 #include "Sampling/PCGExSampleNearestSpline.h"
 
-/*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
+///*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
 #define LOCTEXT_NAMESPACE "PCGExSampleNearestSplineElement"
 #define PCGEX_NAMESPACE SampleNearestPolyLine
 
@@ -22,7 +22,7 @@ TArray<FPCGPinProperties> UPCGExSampleNearestSplineSettings::InputPinProperties(
 	return PinProperties;
 }
 
-PCGExData::EInit UPCGExSampleNearestSplineSettings::GetMainOutputInitMode() const { return PCGExData::EInit::DuplicateInput; }
+PCGExData::EIOInit UPCGExSampleNearestSplineSettings::GetMainOutputInitMode() const { return PCGExData::EIOInit::DuplicateInput; }
 
 int32 UPCGExSampleNearestSplineSettings::GetPreferredChunkSize() const { return PCGExMT::GAsyncLoop_L; }
 

@@ -3,7 +3,7 @@
 
 #include "Sampling/PCGExSampleNearestSurface.h"
 
-/*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
+///*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
 
 #if PCGEX_ENGINE_VERSION > 503
 #include "Engine/OverlapResult.h"
@@ -19,7 +19,7 @@ TArray<FPCGPinProperties> UPCGExSampleNearestSurfaceSettings::InputPinProperties
 	return PinProperties;
 }
 
-PCGExData::EInit UPCGExSampleNearestSurfaceSettings::GetMainOutputInitMode() const { return PCGExData::EInit::DuplicateInput; }
+PCGExData::EIOInit UPCGExSampleNearestSurfaceSettings::GetMainOutputInitMode() const { return PCGExData::EIOInit::DuplicateInput; }
 
 int32 UPCGExSampleNearestSurfaceSettings::GetPreferredChunkSize() const { return PCGExMT::GAsyncLoop_L; }
 

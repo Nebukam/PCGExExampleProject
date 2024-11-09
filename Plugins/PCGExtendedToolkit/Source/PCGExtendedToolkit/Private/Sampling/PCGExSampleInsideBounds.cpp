@@ -3,7 +3,7 @@
 
 #include "Sampling/PCGExSampleInsideBounds.h"
 
-/*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
+///*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
 #include "PCGExPointsProcessor.h"
 #include "Data/Blending/PCGExMetadataBlender.h"
 
@@ -30,7 +30,7 @@ TArray<FPCGPinProperties> UPCGExSampleInsideBoundsSettings::InputPinProperties()
 	return PinProperties;
 }
 
-PCGExData::EInit UPCGExSampleInsideBoundsSettings::GetMainOutputInitMode() const { return PCGExData::EInit::DuplicateInput; }
+PCGExData::EIOInit UPCGExSampleInsideBoundsSettings::GetMainOutputInitMode() const { return PCGExData::EIOInit::DuplicateInput; }
 
 int32 UPCGExSampleInsideBoundsSettings::GetPreferredChunkSize() const { return PCGExMT::GAsyncLoop_L; }
 
