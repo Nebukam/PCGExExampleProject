@@ -3,7 +3,7 @@
 
 #include "Sampling/PCGExSampleInsideBounds.h"
 
-/*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
+///*BUILD_TOOL_BUG_55_TOGGLE*/#include "CoreMinimal.h"
 #include "PCGExPointsProcessor.h"
 #include "Data/Blending/PCGExMetadataBlender.h"
 
@@ -66,7 +66,7 @@ bool FPCGExSampleInsideBoundsElement::Boot(FPCGExContext* InContext) const
 	}
 
 	Context->DistanceDetails = Settings->DistanceDetails.MakeDistances();
-	
+
 	Context->TargetPoints = &Context->TargetsFacade->Source->GetIn()->GetPoints();
 
 	Context->NumTargets = Context->TargetPoints->Num();
