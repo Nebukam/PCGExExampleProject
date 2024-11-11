@@ -7,7 +7,17 @@
 #define LOCTEXT_NAMESPACE "PCGExReversePointOrderElement"
 #define PCGEX_NAMESPACE ReversePointOrder
 
-PCGExData::EIOInit UPCGExReversePointOrderSettings::GetMainOutputInitMode() const { return PCGExData::EIOInit::DuplicateInput; }
+PCGExData::EIOInit UPCGExReversePointOrderSettings::GetMainOutputInitMode() const { return PCGExData::EIOInit::NoOutput; }
+
+TArray<FPCGPinProperties> UPCGExReversePointOrderSettings::InputPinProperties() const
+{
+	TArray<FPCGPinProperties> PinProperties = Super::InputPinProperties();
+	if (bReverseUsingSortingRules)
+	{
+		PCGEX_PIN_PARAMS(PCGExSorting::SourceSortingRules, "Plug sorting rules here. Order is defined by each rule' priority value, in ascending order.", Required, {})
+	}
+	return PinProperties;
+}
 
 PCGEX_INITIALIZE_ELEMENT(ReversePointOrder)
 
@@ -52,11 +62,42 @@ bool FPCGExReversePointOrderElement::ExecuteInternal(FPCGContext* InContext) con
 
 namespace PCGExReversePointOrder
 {
+	void FProcessor::RegisterBuffersDependencies(PCGExData::FFacadePreloader& FacadePreloader)
+	{
+		TPointsProcessor<FPCGExReversePointOrderContext, UPCGExReversePointOrderSettings>::RegisterBuffersDependencies(FacadePreloader);
+		if (Settings->bReverseUsingSortingRules)
+		{
+			Sorter = MakeShared<PCGExSorting::PointSorter<false, true>>(Context, PointDataFacade, PCGExSorting::GetSortingRules(Context, PCGExSorting::SourceSortingRules));
+			Sorter->SortDirection = Settings->SortDirection;
+			Sorter->RegisterBuffersDependencies(FacadePreloader);
+		}
+	}
+
 	bool FProcessor::Process(const TSharedPtr<PCGExMT::FTaskManager> InAsyncManager)
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(PCGExWriteIndex::Process);
 
 		if (!FPointsProcessor::Process(InAsyncManager)) { return false; }
+
+		if (Sorter)
+		{
+			if (!Sorter->Init())
+			{
+				PCGE_LOG_C(Warning, GraphAndLog, Context, FTEXT("Some sorting rules could not be processed."));
+				bReversed = false;
+				PointDataFacade->Source->InitializeOutput(PCGExData::EIOInit::Forward);
+				return false;
+			}
+
+			if (!Sorter->Sort(0, PointDataFacade->GetNum() - 1))
+			{
+				bReversed = false;
+				PointDataFacade->Source->InitializeOutput(PCGExData::EIOInit::Forward);
+				return true;
+			}
+		}
+
+		PointDataFacade->Source->InitializeOutput(PCGExData::EIOInit::DuplicateInput);
 
 		TArray<FPCGPoint>& MutablePoints = PointDataFacade->GetOut()->GetMutablePoints();
 		Algo::Reverse(MutablePoints);
@@ -139,7 +180,15 @@ namespace PCGExReversePointOrder
 
 	void FProcessor::CompleteWork()
 	{
-		PointDataFacade->Write(AsyncManager);
+		if (bReversed)
+		{
+			PointDataFacade->Write(AsyncManager);
+			if (Settings->bTagIfReversed) { PointDataFacade->Source->Tags->Add(Settings->IsReversedTag); }
+		}
+		else
+		{
+			if (Settings->bTagIfNotReversed) { PointDataFacade->Source->Tags->Add(Settings->IsNotReversedTag); }
+		}
 	}
 }
 
