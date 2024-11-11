@@ -130,7 +130,6 @@ namespace PCGExReversePointOrder
 	class FProcessor final : public PCGExPointsMT::TPointsProcessor<FPCGExReversePointOrderContext, UPCGExReversePointOrderSettings>
 	{
 		TArray<FPCGExSwapAttributePairDetails> SwapPairs;
-		TSharedPtr<PCGEx::FAttributesInfos> AttributesInfos;
 		TSharedPtr<PCGExSorting::PointSorter<false, true>> Sorter;
 
 		bool bReversed = true;
