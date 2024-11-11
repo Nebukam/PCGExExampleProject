@@ -118,7 +118,7 @@ namespace PCGExPointsFilter
 			double ClosestDist = MAX_dbl;
 			for (const FPCGSplineStruct* Spline : Splines)
 			{
-				const FTransform T = Spline->GetTransformAtSplineInputKey(Spline->FindInputKeyClosestToWorldLocation(Pos), ESplineCoordinateSpace::World, TypedFilterFactory->Config.bSplineScaleTolerance);
+				const FTransform T = Spline->GetTransformAtSplineInputKey(Spline->FindInputKeyClosestToWorldLocation(Pos), ESplineCoordinateSpace::World, TypedFilterFactory->Config.bSplineScalesTolerance);
 				const double D = FVector::DistSquared(T.GetLocation(), Pos);
 
 				if (D > ClosestDist) { continue; }
@@ -142,7 +142,7 @@ namespace PCGExPointsFilter
 		{
 			for (const FPCGSplineStruct* Spline : Splines)
 			{
-				const FTransform T = Spline->GetTransformAtSplineInputKey(Spline->FindInputKeyClosestToWorldLocation(Pos), ESplineCoordinateSpace::World, TypedFilterFactory->Config.bSplineScaleTolerance);
+				const FTransform T = Spline->GetTransformAtSplineInputKey(Spline->FindInputKeyClosestToWorldLocation(Pos), ESplineCoordinateSpace::World, TypedFilterFactory->Config.bSplineScalesTolerance);
 				if (const FVector S = T.GetScale3D(); FVector::DistSquared(T.GetLocation(), Pos) < FVector2D(S.Y, S.Z).Length() * ToleranceSquared) { State |= On; }
 				if (FVector::DotProduct(T.GetRotation().GetRightVector(), (T.GetLocation() - Pos).GetSafeNormal()) > 0) { State |= Inside; }
 				else { State |= Outside; }

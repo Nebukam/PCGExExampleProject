@@ -62,7 +62,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSplineFilterConfig
 
 	/** Scale the tolerance with spline' "thickness" (Scale' length)  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
-	bool bSplineScaleTolerance = false;
+	bool bSplineScalesTolerance = false;
 
 	/** If enabled, invert the result of the test */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
