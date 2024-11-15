@@ -249,7 +249,7 @@ namespace PCGExPathCrossings
 		}
 
 		for (const TSharedPtr<PCGExPointsMT::FPointsProcessorBatchBase> Parent = ParentBatch.Pin();
-		     const TSharedPtr<PCGExData::FFacade> Facade : Parent->ProcessorFacades)
+		     const TSharedRef<PCGExData::FFacade>& Facade : Parent->ProcessorFacades)
 		{
 			const TSharedRef<FPointsProcessor>* OtherProcessorPtr = Parent->SubProcessorMap->Find(&Facade->Source.Get());
 			if (!OtherProcessorPtr) { continue; }
@@ -428,7 +428,7 @@ namespace PCGExPathCrossings
 		PCGEx::ArrayOfIndices(Order, NumCrossings);
 		Order.Sort([&](const int32 A, const int32 B) { return Crossing->Alphas[A] < Crossing->Alphas[B]; });
 
-		const TUniquePtr<PCGExData::FUnionData> Union = MakeUnique<PCGExData::FUnionData>();
+		const TSharedPtr<PCGExData::FUnionData> Union = MakeShared<PCGExData::FUnionData>();
 		for (int i = 0; i < NumCrossings; i++)
 		{
 			uint32 PtIdx;
@@ -440,7 +440,7 @@ namespace PCGExPathCrossings
 			Union->Reset();
 			Union->Add(IOIdx, PtIdx);
 			Union->Add(IOIdx, SecondIndex);
-			UnionBlender->SoftMergeSingle(Edge.AltStart + i + 1, Union.Get(), Context->Distances);
+			UnionBlender->SoftMergeSingle(Edge.AltStart + i + 1, Union, Context->Distances);
 		}
 	}
 
@@ -453,7 +453,7 @@ namespace PCGExPathCrossings
 	{
 		UnionMetadata = MakeShared<PCGExData::FUnionMetadata>();
 		UnionBlender = MakeShared<PCGExDataBlending::FUnionBlender>(&Settings->CrossingBlending, &Settings->CrossingCarryOver);
-		for (const TSharedPtr<PCGExData::FPointIO> IO : Context->MainPoints->Pairs)
+		for (const TSharedPtr<PCGExData::FPointIO>& IO : Context->MainPoints->Pairs)
 		{
 			if (IO && CrossIOIndices.Contains(IO->IOIndex)) { UnionBlender->AddSource(Context->SubProcessorMap[IO.Get()]->PointDataFacade, &ProtectedAttributes); }
 		}
