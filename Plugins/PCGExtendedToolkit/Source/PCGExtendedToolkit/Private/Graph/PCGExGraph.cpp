@@ -227,7 +227,7 @@ MACRO(EdgeUnionSize, int32, 0, UnionSize)
 	bool FGraph::InsertEdgeUnsafe(const int32 A, const int32 B, FEdge& OutEdge, const int32 IOIndex)
 	{
 		check(A != B)
-		
+
 		const uint64 Hash = PCGEx::H64U(A, B);
 
 		if (UniqueEdges.Contains(Hash)) { return false; }
@@ -383,7 +383,7 @@ MACRO(EdgeUnionSize, int32, 0, UnionSize)
 				for (const FLink Lk : Node.Links)
 				{
 					const int32 E = Lk.Edge;
-					
+
 					if (VisitedEdges[E]) { continue; }
 					VisitedEdges[E] = true;
 

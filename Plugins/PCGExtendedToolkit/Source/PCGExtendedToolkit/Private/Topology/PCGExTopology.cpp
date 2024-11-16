@@ -43,49 +43,40 @@ namespace PCGExTopology
 	bool FCellConstraints::ContainsSignedEdgeHash(const uint64 Hash) const
 	{
 		if (!bDedupe) { return false; }
-		else
-		{
-			FReadScopeLock ReadScopeLock(UniquePathsStartHashLock);
-			return UniquePathsStartHash.Contains(Hash);
-		}
+		FReadScopeLock ReadScopeLock(UniquePathsStartHashLock);
+		return UniquePathsStartHash.Contains(Hash);
 	}
 
 	bool FCellConstraints::IsUniqueStartHash(const uint64 Hash)
 	{
 		if (!bDedupe) { return true; }
-		else
+		bool bAlreadyExists = false;
 		{
-			bool bAlreadyExists = false;
-			{
-				FReadScopeLock ReadScopeLock(UniquePathsStartHashLock);
-				bAlreadyExists = UniquePathsStartHash.Contains(Hash);
-				if (bAlreadyExists) { return false; }
-			}
-			{
-				FWriteScopeLock WriteScopeLock(UniquePathsStartHashLock);
-				UniquePathsStartHash.Add(Hash, &bAlreadyExists);
-				return !bAlreadyExists;
-			}
+			FReadScopeLock ReadScopeLock(UniquePathsStartHashLock);
+			bAlreadyExists = UniquePathsStartHash.Contains(Hash);
+			if (bAlreadyExists) { return false; }
+		}
+		{
+			FWriteScopeLock WriteScopeLock(UniquePathsStartHashLock);
+			UniquePathsStartHash.Add(Hash, &bAlreadyExists);
+			return !bAlreadyExists;
 		}
 	}
 
 	bool FCellConstraints::IsUniqueCellHash(const FCell* InCell)
 	{
 		if (!bDedupe) { return true; }
-		else
-		{
-			FWriteScopeLock WriteScopeLock(UniquePathsStartHashLock);
+		FWriteScopeLock WriteScopeLock(UniquePathsStartHashLock);
 
-			TArray<int32> Nodes = InCell->Nodes;
-			Nodes.Sort();
+		TArray<int32> Nodes = InCell->Nodes;
+		Nodes.Sort();
 
-			uint32 Hash = 0;
-			for (int32 i = 0; i < Nodes.Num(); i++) { Hash = HashCombineFast(Hash, Nodes[i]); }
+		uint32 Hash = 0;
+		for (int32 i = 0; i < Nodes.Num(); i++) { Hash = HashCombineFast(Hash, Nodes[i]); }
 
-			bool bAlreadyExists;
-			UniquePathsBoxHash.Add(Hash, &bAlreadyExists);
-			return !bAlreadyExists;
-		}
+		bool bAlreadyExists;
+		UniquePathsBoxHash.Add(Hash, &bAlreadyExists);
+		return !bAlreadyExists;
 	}
 
 	ECellResult FCell::BuildFromCluster(
@@ -254,22 +245,22 @@ namespace PCGExTopology
 		if (!Constraints->bKeepCellsWithLeaves) { return; }
 
 		const int32 NumPoints = InMutablePoints.Num();
-		
+
 		FVector A = InMutablePoints[0].Transform.GetLocation();
 		FVector B = InMutablePoints[1].Transform.GetLocation();
 		int32 BIdx = Nodes[0];
 		int32 AIdx = -1;
-		
+
 		for (int i = 2; i < NumPoints; i++)
 		{
 			FVector C = InMutablePoints[i].Transform.GetLocation();
 
-			if(B == C)
+			if (B == C)
 			{
 				// Duplicate point, most likely a dead end. Could also be collocated points.
 				//InMutablePoints[i].Transform.SetLocation(C + PCGExMath::GetNormalUp(A, B, FVector::UpVector) * 0.01); //Slightly offset
 			}
-			
+
 			A = B;
 			B = C;
 		}

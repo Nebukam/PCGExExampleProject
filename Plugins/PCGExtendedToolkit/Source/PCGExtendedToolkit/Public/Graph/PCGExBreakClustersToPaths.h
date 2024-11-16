@@ -54,7 +54,7 @@ public:
 	/** How to handle leaves */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	EPCGExBreakClusterLeavesHandling LeavesHandling = EPCGExBreakClusterLeavesHandling::Include;
-	
+
 	/** Operation target mode */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	EPCGExBreakClusterOperationTarget OperateOn;

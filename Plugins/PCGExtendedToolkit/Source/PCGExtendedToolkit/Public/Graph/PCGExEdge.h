@@ -107,9 +107,8 @@ namespace PCGExGraph
 
 		bool operator==(const FEdge& Other) const { return PCGEx::H64U(Start, End) == PCGEx::H64U(Other.Start, Other.End); }
 		operator uint64() const { return PCGEx::H64U(Start, End); }
-		
-		FORCEINLINE uint32 GetTypeHash(const FLink& Key) { return HashCombineFast(Key.Node, Key.Edge); }
 
+		FORCEINLINE uint32 GetTypeHash(const FLink& Key) { return HashCombineFast(Key.Node, Key.Edge); }
 	};
 
 	static void SetClusterVtx(const TSharedPtr<PCGExData::FPointIO>& IO, FString& OutId)

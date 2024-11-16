@@ -26,8 +26,6 @@ protected:
 	virtual FPCGElementPtr CreateElement() const override;
 	//~End UPCGSettings
 
-public:
-
 private:
 	friend class FPCGExTopologyEdgesProcessorElement;
 };
@@ -93,15 +91,15 @@ namespace PCGExTopologyClusterSurface
 			const EObjectFlags ObjectFlags = (bIsPreviewMode ? RF_Transient : RF_NoFlags);
 			UDynamicMeshComponent* DynamicMeshComponent = NewObject<UDynamicMeshComponent>(TargetActor, MakeUniqueObjectName(TargetActor, UDynamicMeshComponent::StaticClass(), FName(ComponentName)), ObjectFlags);
 
-			if(Settings->Topology.bFlipOrientation)
+			if (Settings->Topology.bFlipOrientation)
 			{
-				GetInternalMesh()->GetMeshPtr()->ReverseOrientation();	
+				GetInternalMesh()->GetMeshPtr()->ReverseOrientation();
 			}
-			
+
 			DynamicMeshComponent->SetDynamicMesh(GetInternalMesh());
 			DynamicMeshComponent->SetDistanceFieldMode(Settings->Topology.DistanceFieldMode);
 			Context->ManagedObjects->Remove(GetInternalMesh());
-			
+
 			Context->AttachManageComponent(
 				TargetActor, DynamicMeshComponent,
 				FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, false));

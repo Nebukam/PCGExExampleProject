@@ -70,7 +70,7 @@ namespace PCGExCluster
 	void FNodeChain::Dump(const TSharedRef<FCluster>& Cluster, const TSharedPtr<PCGExGraph::FGraph>& Graph, const bool bAddMetadata) const
 	{
 		const int32 IOIndex = Cluster->EdgesIO.Pin()->IOIndex;
-		PCGExGraph::FEdge OutEdge = PCGExGraph::FEdge{};
+		FEdge OutEdge = FEdge{};
 
 		if (SingleEdge != -1)
 		{
@@ -104,7 +104,7 @@ namespace PCGExCluster
 	void FNodeChain::DumpReduced(const TSharedRef<FCluster>& Cluster, const TSharedPtr<PCGExGraph::FGraph>& Graph, const bool bAddMetadata) const
 	{
 		const int32 IOIndex = Cluster->EdgesIO.Pin()->IOIndex;
-		PCGExGraph::FEdge OutEdge = PCGExGraph::FEdge{};
+		FEdge OutEdge = FEdge{};
 
 		if (SingleEdge != -1)
 		{
@@ -152,6 +152,7 @@ namespace PCGExCluster
 			if (Node->IsBinary()) { continue; }
 			if (Breakpoints && !(*Breakpoints)[Node->PointIndex])
 
+			{
 				for (const FLink& Lk : Node->Links)
 				{
 					// Skip immediately known leaves or already seeded nodes. Avoid double-sampling simple cases
@@ -160,6 +161,7 @@ namespace PCGExCluster
 					TSharedPtr<FNodeChain> NewChain = MakeShared<FNodeChain>(FLink(Node->NodeIndex, Lk.Edge));
 					Chains.Add(NewChain);
 				}
+			}
 		}
 
 		Chains.Shrink();

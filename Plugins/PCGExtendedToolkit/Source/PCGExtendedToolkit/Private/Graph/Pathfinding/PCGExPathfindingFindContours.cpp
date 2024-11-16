@@ -162,7 +162,6 @@ namespace PCGExFindContours
 
 	void FProcessor::TryFindContours(const int32 SeedIndex)
 	{
-		
 		const TSharedPtr<PCGExData::FPointIO>& PathIO = Context->Paths->Pairs[SeedIndex];
 		const FVector ProjectedSeedPosition = Context->ProjectionDetails.Project(Context->SeedsDataFacade->Source->GetInPoint(SeedIndex).Transform.GetLocation(), SeedIndex);
 
@@ -195,7 +194,7 @@ namespace PCGExFindContours
 		//const TArray<int32>& VtxPointIndices = Cluster->GetVtxPointIndices();
 		for (int i = 0; i < Cell->Nodes.Num(); i++) { MutablePoints[i] = *Cluster->GetNodePoint(Cell->Nodes[i]); }
 		Cell->PostProcessPoints(MutablePoints);
-		
+
 		Context->SeedAttributesToPathTags.Tag(SeedIndex, PathIO);
 		Context->SeedForwardHandler->Forward(SeedIndex, PathDataFacade);
 
@@ -227,7 +226,7 @@ namespace PCGExFindContours
 		TWeakPtr<FProcessor> WeakPtr = SharedThis(this);
 
 		const int32 NumSeeds = Context->SeedsDataFacade->Source->GetNum();
-		
+
 		for (int i = 0; i < NumSeeds; i++)
 		{
 			Context->Paths->Emplace_GetRef<UPCGPointData>(VtxDataFacade->Source, PCGExData::EIOInit::NoOutput);
@@ -288,7 +287,6 @@ namespace PCGExFindContours
 	{
 		TBatch<FProcessor>::Process();
 	}
-
 }
 
 #undef LOCTEXT_NAMESPACE
