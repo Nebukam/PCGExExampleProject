@@ -41,7 +41,7 @@ public:
 			for (const PCGExGraph::FLink Lk : Current.Links)
 			{
 				const uint32 NeighborIndex = Lk.Node;
-				const uint32 EdgeIndex= Lk.Edge;
+				const uint32 EdgeIndex = Lk.Edge;
 
 				if (Visited[NeighborIndex]) { continue; } // Exit early
 

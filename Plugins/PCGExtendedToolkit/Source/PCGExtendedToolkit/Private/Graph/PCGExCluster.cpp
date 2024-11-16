@@ -77,7 +77,7 @@ namespace PCGExCluster
 		NodeIndexLookup(InNodeIndexLookup), VtxIO(InVtxIO), EdgesIO(InEdgesIO)
 	{
 		Nodes = MakeShared<TArray<FNode>>();
-		Edges = MakeShared<TArray<PCGExGraph::FEdge>>();
+		Edges = MakeShared<TArray<FEdge>>();
 		Bounds = FBox(ForceInit);
 
 		VtxPoints = &InVtxIO->GetPoints(PCGExData::ESource::In);
@@ -138,17 +138,17 @@ namespace PCGExCluster
 		{
 			const int32 NumNewEdges = OtherCluster->Edges->Num();
 
-			Edges = MakeShared<TArray<PCGExGraph::FEdge>>();
-			TArray<PCGExGraph::FEdge>& NewEdges = *Edges;
-			TArray<PCGExGraph::FEdge>& SourceEdges = *OtherCluster->Edges;
+			Edges = MakeShared<TArray<FEdge>>();
+			TArray<FEdge>& NewEdges = *Edges;
+			TArray<FEdge>& SourceEdges = *OtherCluster->Edges;
 
 			PCGEx::InitArray(NewEdges, NumNewEdges);
 
 			const int32 EdgeIOIndex = InEdgesIO->IOIndex;
 			for (int i = 0; i < NumNewEdges; i++)
 			{
-				const PCGExGraph::FEdge& SourceEdge = SourceEdges[i];
-				PCGExGraph::FEdge& NewEdge = (NewEdges[i] = SourceEdge);
+				const FEdge& SourceEdge = SourceEdges[i];
+				FEdge& NewEdge = (NewEdges[i] = SourceEdge);
 				NewEdge.IOIndex = EdgeIOIndex;
 			}
 
@@ -241,7 +241,7 @@ namespace PCGExCluster
 			StartNode.Link(EndNode, i);
 			EndNode.Link(StartNode, i);
 
-			*(Edges->GetData() + i) = PCGExGraph::FEdge(i, *StartPointIndexPtr, *EndPointIndexPtr, i, EdgeIOIndex);
+			*(Edges->GetData() + i) = FEdge(i, *StartPointIndexPtr, *EndPointIndexPtr, i, EdgeIOIndex);
 		}
 
 		if (InExpectedAdjacency)
@@ -274,7 +274,7 @@ namespace PCGExCluster
 		Edges->Reserve(NumRawEdges);
 		Edges->Append(SubGraph->FlattenedEdges);
 
-		for (const PCGExGraph::FEdge& E : SubGraph->FlattenedEdges)
+		for (const FEdge& E : SubGraph->FlattenedEdges)
 		{
 			FNode& StartNode = GetOrCreateNodeUnsafe(SubVtxPoints, E.Start);
 			FNode& EndNode = GetOrCreateNodeUnsafe(SubVtxPoints, E.End);
@@ -410,7 +410,7 @@ namespace PCGExCluster
 		int32 ClosestIndex = -1;
 
 		const TArray<FNode>& NodesRef = *Nodes;
-		const TArray<PCGExGraph::FEdge>& EdgesRef = *Edges;
+		const TArray<FEdge>& EdgesRef = *Edges;
 
 		if (EdgeOctree)
 		{
@@ -440,7 +440,7 @@ namespace PCGExCluster
 		}
 		else
 		{
-			for (const PCGExGraph::FEdge& Edge : (*Edges))
+			for (const FEdge& Edge : (*Edges))
 			{
 				const double Dist = GetPointDistToEdgeSquared(Edge, Position);
 				if (Dist < MaxDistance)
@@ -453,7 +453,7 @@ namespace PCGExCluster
 
 		if (ClosestIndex == -1) { return -1; }
 
-		const PCGExGraph::FEdge& Edge = EdgesRef[ClosestIndex];
+		const FEdge& Edge = EdgesRef[ClosestIndex];
 		const FNode* Start = GetEdgeStart(Edge);
 		const FNode* End = GetEdgeEnd(Edge);
 
@@ -613,7 +613,7 @@ namespace PCGExCluster
 		TArray<double>& LengthsRef = *EdgeLengths;
 
 		const TArray<FNode>& NodesRef = *Nodes;
-		const TArray<PCGExGraph::FEdge>& EdgesRef = *Edges;
+		const TArray<FEdge>& EdgesRef = *Edges;
 
 		const int32 NumEdges = Edges->Num();
 		double Min = MAX_dbl;
@@ -622,7 +622,7 @@ namespace PCGExCluster
 
 		for (int i = 0; i < NumEdges; i++)
 		{
-			const PCGExGraph::FEdge& Edge = EdgesRef[i];
+			const FEdge& Edge = EdgesRef[i];
 			const double Dist = GetDist(Edge);
 			LengthsRef[i] = Dist;
 			Min = FMath::Min(Dist, Min);
@@ -696,14 +696,14 @@ namespace PCGExCluster
 		}
 	}
 
-	void FCluster::GetValidEdges(TArray<PCGExGraph::FEdge>& OutValidEdges) const
+	void FCluster::GetValidEdges(TArray<FEdge>& OutValidEdges) const
 	{
 		const TSharedPtr<PCGExData::FPointIO> PinnedEdgesIO = EdgesIO.Pin();
 		OutValidEdges.Reserve(Edges->Num());
 
 		const int32 IOIndex = PinnedEdgesIO ? PinnedEdgesIO->IOIndex : -1;
 
-		for (const PCGExGraph::FEdge& Edge : (*Edges))
+		for (const FEdge& Edge : (*Edges))
 		{
 			if (!Edge.bValid || !GetEdgeStart(Edge)->bValid || !GetEdgeEnd(Edge)->bValid) { continue; }
 			OutValidEdges.Add_GetRef(Edge).IOIndex = IOIndex;

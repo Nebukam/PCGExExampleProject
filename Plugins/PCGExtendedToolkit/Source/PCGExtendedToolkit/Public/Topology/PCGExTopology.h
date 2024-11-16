@@ -321,7 +321,7 @@ namespace PCGExTopology
 			if (!bCompiledSuccessfully) { return ETriangulationResult::InvalidCell; }
 			if (Nodes.Num() < 3) { return ETriangulationResult::TooFewPoints; }
 			if (bIsConvex || Nodes.Num() == 3) { return TriangulateFan<bMarkTriangles>(ProjectedPositions, OutTriangles, InCluster); }
-			else { return TriangulateEarClipping<bMarkTriangles>(ProjectedPositions, OutTriangles, InCluster); }
+			return TriangulateEarClipping<bMarkTriangles>(ProjectedPositions, OutTriangles, InCluster);
 		}
 
 		int32 GetTriangleNumEstimate() const;
@@ -447,5 +447,4 @@ namespace PCGExTopology
 	};
 
 #pragma endregion
-
 }
