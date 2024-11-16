@@ -79,7 +79,7 @@ namespace PCGExTopology
 			TArray<int32> Nodes = InCell->Nodes;
 			Nodes.Sort();
 
-			int32 Hash = 0;
+			uint32 Hash = 0;
 			for (int32 i = 0; i < Nodes.Num(); i++) { Hash = HashCombineFast(Hash, Nodes[i]); }
 
 			bool bAlreadyExists;
@@ -107,11 +107,11 @@ namespace PCGExTopology
 		const FVector B = ProjectedPositions[InCluster->GetNode(NextIndex)->PointIndex];
 
 		const double SanityAngle = PCGExMath::GetDegreesBetweenVectors((B - A).GetSafeNormal(), (B - Guide).GetSafeNormal());
-		const bool bStartIsDeadEnd = InCluster->GetNode(StartNodeIndex)->Adjacency.Num() == 1;
+		const bool bStartsWithLeaf = InCluster->GetNode(StartNodeIndex)->IsLeaf();
 
-		if (bStartIsDeadEnd && !Constraints->bKeepCellsWithDeadEnds) { return ECellResult::DeadEnd; }
+		if (bStartsWithLeaf && !Constraints->bKeepCellsWithLeaves) { return ECellResult::Leaf; }
 
-		if (SanityAngle > 180 && !bStartIsDeadEnd)
+		if (SanityAngle > 180 && !bStartsWithLeaf)
 		{
 			// Swap search orientation
 			PrevIndex = NextIndex;
@@ -146,35 +146,35 @@ namespace PCGExTopology
 			double BestAngle = -1;
 			int32 NextBest = -1;
 
-			const PCGExCluster::FExpandedNode& Current = *(ExpandedNodes->GetData() + NextIndex);
+			const PCGExCluster::FNode* Current = InCluster->GetNode(NextIndex);
 
-			Nodes.Add(Current);
+			Nodes.Add(Current->NodeIndex);
 			NumUniqueNodes++;
-			Centroid += InCluster->GetPos(Current);
+			const FVector& RP = InCluster->GetPos(Current);
+			Centroid += RP;
 
 			if (NumUniqueNodes > Constraints->MaxPointCount) { return ECellResult::ExceedPointsLimit; }
 
-			Bounds += InCluster->GetPos(Current.Node);
+			Bounds += RP;
 			if (Bounds.GetSize().Length() > Constraints->MaxBoundsSize) { return ECellResult::ExceedBoundsLimit; }
 
-			const FVector P = ProjectedPositions[Current.Node->PointIndex];
-			const FVector GuideDir = (P - ProjectedPositions[InCluster->GetNode(PrevIndex)->PointIndex]).GetSafeNormal();
+			const FVector PP = ProjectedPositions[Current->PointIndex];
+			const FVector GuideDir = (PP - ProjectedPositions[InCluster->GetNode(PrevIndex)->PointIndex]).GetSafeNormal();
 
-			if (Current.Neighbors.Num() == 1 && Constraints->bDuplicateDeadEndPoints) { Nodes.Add(Current); }
-
-			if (Current.Neighbors.Num() > 1) { Exclusions.Add(PrevIndex); }
+			if (Current->Num() == 1 && Constraints->bDuplicateLeafPoints) { Nodes.Add(Current->NodeIndex); }
+			if (Current->Num() > 1) { Exclusions.Add(PrevIndex); }
 
 			PrevIndex = NextIndex;
 
 			bHasAdjacencyToStart = false;
-			for (const PCGExCluster::FExpandedNeighbor& N : Current.Neighbors)
+			for (const PCGExGraph::FLink Lk : Current->Links)
 			{
-				const int32 NeighborIndex = N.Node->NodeIndex;
+				const int32 NeighborIndex = Lk.Node;
 
 				if (NeighborIndex == StartNodeIndex) { bHasAdjacencyToStart = true; }
 				if (Exclusions.Contains(NeighborIndex)) { continue; }
 
-				const FVector OtherDir = (P - ProjectedPositions[N.Node->PointIndex]).GetSafeNormal();
+				const FVector OtherDir = (PP - ProjectedPositions[InCluster->GetNodePointIndex(NeighborIndex)]).GetSafeNormal();
 
 				if (const double Angle = PCGExMath::GetDegreesBetweenVectors(OtherDir, GuideDir); Angle > BestAngle)
 				{
@@ -193,7 +193,7 @@ namespace PCGExTopology
 
 			if (NextBest != -1)
 			{
-				if (InCluster->GetNode(NextBest)->Adjacency.Num() == 1 && !Constraints->bKeepCellsWithDeadEnds) { return ECellResult::DeadEnd; }
+				if (InCluster->GetNode(NextBest)->Num() == 1 && !Constraints->bKeepCellsWithLeaves) { return ECellResult::Leaf; }
 				if (NumUniqueNodes > Constraints->MaxPointCount) { return ECellResult::ExceedBoundsLimit; }
 
 				if (NumUniqueNodes > 2)
@@ -215,7 +215,7 @@ namespace PCGExTopology
 			}
 		}
 
-		if (NumUniqueNodes <= 2) { return ECellResult::DeadEnd; }
+		if (NumUniqueNodes <= 2) { return ECellResult::Leaf; }
 
 		bIsClosedLoop = bHasAdjacencyToStart;
 		Centroid /= NumUniqueNodes;
@@ -251,7 +251,7 @@ namespace PCGExTopology
 
 	void FCell::PostProcessPoints(TArray<FPCGPoint>& InMutablePoints)
 	{
-		if (!Constraints->bKeepCellsWithDeadEnds) { return; }
+		if (!Constraints->bKeepCellsWithLeaves) { return; }
 
 		const int32 NumPoints = InMutablePoints.Num();
 		
