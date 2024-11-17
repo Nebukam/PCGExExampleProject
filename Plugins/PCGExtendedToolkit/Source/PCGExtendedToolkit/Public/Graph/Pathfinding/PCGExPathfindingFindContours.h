@@ -162,7 +162,6 @@ namespace PCGExFindContours
 {
 	class FProcessor final : public PCGExClusterMT::TProcessor<FPCGExFindContoursContext, UPCGExFindContoursSettings>
 	{
-		friend struct FPCGExFindContoursContext;
 		friend class FBatch;
 
 	protected:
@@ -170,9 +169,7 @@ namespace PCGExFindContours
 
 	public:
 		TSharedPtr<PCGExTopology::FCellConstraints> CellsConstraints;
-
 		TArray<FVector>* ProjectedPositions = nullptr;
-		TSharedPtr<TArray<PCGExCluster::FExpandedNode>> ExpandedNodes;
 
 		FProcessor(const TSharedRef<PCGExData::FFacade>& InVtxDataFacade, const TSharedRef<PCGExData::FFacade>& InEdgeDataFacade):
 			TProcessor(InVtxDataFacade, InEdgeDataFacade)
@@ -183,7 +180,7 @@ namespace PCGExFindContours
 
 		virtual bool Process(TSharedPtr<PCGExMT::FTaskManager> InAsyncManager) override;
 		virtual void ProcessSingleRangeIteration(int32 Iteration, const int32 LoopIdx, const int32 Count) override;
-		void TryFindContours(const int32 SeedIndex);
+		void TryFindContours(const int32 SeedIndex) const;
 		virtual void CompleteWork() override;
 	};
 

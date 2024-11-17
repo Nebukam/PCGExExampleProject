@@ -143,26 +143,18 @@ namespace PCGExFindContours
 		if (Settings->bUseOctreeSearch) { Cluster->RebuildOctree(Settings->SeedPicking.PickingMethod); }
 		Cluster->RebuildOctree(EPCGExClusterClosestSearchMode::Edge); // We need edge octree anyway
 
-		ExpandedNodes = Cluster->ExpandedNodes;
-
-		if (!ExpandedNodes)
-		{
-			ExpandedNodes = Cluster->GetExpandedNodes(false);
-			bBuildExpandedNodes = true;
-			StartParallelLoopForRange(NumNodes);
-		}
+		StartParallelLoopForRange(Context->SeedsDataFacade->Source->GetNum(), 64);
 
 		return true;
 	}
 
-	void FProcessor::ProcessSingleRangeIteration(const int32 Iteration, const int32 LoopIdx, const int32 Count)
+	void FProcessor::ProcessSingleRangeIteration(int32 Iteration, const int32 LoopIdx, const int32 Count)
 	{
-		*(ExpandedNodes->GetData() + Iteration) = PCGExCluster::FExpandedNode(Cluster, Iteration);
+		TryFindContours(Iteration);
 	}
 
-	void FProcessor::TryFindContours(const int32 SeedIndex)
+	void FProcessor::TryFindContours(const int32 SeedIndex) const
 	{
-		const TSharedPtr<PCGExData::FPointIO>& PathIO = Context->Paths->Pairs[SeedIndex];
 		const FVector ProjectedSeedPosition = Context->ProjectionDetails.Project(Context->SeedsDataFacade->Source->GetInPoint(SeedIndex).Transform.GetLocation(), SeedIndex);
 
 		const FVector RealSeedPosition = Context->SeedsDataFacade->Source->GetInPoint(SeedIndex).Transform.GetLocation();
@@ -177,23 +169,27 @@ namespace PCGExFindContours
 		const FVector StartPosition = Cluster->GetPos(StartNodeIndex);
 		if (!Settings->SeedPicking.WithinDistance(StartPosition, RealSeedPosition)) { return; } // Fail. Not within radius.
 
-		TSharedPtr<PCGExTopology::FCell> Cell = MakeShared<PCGExTopology::FCell>(CellsConstraints.ToSharedRef());
+		const TSharedPtr<PCGExTopology::FCell> Cell = MakeShared<PCGExTopology::FCell>(CellsConstraints.ToSharedRef());
 
-		const PCGExTopology::ECellResult Result = Cell->BuildFromCluster(StartNodeIndex, NextEdge, ProjectedSeedPosition, Cluster.ToSharedRef(), *ProjectedPositions, ExpandedNodes);
+		const PCGExTopology::ECellResult Result = Cell->BuildFromCluster(StartNodeIndex, NextEdge, ProjectedSeedPosition, Cluster.ToSharedRef(), *ProjectedPositions);
 		if (Result != PCGExTopology::ECellResult::Success) { return; }
 
-		PathIO->InitializeOutput(PCGExData::EIOInit::NewOutput);
+		TSharedRef<PCGExData::FPointIO> PathIO = Context->Paths->Emplace_GetRef<UPCGPointData>(VtxDataFacade->Source, PCGExData::EIOInit::NewOutput).ToSharedRef();
+		PathIO->IOIndex = SeedIndex; // Enforce seed order for collection output
+
 		PCGExGraph::CleanupClusterTags(PathIO, true);
 		PCGExGraph::CleanupVtxData(PathIO);
 
-		TSharedPtr<PCGExData::FFacade> PathDataFacade = MakeShared<PCGExData::FFacade>(PathIO.ToSharedRef());
+		TSharedPtr<PCGExData::FFacade> PathDataFacade = MakeShared<PCGExData::FFacade>(PathIO);
 
-		TArray<FPCGPoint>& MutablePoints = PathIO->GetOut()->GetMutablePoints();
-		MutablePoints.SetNumUninitialized(Cell->Nodes.Num());
+		TArray<FPCGPoint> MutablePoints;
+		MutablePoints.Reserve(Cell->Nodes.Num());
 
-		//const TArray<int32>& VtxPointIndices = Cluster->GetVtxPointIndices();
-		for (int i = 0; i < Cell->Nodes.Num(); i++) { MutablePoints[i] = *Cluster->GetNodePoint(Cell->Nodes[i]); }
+		const TArray<FPCGPoint>& InPoints = PathIO->GetIn()->GetPoints();
+		for (int i = 0; i < Cell->Nodes.Num(); i++) { MutablePoints.Add(InPoints[Cluster->GetNode(Cell->Nodes[i])->PointIndex]); }
 		Cell->PostProcessPoints(MutablePoints);
+
+		PathIO->GetOut()->SetPoints(MutablePoints);
 
 		Context->SeedAttributesToPathTags.Tag(SeedIndex, PathIO);
 		Context->SeedForwardHandler->Forward(SeedIndex, PathDataFacade);
@@ -208,6 +204,9 @@ namespace PCGExFindContours
 		if (!Cell->bIsClosedLoop) { if (Settings->bTagIfOpenPath) { PathIO->Tags->Add(Settings->IsOpenPathTag); } }
 		else { if (Settings->bTagIfClosedLoop) { PathIO->Tags->Add(Settings->IsClosedLoopTag); } }
 
+		if (Cell->bIsConvex) { if (Settings->bTagConvex) { PathIO->Tags->Add(Settings->ConvexTag); } }
+		else { if (Settings->bTagConcave) { PathIO->Tags->Add(Settings->ConcaveTag); } }
+
 		PathDataFacade->Write(AsyncManager);
 
 		if (Settings->bOutputFilteredSeeds)
@@ -221,23 +220,7 @@ namespace PCGExFindContours
 
 	void FProcessor::CompleteWork()
 	{
-		PCGEX_ASYNC_GROUP_CHKD_VOID(AsyncManager, ProcessSeedsTask)
-
-		TWeakPtr<FProcessor> WeakPtr = SharedThis(this);
-
-		const int32 NumSeeds = Context->SeedsDataFacade->Source->GetNum();
-
-		for (int i = 0; i < NumSeeds; i++)
-		{
-			Context->Paths->Emplace_GetRef<UPCGPointData>(VtxDataFacade->Source, PCGExData::EIOInit::NoOutput);
-		}
-
-		ProcessSeedsTask->OnIterationCallback = [WeakPtr](const int32 Index, const int32 Count, const int32 LoopIdx)
-		{
-			if (const TSharedPtr<FProcessor> This = WeakPtr.Pin()) { This->TryFindContours(Index); }
-		};
-
-		ProcessSeedsTask->StartIterations(NumSeeds, 12, false, false);
+		TProcessor<FPCGExFindContoursContext, UPCGExFindContoursSettings>::CompleteWork();
 	}
 
 	void FBatch::Process()
