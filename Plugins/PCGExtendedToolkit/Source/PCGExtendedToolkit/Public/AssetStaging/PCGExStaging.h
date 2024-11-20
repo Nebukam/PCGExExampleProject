@@ -11,34 +11,40 @@ namespace PCGExStaging
 {
 	const FName SourceCollectionMapLabel = TEXT("Map");
 	const FName OutputCollectionMapLabel = TEXT("Map");
-	
+
 	const FName Tag_CollectionPath = FName(PCGEx::PCGExPrefix + TEXT("Collection/Path"));
 	const FName Tag_CollectionIdx = FName(PCGEx::PCGExPrefix + TEXT("Collection/Idx"));
 	const FName Tag_EntryIdx = FName(PCGEx::PCGExPrefix + TEXT("CollectionEntry"));
-	
-	class FCollectionPickDatasetPacker : public TSharedFromThis<FCollectionPickDatasetPacker>
+
+	class FPickPacker : public TSharedFromThis<FPickPacker>
 	{
+		FPCGExContext* Context = nullptr;
+
 		TArray<const UPCGExAssetCollection*> AssetCollections;
-		TMap<const UPCGExAssetCollection*, uint16> CollectionMap;
+		TMap<const UPCGExAssetCollection*, uint32> CollectionMap;
 		mutable FRWLock AssetCollectionsLock;
 
+		uint16 BaseHash = 0;
+
 	public:
-		FCollectionPickDatasetPacker()
+		FPickPacker(FPCGExContext* InContext)
+			: Context(InContext)
 		{
+			BaseHash = static_cast<uint16>(InContext->GetInputSettings<UPCGSettings>()->UID);
 		}
 
 		uint64 GetPickIdx(const UPCGExAssetCollection* InCollection, const int32 InIndex)
 		{
 			{
 				FReadScopeLock ReadScopeLock(AssetCollectionsLock);
-				if (const uint16* ColIndexPtr = CollectionMap.Find(InCollection)) { return PCGEx::H64(*ColIndexPtr, InIndex); }
+				if (const uint32* ColIdxPtr = CollectionMap.Find(InCollection)) { return PCGEx::H64(*ColIdxPtr, InIndex); }
 			}
 
 			{
 				FWriteScopeLock WriteScopeLock(AssetCollectionsLock);
-				if (const uint16* ColIndexPtr = CollectionMap.Find(InCollection)) { return PCGEx::H64(*ColIndexPtr, InIndex); }
+				if (const uint32* ColIdxPtr = CollectionMap.Find(InCollection)) { return PCGEx::H64(*ColIdxPtr, InIndex); }
 
-				uint16 ColIndex = static_cast<uint16>(AssetCollections.Add(InCollection));
+				uint32 ColIndex = PCGEx::H32(BaseHash, AssetCollections.Add(InCollection));
 				CollectionMap.Add(InCollection, ColIndex);
 				return PCGEx::H64(ColIndex, InIndex);
 			}
@@ -54,7 +60,7 @@ namespace PCGExStaging
 			FPCGMetadataAttribute<FString>* CollectionPath  = InAttributeSet->Metadata->FindOrCreateAttribute<FString>(Tag_CollectionPath, TEXT(""), false, true, true);
 #endif
 
-			for (const TPair<const UPCGExAssetCollection*, uint16>& Pair : CollectionMap)
+			for (const TPair<const UPCGExAssetCollection*, uint32>& Pair : CollectionMap)
 			{
 				const int64 Key = InAttributeSet->Metadata->AddEntry();
 				CollectionIdx->SetValue(Key, Pair.Value);
@@ -69,16 +75,16 @@ namespace PCGExStaging
 	};
 
 	template <typename C = UPCGExAssetCollection, typename A = FPCGExAssetCollectionEntry>
-	class TCollectionPickDatasetUnpacker : public TSharedFromThis<TCollectionPickDatasetUnpacker<C, A>>
+	class TPickUnpacker : public TSharedFromThis<TPickUnpacker<C, A>>
 	{
-		TMap<uint16, const C*> CollectionMap;
+		TMap<uint32, C*> CollectionMap;
 
 	public:
-		TCollectionPickDatasetUnpacker()
+		TPickUnpacker()
 		{
 		}
 
-		bool UnpackDataset(FPCGExContext* InContext, const UPCGParamData* InAttributeSet)
+		bool UnpackDataset(FPCGContext* InContext, const UPCGParamData* InAttributeSet)
 		{
 			const UPCGMetadata* Metadata = InAttributeSet->Metadata;
 
@@ -95,7 +101,7 @@ namespace PCGExStaging
 				return false;
 			}
 
-			CollectionMap.Reserve(NumEntries);
+			CollectionMap.Reserve(CollectionMap.Num() + NumEntries);
 
 			const FPCGMetadataAttribute<int32>* CollectionIdx = InAttributeSet->Metadata->GetConstTypedAttribute<int32>(Tag_CollectionIdx);
 
@@ -107,7 +113,7 @@ namespace PCGExStaging
 
 			if (!CollectionIdx || !CollectionPath)
 			{
-				PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Missing required attributes."));
+				PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Missing required attributes, or unsupported type."));
 				return false;
 			}
 
@@ -116,14 +122,22 @@ namespace PCGExStaging
 				int32 Idx = CollectionIdx->GetValueFromItemKey(i);
 
 #if PCGEX_ENGINE_VERSION > 503
-				const C* Collection = TSoftObjectPtr<C>(CollectionPath->GetValueFromItemKey(i)).LoadSynchronous();
+				C* Collection = TSoftObjectPtr<C>(CollectionPath->GetValueFromItemKey(i)).LoadSynchronous();
 #else
-				const C* Collection = TSoftObjectPtr<C>(FSoftObjectPath(CollectionPath->GetValueFromItemKey(i))).LoadSynchronous();
+				C* Collection = TSoftObjectPtr<C>(FSoftObjectPath(CollectionPath->GetValueFromItemKey(i))).LoadSynchronous();
 #endif
 
 				if (!Collection)
 				{
 					PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Some collections could not be loaded."));
+					return false;
+				}
+
+				if (CollectionMap.Contains(Idx))
+				{
+					if (CollectionMap[Idx] == Collection) { continue; }
+
+					PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Collection Idx collision."));
 					return false;
 				}
 
@@ -133,17 +147,34 @@ namespace PCGExStaging
 			return true;
 		}
 
+		void UnpackPin(FPCGContext* InContext, FName InPinLabel)
+		{
+			TArray<FPCGTaggedData> Params = InContext->InputData.GetParamsByPin(InPinLabel);
+			for (FPCGTaggedData& InTaggedData : Params)
+			{
+				const UPCGParamData* ParamData = Cast<UPCGParamData>(InTaggedData.Data);
+
+				if (!ParamData) { continue; }
+				const TSharedPtr<PCGEx::FAttributesInfos> Infos = PCGEx::FAttributesInfos::Get(ParamData->Metadata);
+
+				if (!ParamData->Metadata->HasAttribute(Tag_CollectionIdx) || !ParamData->Metadata->HasAttribute(Tag_CollectionPath)) { continue; }
+
+				UnpackDataset(InContext, ParamData);
+			}
+		}
+
+		bool HasValidMapping() const { return !CollectionMap.IsEmpty(); }
+
 		bool ResolveEntry(uint64 EntryHash, const A*& OutEntry)
 		{
 			const UPCGExAssetCollection* EntryHost = nullptr;
-			const FPCGExAssetCollectionEntry* Entry = nullptr;
 
 			uint32 CollectionIdx = 0;
 			uint32 EntryIndex = 0;
 			PCGEx::H64(EntryHash, CollectionIdx, EntryIndex);
 
-			const C** Collection = CollectionMap.Find(EntryHash);
-			if (!Collection || !Collection->IsValidIndex(EntryIndex)) { return false; }
+			C** Collection = CollectionMap.Find(CollectionIdx);
+			if (!Collection || !(*Collection)->IsValidIndex(EntryIndex)) { return false; }
 
 			(*Collection)->GetEntryAt(OutEntry, EntryIndex, EntryHost);
 			return true;
