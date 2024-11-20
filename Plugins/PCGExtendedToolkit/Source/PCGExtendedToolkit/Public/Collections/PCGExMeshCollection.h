@@ -28,7 +28,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshCollectionEntry : public FPCGExAsset
 
 	/** Config used when this entry is consumed as an instanced static mesh */
 	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides))
-	FPCGSoftISMComponentDescriptor ISMDescriptor;
+	FSoftISMComponentDescriptor ISMDescriptor;
 
 	/** Config used when this entry is consumed as a regular static mesh primitive (i.e Spline Mesh)*/
 	UPROPERTY(EditAnywhere, Category = Settings, meta=(EditCondition="!bIsSubCollection", EditConditionHides))
@@ -38,7 +38,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshCollectionEntry : public FPCGExAsset
 	TSoftObjectPtr<UPCGExMeshCollection> SubCollection;
 
 	TObjectPtr<UPCGExMeshCollection> SubCollectionPtr;
-
+	
 	bool Matches(const FPCGMeshInstanceList& InstanceList) const
 	{
 		// TODO : This is way too weak
@@ -58,6 +58,10 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExMeshCollectionEntry : public FPCGExAsset
 	virtual void UpdateStaging(const UPCGExAssetCollection* OwningCollection, int32 InInternalIndex, const bool bRecursive) override;
 	virtual void SetAssetPath(const FSoftObjectPath& InPath) override;
 
+#if PCGEX_ENGINE_VERSION > 503
+	void InitPCGSoftISMDescriptor(FPCGSoftISMComponentDescriptor& TargetDescriptor) const;
+#endif
+	
 #if WITH_EDITOR
 	virtual void EDITOR_Sanitize() override;
 #endif

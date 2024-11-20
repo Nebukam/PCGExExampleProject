@@ -9,11 +9,7 @@
 #include "Elements/PCGStaticMeshSpawnerContext.h"
 #include "Elements/Metadata/PCGMetadataElementCommon.h"
 #include "MeshSelectors/PCGMeshSelectorBase.h"
-#include "Metadata/PCGObjectPropertyOverride.h"
-#include "Metadata/PCGMetadataPartitionCommon.h"
-#include "Metadata/Accessors/PCGAttributeAccessorHelpers.h"
 
-#include "Algo/AnyOf.h"
 #include "AssetStaging/PCGExStaging.h"
 #include "Collections/PCGExMeshCollection.h"
 #include "Engine/StaticMesh.h"
@@ -39,10 +35,18 @@ namespace PCGExMeshSelectorStaged
 			}
 		}
 
-		FPCGSoftISMComponentDescriptor TemplateDescriptor = FPCGSoftISMComponentDescriptor(Entry->ISMDescriptor);
+#if PCGEX_ENGINE_VERSION > 503
+		FPCGSoftISMComponentDescriptor TemplateDescriptor = FPCGSoftISMComponentDescriptor();
+		Entry->InitPCGSoftISMDescriptor(TemplateDescriptor);
+
 		FPCGMeshInstanceList& NewInstanceList = InstanceLists.Emplace_GetRef(TemplateDescriptor);
 		NewInstanceList.Descriptor = TemplateDescriptor;
 		NewInstanceList.PointData = InPointData;
+#else
+		FSoftISMComponentDescriptor TemplateDescriptor = FSoftISMComponentDescriptor(Entry->ISMDescriptor);
+		FPCGMeshInstanceList& NewInstanceList = InstanceLists.Emplace_GetRef(TemplateDescriptor);
+		NewInstanceList.Descriptor = TemplateDescriptor;
+#endif
 
 		return NewInstanceList;
 	}
@@ -132,7 +136,7 @@ bool UPCGExMeshSelectorStaged::SelectInstances(
 	{
 		OutPointData->Metadata->DeleteAttribute(PCGExStaging::Tag_EntryIdx);
 	}
-	
+
 	return Context.CurrentPointIndex == NumPoints;
 }
 
