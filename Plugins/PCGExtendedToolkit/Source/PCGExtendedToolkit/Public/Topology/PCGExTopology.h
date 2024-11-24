@@ -397,19 +397,19 @@ namespace PCGExTopology
 		int32 MinPointCount = MIN_int32;
 
 		double MaxBoundsSize = MAX_dbl;
-		double MinBoundsSize = MIN_dbl;
+		double MinBoundsSize = MIN_dbl_neg;
 
 		double MaxArea = MAX_dbl;
-		double MinArea = MIN_dbl;
+		double MinArea = MIN_dbl_neg;
 
 		double MaxPerimeter = MAX_dbl;
-		double MinPerimeter = MIN_dbl;
+		double MinPerimeter = MIN_dbl_neg;
 
 		double MaxSegmentLength = MAX_dbl;
-		double MinSegmentLength = MIN_dbl;
+		double MinSegmentLength = MIN_dbl_neg;
 
 		double MaxCompactness = MAX_dbl;
-		double MinCompactness = MIN_dbl;
+		double MinCompactness = MIN_dbl_neg;
 
 		double WrapperClassificationTolerance = 0;
 		bool bBuildWrapper = true;
