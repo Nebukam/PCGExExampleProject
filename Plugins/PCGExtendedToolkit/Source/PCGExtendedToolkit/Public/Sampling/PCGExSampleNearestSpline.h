@@ -345,7 +345,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExSampleNearestSplineContext final : FPCGE
 	TSharedPtr<PCGExDetails::FDistances> DistanceDetails;
 
 	TArray<const UPCGSplineData*> Targets;
-	TArray<const FPCGSplineStruct> Splines;
+	TArray<FPCGSplineStruct> Splines;
 	TArray<double> SegmentCounts;
 
 	int64 NumTargets = 0;
@@ -373,6 +373,8 @@ namespace PCGExSampleNearestSpline
 {
 	class FProcessor final : public PCGExPointsMT::TPointsProcessor<FPCGExSampleNearestSplineContext, UPCGExSampleNearestSplineSettings>
 	{
+		TSharedPtr<PCGExDetails::FDistances> DistanceDetails;
+		
 		TArray<int8> SampleState;
 
 		TSharedPtr<PCGExData::TBuffer<double>> RangeMinGetter;
