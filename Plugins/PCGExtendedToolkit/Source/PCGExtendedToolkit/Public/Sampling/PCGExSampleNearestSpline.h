@@ -170,7 +170,7 @@ public:
 
 	/** How to interpret the sample alpha value. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, DisplayName=" └─ Mode", EditCondition="bSampleSpecificAlpha", EditConditionHides))
-	EPCGExSplineSampleAlphaMode SampleAlphaMode = EPCGExSplineSampleAlphaMode::Time;
+	EPCGExSplineSampleAlphaMode SampleAlphaMode = EPCGExSplineSampleAlphaMode::Alpha;
 
 	/** Whether to wrap out of bounds value on closed loops. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable, DisplayName=" └─ Wrap Closed Loops", EditCondition="bSampleSpecificAlpha", EditConditionHides))
@@ -194,12 +194,12 @@ public:
 	EPCGExRangeType WeightMethod = EPCGExRangeType::FullRange;
 
 	/** Whether to use in-editor curve or an external asset. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_NotOverridable, EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_NotOverridable))
 	bool bUseLocalCurve = false;
 
 	// TODO: DirtyCache for OnDependencyChanged when this float curve is an external asset
 	/** Curve that balances weight over distance */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_NotOverridable, DisplayName="Weight Over Distance", EditCondition = "bUseLocalCurve", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta = (PCG_NotOverridable, DisplayName="Weight Over Distance", EditCondition = "bUseLocalCurve", EditConditionHides))
 	FRuntimeFloatCurve LocalWeightOverDistance;
 
 	/** Curve that balances weight over distance */
