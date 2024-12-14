@@ -53,7 +53,7 @@ namespace PCGExData
 		New,
 	};
 
-	PCGEX_ASYNC_STATE(State_MergingData);
+	PCGEX_CTX_STATE(State_MergingData);
 
 #pragma region Pool & Buffers
 
@@ -662,13 +662,13 @@ namespace PCGExData
 			return Data->Metadata->template GetConstTypedAttribute<T>(InName);
 		}
 
-		TSharedPtr<PCGExGeo::FPointBoxCloud> GetCloud(const EPCGExPointBoundsSource BoundsSource, const double Epsilon = DBL_EPSILON)
+		TSharedPtr<PCGExGeo::FPointBoxCloud> GetCloud(const EPCGExPointBoundsSource BoundsSource, const double Expansion = DBL_EPSILON)
 		{
 			FWriteScopeLock WriteScopeLock(CloudLock);
 
 			if (Cloud) { return Cloud; }
 
-			Cloud = MakeShared<PCGExGeo::FPointBoxCloud>(GetIn(), BoundsSource, Epsilon);
+			Cloud = MakeShared<PCGExGeo::FPointBoxCloud>(GetIn(), BoundsSource, Expansion);
 			return Cloud;
 		}
 
@@ -917,35 +917,6 @@ namespace PCGExData
 		if (!PointData) { return nullptr; }
 
 		return const_cast<UPCGPointData*>(PointData);
-	}
-
-	static void CopyValues(
-		const TSharedPtr<PCGExMT::FTaskManager>& AsyncManager,
-		const PCGEx::FAttributeIdentity& Identity,
-		const TSharedPtr<FPointIO>& Source,
-		const TSharedPtr<FPointIO>& Target,
-		const TArrayView<const int32>& SourceIndices,
-		const int32 TargetIndex = 0)
-	{
-		PCGEx::ExecuteWithRightType(
-			Identity.UnderlyingType, [&](auto DummyValue)
-			{
-				using T = decltype(DummyValue);
-				TArray<T> RawValues;
-
-				// 'template' spec required for clang on mac, not sure why.
-				// ReSharper disable once CppRedundantTemplateKeyword
-				const FPCGMetadataAttribute<T>* SourceAttribute = Source->GetIn()->Metadata->template GetConstTypedAttribute<T>(Identity.Name);
-
-				PCGEX_MAKE_SHARED(TargetBuffer, TBuffer<T>, Target.ToSharedRef(), Identity.Name)
-				TargetBuffer->PrepareWrite(SourceAttribute->GetValue(PCGDefaultValueKey), SourceAttribute->AllowsInterpolation(), EBufferInit::New);
-
-				TUniquePtr<FPCGAttributeAccessor<T>> InAccessor = MakeUnique<FPCGAttributeAccessor<T>>(SourceAttribute, Source->GetIn()->Metadata);
-				TArrayView<T> InRange = MakeArrayView(TargetBuffer->GetOutValues()->GetData() + TargetIndex, SourceIndices.Num());
-				InAccessor->GetRange(InRange, 0, *Source->GetInKeys());
-
-				PCGExMT::Write(AsyncManager, TargetBuffer);
-			});
 	}
 
 #pragma endregion

@@ -138,18 +138,18 @@ namespace PCGExGraph
 	const FName SourceVtxFiltersLabel = FName("VtxFilters");
 	const FName SourceEdgeFiltersLabel = FName("EdgeFilters");
 
-	PCGEX_ASYNC_STATE(State_PreparingUnion)
-	PCGEX_ASYNC_STATE(State_ProcessingUnion)
+	PCGEX_CTX_STATE(State_PreparingUnion)
+	PCGEX_CTX_STATE(State_ProcessingUnion)
 
-	PCGEX_ASYNC_STATE(State_WritingClusters)
-	PCGEX_ASYNC_STATE(State_ReadyToCompile)
-	PCGEX_ASYNC_STATE(State_Compiling)
+	PCGEX_CTX_STATE(State_WritingClusters)
+	PCGEX_CTX_STATE(State_ReadyToCompile)
+	PCGEX_CTX_STATE(State_Compiling)
 
-	PCGEX_ASYNC_STATE(State_ProcessingPointEdgeIntersections)
-	PCGEX_ASYNC_STATE(State_ProcessingEdgeEdgeIntersections)
+	PCGEX_CTX_STATE(State_ProcessingPointEdgeIntersections)
+	PCGEX_CTX_STATE(State_ProcessingEdgeEdgeIntersections)
 
-	PCGEX_ASYNC_STATE(State_Pathfinding)
-	PCGEX_ASYNC_STATE(State_WaitingPathfinding)
+	PCGEX_CTX_STATE(State_Pathfinding)
+	PCGEX_CTX_STATE(State_WaitingPathfinding)
 
 	const TSet<FName> ProtectedClusterAttributes = {Tag_EdgeEndpoints, Tag_VtxEndpoint, Tag_ClusterIndex};
 
@@ -731,41 +731,6 @@ MACRO(EdgeUnionSize, int32, 0, UnionSize)
 	static bool IsPointDataEdgeReady(const UPCGMetadata* Metadata)
 	{
 		return Metadata->GetConstTypedAttribute<int64>(Tag_EdgeEndpoints) ? true : false;
-	}
-
-	static bool GetReducedVtxIndices(const TSharedPtr<PCGExData::FPointIO>& InEdges, const TMap<uint32, int32>* NodeIndicesMap, TArray<int32>& OutVtxIndices, int32& OutEdgeNum)
-	{
-		const TUniquePtr<PCGExData::TBuffer<int64>> EndpointsBuffer = MakeUnique<PCGExData::TBuffer<int64>>(InEdges.ToSharedRef(), Tag_EdgeEndpoints);
-		if (!EndpointsBuffer->PrepareRead()) { return false; }
-
-		const TArray<int64>& Endpoints = *EndpointsBuffer->GetInValues().Get();
-
-		OutEdgeNum = Endpoints.Num();
-
-		OutVtxIndices.Empty();
-
-		TSet<int32> UniqueVtx;
-		UniqueVtx.Reserve(OutEdgeNum * 2);
-
-		for (int i = 0; i < OutEdgeNum; i++)
-		{
-			uint32 A;
-			uint32 B;
-			PCGEx::H64(Endpoints[i], A, B);
-
-			const int32* NodeStartPtr = NodeIndicesMap->Find(A);
-			const int32* NodeEndPtr = NodeIndicesMap->Find(B);
-
-			if (!NodeStartPtr || !NodeEndPtr || (*NodeStartPtr == *NodeEndPtr)) { continue; }
-
-			UniqueVtx.Add(*NodeStartPtr);
-			UniqueVtx.Add(*NodeEndPtr);
-		}
-
-		OutVtxIndices.Append(UniqueVtx.Array());
-		UniqueVtx.Empty();
-
-		return true;
 	}
 
 	static void CleanupVtxData(const TSharedPtr<PCGExData::FPointIO>& PointIO)

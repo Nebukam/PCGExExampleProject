@@ -23,6 +23,9 @@
 #ifndef PCGEX_MT_MACROS
 #define PCGEX_MT_MACROS
 
+#define PCGEX_ASYNC_CHECK(_MANAGER) if(!_MANAGER->IsAlive()){return false;}
+#define PCGEX_ASYNC_CHECK_VOID(_MANAGER) if(!_MANAGER->IsAlive()){return;}
+
 #define PCGEX_ASYNC_GROUP_CHKD_VOID(_MANAGER, _NAME) \
 	TSharedPtr<PCGExMT::FTaskGroup> _NAME = _MANAGER ? _MANAGER->TryCreateGroup(FName(#_NAME)) : nullptr; \
 	if(!_NAME){ return; }
@@ -38,10 +41,6 @@
 
 #define PCGEX_START_TASK(_CLASS, ...) PCGEX_MAKE_SHARED(Task, _CLASS, __VA_ARGS__); AsyncManager->Start<_CLASS>(Task);
 #define PCGEX_START_TASK_INTERNAL(_CLASS, ...) PCGEX_MAKE_SHARED(Task, _CLASS, __VA_ARGS__); InternalStart<_CLASS>(AsyncManager, InGroup, Task);
-
-#define PCGEX_ASYNC_CHECK if (!AsyncManager->IsAvailable()) { return false; }
-#define PCGEX_ASYNC_CHECK_VOID if (!AsyncManager->IsAvailable()) { return; }
-
 
 #endif
 #pragma endregion
@@ -118,11 +117,14 @@ namespace PCGExMT
 		friend class FPCGExTask;
 		friend class FTaskGroup;
 
+		TSharedPtr<PCGEx::FLifecycle> Lifecycle;
+
 	public:
 		FTaskManager(FPCGExContext* InContext)
 			: Context(InContext)
 		{
 			PCGEX_LOG_CTR(FTaskManager)
+			Lifecycle = InContext->Lifecycle;
 		}
 
 		~FTaskManager();
@@ -143,7 +145,8 @@ namespace PCGExMT
 
 		TSharedPtr<FTaskGroup> TryCreateGroup(const FName& GroupName);
 
-		FORCEINLINE bool IsAvailable() const { return Stopped ? false : true; }
+		FORCEINLINE bool IsAlive() const { return Lifecycle->IsAlive(); }
+		FORCEINLINE bool IsAvailable() const { return Stopped ? false : Lifecycle->IsAlive(); }
 
 		template <typename T>
 		void Start(const TSharedPtr<T>& InTask)
@@ -202,7 +205,6 @@ namespace PCGExMT
 		FName GroupName = NAME_None;
 
 	public:
-		int8 bAvailable = 1;
 		using SimpleCallback = std::function<void()>;
 
 		using CompletionCallback = std::function<void()>;
@@ -227,6 +229,16 @@ namespace PCGExMT
 		{
 		}
 
+		void Cancel()
+		{
+			bCanceled = true;
+		}
+
+		bool IsCanceled() const
+		{
+			return bCanceled;
+		}
+
 		bool IsAvailable() const;
 
 		template <typename T, typename... Args>
@@ -240,7 +252,7 @@ namespace PCGExMT
 			if (OnPrepareSubLoopsCallback) { OnPrepareSubLoopsCallback(Loops); }
 
 			const TSharedPtr<FTaskGroup> Self = SharedThis(this);
-			
+
 			for (const FScope& Scope : Loops)
 			{
 				PCGEX_MAKE_SHARED(Task, T, std::forward<Args>(InArgs)...)
@@ -299,6 +311,9 @@ namespace PCGExMT
 			if (Manager->ForceSync) { Manager->StartSynchronousTask(InTask, SharedThis(this)); }
 			else { Manager->StartBackgroundTask(InTask, SharedThis(this)); }
 		}
+
+	private:
+		std::atomic<bool> bCanceled{false};
 	};
 
 	class /*PCGEXTENDEDTOOLKIT_API*/ FPCGExTask : public TSharedFromThis<FPCGExTask>
