@@ -20,6 +20,9 @@
 - #### The included PCGExtendedToolkit version is usually the most up-to-date branch, the available release is a few update behind.
 
 ### Some examples
+
+[Dynamic contouring on YT](https://www.youtube.com/watch?v=bpT4G8JR3jU)
+
 #### Interconnected rooms
 ![image](https://github.com/user-attachments/assets/8e3a82e8-801d-4897-8512-4bbc1589fa6e)
 
