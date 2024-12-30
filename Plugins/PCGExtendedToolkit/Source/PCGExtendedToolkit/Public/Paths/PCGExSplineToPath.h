@@ -46,8 +46,8 @@ public:
 
 	/** Point transform */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
-	FPCGExTransformDetails TransformDetails = FPCGExTransformDetails(false);
-
+	FPCGExLeanTransformDetails TransformDetails;
+	
 	/** Sample inputs.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Sampling", meta=(PCG_Overridable))
 	EPCGExSplineSamplingIncludeMode SampleInputs = EPCGExSplineSamplingIncludeMode::All;
