@@ -7,12 +7,23 @@
 #define LOCTEXT_NAMESPACE "PCGExCreateTensor"
 #define PCGEX_NAMESPACE CreateTensor
 
-UPCGExTensorOperation* UPCGExTensorFactoryBase::CreateOperation(FPCGExContext* InContext) const
+UPCGExTensorOperation* UPCGExTensorFactoryData::CreateOperation(FPCGExContext* InContext) const
 {
 	return nullptr; // Create shape builder operation
 }
 
-UPCGExParamFactoryBase* UPCGExTensorFactoryProviderSettings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const
+bool UPCGExTensorFactoryData::ExecuteInternal(FPCGExContext* InContext, bool& bAbort)
+{
+	if (!Super::ExecuteInternal(InContext, bAbort)) { return false; }
+	return InitInternalData(InContext);
+}
+
+bool UPCGExTensorFactoryData::InitInternalData(FPCGExContext* InContext)
+{
+	return false;
+}
+
+UPCGExFactoryData* UPCGExTensorFactoryProviderSettings::CreateFactory(FPCGExContext* InContext, UPCGExFactoryData* InFactory) const
 {
 	return InFactory;
 }

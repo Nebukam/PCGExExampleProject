@@ -18,7 +18,7 @@
 MACRO(Success, bool, false)\
 MACRO(Transform, FTransform, FTransform::Identity)
 
-class UPCGExFilterFactoryBase;
+class UPCGExFilterFactoryData;
 
 namespace PCGExPolyLine
 {

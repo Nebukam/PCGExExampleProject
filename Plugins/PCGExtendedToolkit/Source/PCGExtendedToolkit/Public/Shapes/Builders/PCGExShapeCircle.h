@@ -92,7 +92,7 @@ protected:
 
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExShapeCircleFactory : public UPCGExShapeBuilderFactoryBase
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExShapeCircleFactory : public UPCGExShapeBuilderFactoryData
 {
 	GENERATED_BODY()
 
@@ -118,5 +118,5 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, ShowOnlyInnerProperties))
 	FPCGExShapeCircleConfig Config;
 
-	virtual UPCGExParamFactoryBase* CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const override;
+	virtual UPCGExFactoryData* CreateFactory(FPCGExContext* InContext, UPCGExFactoryData* InFactory) const override;
 };

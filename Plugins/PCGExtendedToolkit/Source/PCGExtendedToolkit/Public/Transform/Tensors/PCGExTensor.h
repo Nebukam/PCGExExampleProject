@@ -6,6 +6,35 @@
 #include "Data/PCGExData.h"
 #include "PCGExTensor.generated.h"
 
+class UPCGExTensorFactoryData;
+class UPCGExTensorOperation;
+
+UENUM()
+enum class EPCGExTensorSamplingMode : uint8
+{
+	Weighted       = 0 UMETA(DisplayName = "Weighted", ToolTip="Compute a weighted average of the sampled tensors"),
+	OrderedInPlace = 1 UMETA(DisplayName = "Ordered (in place)", ToolTip="Applies tensor one after another in order, using the same original position"),
+	OrderedMutated = 2 UMETA(DisplayName = "Ordered (mutated)", ToolTip="Applies tensor & update sampling position one after another in order"),
+};
+
+USTRUCT(BlueprintType)
+struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExTensorSamplingDetails
+{
+	GENERATED_BODY()
+
+	FPCGExTensorSamplingDetails()
+	{
+	}
+
+	virtual ~FPCGExTensorSamplingDetails()
+	{
+	}
+
+	/** Resolution input type */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Weighting", meta = (PCG_NotOverridable))
+	EPCGExTensorSamplingMode SamplingMode = EPCGExTensorSamplingMode::Weighted;
+};
+
 USTRUCT(BlueprintType)
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExTensorConfigBase
 {
@@ -37,7 +66,6 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExTensorConfigBase
 
 	virtual void Init()
 	{
-		
 	}
 };
 
@@ -46,8 +74,28 @@ namespace PCGExTensor
 	const FName OutputTensorLabel = TEXT("Tensor");
 	const FName SourceTensorsLabel = TEXT("Tensors");
 
-	struct FSampleDirection
+	struct FTensorSample
 	{
-		FVector4 Direction;
+		FVector Direction = FVector::Zero(); // sample direction
+		double Strength = 0;                 // i.e, length
+		int32 Effectors = 0;                 // number of things that affected this sample
+		double TotalWeight = 0;              // total weights applied to this sample
+
+		FTensorSample() = default;
+		~FTensorSample() = default;
+	};
+
+	class FTensorsHandler : public TSharedFromThis<FTensorsHandler>
+	{
+		TArray<UPCGExTensorOperation*> Operations;
+
+	public:
+		FTensorsHandler();
+		bool Init(FPCGExContext* InContext, const TArray<TObjectPtr<const UPCGExTensorFactoryData>>& InFactories);
+		bool Init(FPCGExContext* InContext, const FName InPin);
+
+		bool SamplePosition(const FVector& InPosition, FTensorSample& OutSample);
+		bool SamplePositionOrderedInPlace(const FVector& InPosition, FTensorSample& OutSample);
+		bool SamplePositionOrderedMutated(const FVector& InPosition, FTensorSample& OutSample);
 	};
 }

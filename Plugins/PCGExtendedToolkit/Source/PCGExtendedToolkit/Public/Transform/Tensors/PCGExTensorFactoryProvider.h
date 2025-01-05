@@ -15,8 +15,9 @@ UPCGExTensorOperation* UPCGExTensor##_TENSOR##Factory::CreateOperation(FPCGExCon
 	NewOperation->Config = Config; \
 	NewOperation->Config.Init(); \
 	NewOperation->BaseConfig = NewOperation->Config; \
+	if(!NewOperation->Init(InContext, this)){ return nullptr; } \
 	return NewOperation; } \
-UPCGExParamFactoryBase* UPCGExCreateTensor##_TENSOR##Settings::CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const{ \
+UPCGExFactoryData* UPCGExCreateTensor##_TENSOR##Settings::CreateFactory(FPCGExContext* InContext, UPCGExFactoryData* InFactory) const{ \
 	UPCGExTensor##_TENSOR##Factory* NewFactory = InContext->ManagedObjects->New<UPCGExTensor##_TENSOR##Factory>(); \
 	NewFactory->Config = Config; \
 	return Super::CreateFactory(InContext, NewFactory);}
@@ -24,7 +25,7 @@ UPCGExParamFactoryBase* UPCGExCreateTensor##_TENSOR##Settings::CreateFactory(FPC
 class UPCGExTensorOperation;
 
 UCLASS(Abstract, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFactoryBase : public UPCGExParamFactoryBase
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFactoryData : public UPCGExFactoryData
 {
 	GENERATED_BODY()
 
@@ -35,6 +36,11 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFactoryBase : public UPCGExParamFac
 public:
 	virtual PCGExFactories::EType GetFactoryType() const override { return PCGExFactories::EType::Tensor; }
 	virtual UPCGExTensorOperation* CreateOperation(FPCGExContext* InContext) const;
+
+	virtual bool ExecuteInternal(FPCGExContext* InContext, bool& bAbort) override;
+
+protected:
+	virtual bool InitInternalData(FPCGExContext* InContext);
 };
 
 UCLASS(Abstract, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Graph|Params")
@@ -50,6 +56,10 @@ public:
 #endif
 	//~End UPCGSettings
 
+	/** Tensor Priority, only accounted for by if sampler is in any Ordered- mode.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayPriority=-1))
+	int32 Priority;
+
 	virtual FName GetMainOutputPin() const override { return PCGExTensor::OutputTensorLabel; }
-	virtual UPCGExParamFactoryBase* CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const override;
+	virtual UPCGExFactoryData* CreateFactory(FPCGExContext* InContext, UPCGExFactoryData* InFactory) const override;
 };

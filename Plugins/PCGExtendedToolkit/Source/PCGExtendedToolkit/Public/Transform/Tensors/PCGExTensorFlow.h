@@ -32,17 +32,25 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlow : public UPCGExTensorOperation
 
 public:
 	FPCGExTensorFlowConfig Config;
+
+	virtual bool Init(FPCGExContext* InContext, const UPCGExTensorFactoryData* InFactory) override;
+	
+protected:
+	
 };
 
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlowFactory : public UPCGExTensorFactoryBase
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlowFactory : public UPCGExTensorFactoryData
 {
 	GENERATED_BODY()
 
 public:
 	FPCGExTensorFlowConfig Config;
 	virtual UPCGExTensorOperation* CreateOperation(FPCGExContext* InContext) const override;
+
+protected:
+	virtual bool InitInternalData(FPCGExContext* InContext) override;
 };
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Tensors|Params")
@@ -67,5 +75,5 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, ShowOnlyInnerProperties))
 	FPCGExTensorFlowConfig Config;
 
-	virtual UPCGExParamFactoryBase* CreateFactory(FPCGExContext* InContext, UPCGExParamFactoryBase* InFactory) const override;
+	virtual UPCGExFactoryData* CreateFactory(FPCGExContext* InContext, UPCGExFactoryData* InFactory) const override;
 };
