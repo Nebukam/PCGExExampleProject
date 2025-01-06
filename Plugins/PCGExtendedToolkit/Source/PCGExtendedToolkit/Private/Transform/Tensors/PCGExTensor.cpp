@@ -8,6 +8,31 @@
 
 namespace PCGExTensor
 {
+	FEffectorSample& FEffectorSamples::Emplace_GetRef(const FVector& InDirection, const double InStrength, const double InWeight)
+	{
+		TensorSample.Weight += InWeight;
+		return Samples.Emplace_GetRef(InDirection, InStrength, InWeight);
+	}
+
+	FTensorSample FEffectorSamples::Flatten(const double InWeight)
+	{
+		TensorSample.Effectors = Samples.Num();
+
+		FVector Vector = FVector::ZeroVector;
+
+		for (const FEffectorSample& EffectorSample : Samples)
+		{
+			const double S = (EffectorSample.Strength * (EffectorSample.Weight / TensorSample.Weight));
+			Vector += EffectorSample.Direction * S;
+		}
+
+		TensorSample.Transform.SetLocation(Vector);
+		TensorSample.Transform.SetRotation(FRotationMatrix::MakeFromX(Vector.GetSafeNormal()).ToQuat());
+		TensorSample.Weight = InWeight;
+
+		return TensorSample;
+	}
+
 	FTensorsHandler::FTensorsHandler()
 	{
 	}
@@ -29,25 +54,91 @@ namespace PCGExTensor
 	{
 		TArray<TObjectPtr<const UPCGExTensorFactoryData>> InFactories;
 		if (!PCGExFactories::GetInputFactories(InContext, InPin, InFactories, {PCGExFactories::EType::Tensor}, true)) { return false; }
+		if (InFactories.IsEmpty())
+		{
+			PCGE_LOG_C(Error, GraphAndLog, InContext, FTEXT("Missing tensors."));
+			return false;
+		}
 		return Init(InContext, InFactories);
 	}
 
-	bool FTensorsHandler::SamplePosition(const FVector& InPosition, FTensorSample& OutSample)
+	FTensorSample FTensorsHandler::SampleAtPosition(const FVector& InPosition, bool& OutSuccess) const
 	{
-		// TODO : Go through all operations and gather samples, weighted average
-		return false;
+		FTensorSample Result = FTensorSample();
+
+		TArray<FTensorSample> Samples;
+		double TotalWeight = 0;
+
+		FVector WeightedTranslation = FVector::ZeroVector;
+		FQuat WeightedRotation = FQuat::Identity;
+		double CumulativeWeight = 0.0f;
+
+		for (const UPCGExTensorOperation* Op : Operations)
+		{
+			const FTensorSample Sample = Op->SampleAtPosition(InPosition);
+			if (Sample.Effectors == 0) { continue; }
+			Samples.Add(Sample);
+			TotalWeight += Sample.Weight;
+		}
+
+		OutSuccess = Samples.Num() > 0;
+
+		for (int i = 0; i < Samples.Num(); i++)
+		{
+			const FTensorSample& Sample = Samples[i];
+			const double W = Sample.Weight / TotalWeight;
+			WeightedTranslation += Sample.Transform.GetTranslation() * W;
+
+			if (i == 0)
+			{
+				WeightedRotation = Sample.Transform.GetRotation();
+				CumulativeWeight = W;
+			}
+			else
+			{
+				WeightedRotation = FQuat::Slerp(WeightedRotation, Sample.Transform.GetRotation(), W / (CumulativeWeight + W));
+				CumulativeWeight += W;
+			}
+		}
+
+		WeightedRotation.Normalize();
+
+		Result.Transform.SetTranslation(WeightedTranslation);
+		Result.Transform.SetRotation(WeightedRotation);
+		Result.Transform.SetScale3D(FVector::OneVector);
+
+		return Result;
 	}
 
-	bool FTensorsHandler::SamplePositionOrderedInPlace(const FVector& InPosition, FTensorSample& OutSample)
+	FTensorSample FTensorsHandler::SampleAtPositionOrderedInPlace(const FVector& InPosition, bool& OutSuccess) const
 	{
 		// TODO : Go through all operations and gather samples, apply them one after another
-		return false;
+		OutSuccess = false;
+		return FTensorSample{};
 	}
 
-	bool FTensorsHandler::SamplePositionOrderedMutated(const FVector& InPosition, FTensorSample& OutSample)
+	FTensorSample FTensorsHandler::SampleAtPositionOrderedMutated(const FVector& InPosition, bool& OutSuccess) const
 	{
 		FVector UpdatedPosition = InPosition;
 		// TODO : Go through all operations and gather samples, apply them & update sampling position one after another
-		return false;
+		OutSuccess = false;
+		return FTensorSample{};
 	}
+}
+
+void FPCGExTensorConfigBase::Init()
+{
+	if (!bUseLocalWeightFalloffCurve)
+	{
+		PCGExHelpers::LoadBlocking_AnyThread(WeightFalloffCurve);
+		LocalWeightFalloffCurve.ExternalCurve = WeightFalloffCurve.Get();
+	}
+	WeightFalloffCurveObj = LocalWeightFalloffCurve.GetRichCurveConst();
+
+	if (!bUseLocalStrengthFalloffCurve)
+	{
+		PCGExHelpers::LoadBlocking_AnyThread(StrengthFalloffCurve);
+		LocalStrengthFalloffCurve.ExternalCurve = StrengthFalloffCurve.Get();
+	}
+	StrengthFalloffCurveObj = LocalStrengthFalloffCurve.GetRichCurveConst();
 }

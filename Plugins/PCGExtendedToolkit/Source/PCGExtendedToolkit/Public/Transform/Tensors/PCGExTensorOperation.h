@@ -26,7 +26,7 @@ public:
 
 	virtual bool Init(FPCGExContext* InContext, const UPCGExTensorFactoryData* InFactory);
 	
-	virtual bool SamplePosition(const FVector& InPosition, PCGExTensor::FTensorSample& OutSample);
+	virtual PCGExTensor::FTensorSample SampleAtPosition(const FVector& InPosition) const;
 
 	virtual void Cleanup() override
 	{
@@ -47,6 +47,6 @@ public:
 	virtual void CopySettingsFrom(const UPCGExOperation* Other) override;
 	virtual bool Init(FPCGExContext* InContext, const UPCGExTensorFactoryData* InFactory) override;
 
-protected:
 	const UPCGPointData::PointOctree* Octree = nullptr;
+	TSharedPtr<PCGExDetails::FDistances> DistanceDetails;
 };

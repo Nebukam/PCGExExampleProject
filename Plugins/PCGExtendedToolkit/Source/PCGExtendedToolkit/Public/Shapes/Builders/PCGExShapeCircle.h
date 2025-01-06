@@ -29,7 +29,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExShapeCircleConfig : public FPCGExShapeCo
 	double StartAngleConstant = 0;
 
 	/** Start angle attribute, in degrees. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Start Angle", EditCondition="StartAngleInput == EPCGExInputValueType::Attribute", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="Start Angle", EditCondition="StartAngleInput != EPCGExInputValueType::Constant", EditConditionHides))
 	FPCGAttributePropertyInputSelector StartAngleAttribute;
 
 
@@ -42,7 +42,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExShapeCircleConfig : public FPCGExShapeCo
 	double EndAngleConstant = 360;
 
 	/** End angle attribute, in degrees. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="End Angle", EditCondition="EndAngleInput == EPCGExInputValueType::Attribute", EditConditionHides))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, DisplayName="End Angle", EditCondition="EndAngleInput != EPCGExInputValueType::Constant", EditConditionHides))
 	FPCGAttributePropertyInputSelector EndAngleAttribute;
 };
 

@@ -34,12 +34,11 @@ public:
 	FPCGExTensorMagnetConfig Config;
 
 	virtual bool Init(FPCGExContext* InContext, const UPCGExTensorFactoryData* InFactory) override;
-
 };
 
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorMagnetFactory : public UPCGExTensorFactoryData
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorMagnetFactory : public UPCGExTensorPointFactoryData
 {
 	GENERATED_BODY()
 
@@ -49,11 +48,10 @@ public:
 
 protected:
 	virtual bool InitInternalData(FPCGExContext* InContext) override;
-	
 };
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Tensors|Params")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCreateTensorMagnetSettings : public UPCGExTensorFactoryProviderSettings
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCreateTensorMagnetSettings : public UPCGExTensorPointFactoryProviderSettings
 {
 	GENERATED_BODY()
 
@@ -65,11 +63,7 @@ public:
 #endif
 	//~End UPCGSettings
 
-protected:
-	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
-
 public:
-	
 	/** Tensor properties */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable, ShowOnlyInnerProperties))
 	FPCGExTensorMagnetConfig Config;

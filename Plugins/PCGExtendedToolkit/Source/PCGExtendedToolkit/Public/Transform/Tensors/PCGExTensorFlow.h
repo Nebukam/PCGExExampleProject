@@ -26,14 +26,15 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExTensorFlowConfig : public FPCGExTensorCo
  * 
  */
 UCLASS(MinimalAPI)
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlow : public UPCGExTensorOperation
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlow : public UPCGExTensorPointOperation
 {
 	GENERATED_BODY()
 
 public:
 	FPCGExTensorFlowConfig Config;
-
 	virtual bool Init(FPCGExContext* InContext, const UPCGExTensorFactoryData* InFactory) override;
+
+	virtual PCGExTensor::FTensorSample SampleAtPosition(const FVector& InPosition) const override;
 	
 protected:
 	
@@ -41,7 +42,7 @@ protected:
 
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Data")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlowFactory : public UPCGExTensorFactoryData
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlowFactory : public UPCGExTensorPointFactoryData
 {
 	GENERATED_BODY()
 
@@ -54,7 +55,7 @@ protected:
 };
 
 UCLASS(MinimalAPI, BlueprintType, ClassGroup = (Procedural), Category="PCGEx|Tensors|Params")
-class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCreateTensorFlowSettings : public UPCGExTensorFactoryProviderSettings
+class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExCreateTensorFlowSettings : public UPCGExTensorPointFactoryProviderSettings
 {
 	GENERATED_BODY()
 
@@ -65,9 +66,6 @@ public:
 
 #endif
 	//~End UPCGSettings
-
-protected:
-	virtual TArray<FPCGPinProperties> InputPinProperties() const override;
 
 public:
 	
