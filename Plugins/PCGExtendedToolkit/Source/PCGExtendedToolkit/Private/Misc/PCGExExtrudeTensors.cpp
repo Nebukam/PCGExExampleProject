@@ -395,6 +395,9 @@ namespace PCGExExtrudeTensors
 		AsyncManager->FlushTasks(); // TODO Check if this is safe, we need to flush iteration tasks before creating new ones
 		
 		RemainingIterations--;
+		// TODO : If detecting collisions is enabled, start detection loop here
+		// Note : Closed loop search is probably very redundant here with collision
+		// Test only with last edge of each extrusion against all others extrusions including itself
 		if (!UpdateExtrusionQueue()) { StartParallelLoopForRange(ExtrusionQueue.Num()); }
 		
 	}
