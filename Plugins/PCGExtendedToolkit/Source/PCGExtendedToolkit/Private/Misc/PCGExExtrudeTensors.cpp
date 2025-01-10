@@ -392,8 +392,11 @@ namespace PCGExExtrudeTensors
 
 	void FProcessor::OnRangeProcessingComplete()
 	{
+		AsyncManager->FlushTasks(); // TODO Check if this is safe, we need to flush iteration tasks before creating new ones
+		
 		RemainingIterations--;
 		if (!UpdateExtrusionQueue()) { StartParallelLoopForRange(ExtrusionQueue.Num()); }
+		
 	}
 
 	bool FProcessor::UpdateExtrusionQueue()
