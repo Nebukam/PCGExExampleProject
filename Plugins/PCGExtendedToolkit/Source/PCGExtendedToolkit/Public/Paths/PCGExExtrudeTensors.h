@@ -11,7 +11,7 @@
 #include "PCGExPointsProcessor.h"
 #include "Data/PCGExDataForward.h"
 #include "Transform/PCGExTensorsTransform.h"
-#include "Transform/PCGExTransform.cpp"
+#include "Transform/PCGExTransform.h"
 #include "Transform/Tensors/PCGExTensor.h"
 #include "Transform/Tensors/PCGExTensorFactoryProvider.h"
 #include "Transform/Tensors/PCGExTensorHandler.h"
