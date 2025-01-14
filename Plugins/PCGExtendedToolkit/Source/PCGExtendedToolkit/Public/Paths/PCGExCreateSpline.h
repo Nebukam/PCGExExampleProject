@@ -10,6 +10,7 @@
 #include "PCGExPointsProcessor.h"
 #include "Elements/PCGCreateSpline.h"
 #include "Tangents/PCGExTangentsOperation.h"
+#include "Transform/PCGExTransform.h"
 
 #include "PCGExCreateSpline.generated.h"
 
@@ -76,6 +77,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
 	TArray<FName> PostProcessFunctionNames;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
+	FPCGExAttachmentRules AttachmentRules;
+	
 	bool GetApplyTangents() const
 	{
 		return (!bApplyCustomPointType && DefaultPointType == EPCGExSplinePointType::CurveCustomTangent);

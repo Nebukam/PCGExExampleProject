@@ -95,8 +95,7 @@ bool FPCGExSampleNearestPointElement::Boot(FPCGExContext* InContext) const
 		Settings->TargetAttributes, Context->TargetsFacade->Source, Context->BlendingDetails, MissingTargetAttributes);
 
 	for (const FName Id : MissingTargetAttributes) { PCGE_LOG_C(Warning, GraphAndLog, InContext, FText::Format(FTEXT("Missing source attribute on targets: {0}."), FText::FromName(Id))); }
-
-
+	
 	PCGEX_FOREACH_FIELD_NEARESTPOINT(PCGEX_OUTPUT_VALIDATE_NAME)
 
 	Context->DistanceDetails = Settings->DistanceDetails.MakeDistances();
@@ -250,6 +249,12 @@ namespace PCGExSampleNearestPoints
 		StartParallelLoopForPoints();
 
 		return true;
+	}
+
+	void FProcessor::PrepareLoopScopesForPoints(const TArray<PCGExMT::FScope>& Loops)
+	{
+		TPointsProcessor<FPCGExSampleNearestPointContext, UPCGExSampleNearestPointSettings>::PrepareLoopScopesForPoints(Loops);
+		MaxDistanceValue = MakeShared<PCGExMT::TScopedValue<double>>(Loops, 0);
 	}
 
 	void FProcessor::PrepareSingleLoopScopeForPoints(const PCGExMT::FScope& Scope)
@@ -424,6 +429,8 @@ namespace PCGExSampleNearestPoints
 		PCGEX_OUTPUT_VALUE(NumSamples, Index, TotalSamples)
 		PCGEX_OUTPUT_VALUE(SampledIndex, Index, Stats.IsValid() ? Stats.Closest.Index : -1)
 
+		MaxDistanceValue->Set(Scope, FMath::Max(MaxDistanceValue->Get(Scope), WeightedDistance));
+		
 		FPlatformAtomics::InterlockedExchange(&bAnySuccess, 1);
 	}
 
