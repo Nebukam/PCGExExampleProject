@@ -18,7 +18,6 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExInfluenceDetails
 
 	FPCGExInfluenceDetails()
 	{
-		
 	}
 
 	/** Type of Weight */

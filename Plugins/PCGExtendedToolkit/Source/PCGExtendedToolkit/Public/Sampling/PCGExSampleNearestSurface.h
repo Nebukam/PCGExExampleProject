@@ -130,7 +130,7 @@ public:
 	/** Whether to output normalized distance or not*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Outputs", meta=(PCG_Overridable, DisplayName=" └─ Normalized", EditCondition="bWriteDistance", EditConditionHides, HideEditConditionToggle))
 	bool bOutputNormalizedDistance = false;
-	
+
 	/** Write the inside/outside status of the point. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Outputs", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteIsInside = false;
@@ -223,7 +223,7 @@ namespace PCGExSampleNearestSurface
 
 		TSharedPtr<PCGExData::FDataForwardHandler> SurfacesForward;
 
-		TSharedPtr<PCGExData::TBuffer<double>> MaxDistanceGetter;		
+		TSharedPtr<PCGExData::TBuffer<double>> MaxDistanceGetter;
 		TSharedPtr<PCGExMT::TScopedValue<double>> MaxDistanceValue;
 
 		PCGEX_FOREACH_FIELD_NEARESTSURFACE(PCGEX_OUTPUT_DECL)

@@ -50,7 +50,7 @@ public:
 	/** Stiffness of the edges. Lower values yield better placement (less overlap), but edge topology may be affected. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable, EditCondition="EdgeFitting!=EPCGExRelaxEdgeFitting::Ignore", EditConditionHides))
 	double SpringConstant = 0.1;
-	
+
 	/** If this was a physic simulation, represent the time advance each iteration */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta = (PCG_Overridable))
 	double TimeStep = 0.01;

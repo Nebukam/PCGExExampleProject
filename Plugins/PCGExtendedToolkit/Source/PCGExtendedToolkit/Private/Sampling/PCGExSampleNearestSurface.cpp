@@ -262,7 +262,7 @@ namespace PCGExSampleNearestSurface
 				PCGEX_OUTPUT_VALUE(Distance, Index, MinDist)
 				PCGEX_OUTPUT_VALUE(Success, Index, true)
 				SampleState[Index] = true;
-				
+
 				MaxDistanceValue->Set(Scope, FMath::Max(MaxDistanceValue->Get(Scope), MinDist));
 
 				FPlatformAtomics::InterlockedExchange(&bAnySuccess, 1);

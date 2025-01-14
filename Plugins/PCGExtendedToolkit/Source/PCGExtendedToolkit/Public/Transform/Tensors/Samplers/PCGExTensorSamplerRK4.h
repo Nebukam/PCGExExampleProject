@@ -23,6 +23,6 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorSamplerRK4 : public UPCGExTensorSam
 
 public:
 	virtual void CopySettingsFrom(const UPCGExOperation* Other) override;
-	virtual bool PrepareForData(FPCGExContext* InContext);
-	virtual PCGExTensor::FTensorSample Sample(const TArray<UPCGExTensorOperation*>& InTensors, const FTransform& InProbe, bool& OutSuccess) const;
+	virtual bool PrepareForData(FPCGExContext* InContext) override;
+	virtual PCGExTensor::FTensorSample Sample(const TArray<UPCGExTensorOperation*>& InTensors, const FTransform& InProbe, bool& OutSuccess) const override;
 };

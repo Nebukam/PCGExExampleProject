@@ -385,7 +385,7 @@ namespace PCGExSampleNearestBounds
 		PCGEX_OUTPUT_VALUE(SampledIndex, Index, Stats.IsValid() ? Stats.Closest.Index : -1)
 
 		MaxDistanceValue->Set(Scope, FMath::Max(MaxDistanceValue->Get(Scope), WeightedDistance));
-		
+
 		FPlatformAtomics::InterlockedExchange(&bAnySuccess, 1);
 	}
 

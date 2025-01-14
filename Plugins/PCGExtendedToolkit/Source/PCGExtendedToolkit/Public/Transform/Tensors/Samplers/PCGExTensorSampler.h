@@ -23,7 +23,7 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorSampler : public UPCGExOperation
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings, meta=(PCG_Overridable))
 	double Radius = 1;
-	
+
 	virtual void CopySettingsFrom(const UPCGExOperation* Other) override;
 	virtual bool PrepareForData(FPCGExContext* InContext);
 	virtual PCGExTensor::FTensorSample RawSample(const TArray<UPCGExTensorOperation*>& InTensors, const FTransform& InProbe) const;

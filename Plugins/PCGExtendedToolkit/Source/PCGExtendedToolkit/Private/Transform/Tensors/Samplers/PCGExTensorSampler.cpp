@@ -38,7 +38,7 @@ PCGExTensor::FTensorSample UPCGExTensorSampler::RawSample(const TArray<UPCGExTen
 		Samples.Add(Sample);
 		TotalWeight += Sample.Weight;
 	}
-	
+
 	for (int i = 0; i < Samples.Num(); i++)
 	{
 		const PCGExTensor::FTensorSample& Sample = Samples[i];

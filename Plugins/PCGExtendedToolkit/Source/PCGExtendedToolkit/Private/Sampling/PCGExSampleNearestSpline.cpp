@@ -508,7 +508,7 @@ namespace PCGExSampleNearestSpline
 		PCGEX_OUTPUT_VALUE(ClosedLoop, Index, bClosed)
 
 		MaxDistanceValue->Set(Scope, FMath::Max(MaxDistanceValue->Get(Scope), WeightedDistance));
-		
+
 		FPlatformAtomics::InterlockedExchange(&bAnySuccess, 1);
 	}
 

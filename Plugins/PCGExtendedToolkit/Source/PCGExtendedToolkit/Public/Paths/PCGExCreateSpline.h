@@ -79,7 +79,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
 	FPCGExAttachmentRules AttachmentRules;
-	
+
 	bool GetApplyTangents() const
 	{
 		return (!bApplyCustomPointType && DefaultPointType == EPCGExSplinePointType::CurveCustomTangent);

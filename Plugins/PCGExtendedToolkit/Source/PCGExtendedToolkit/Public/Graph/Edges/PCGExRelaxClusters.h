@@ -54,7 +54,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = Settings, Instanced, meta=(PCG_Overridable, NoResetToDefault, ShowOnlyInnerProperties))
 	TObjectPtr<UPCGExRelaxClusterOperation> Relaxing;
 
-	
+
 	/** Write the final direction and size of the relaxation. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Outputs", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteDirectionAndSize = false;
@@ -88,7 +88,7 @@ struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExRelaxClustersContext final : FPCGExEdges
 	friend class FPCGExRelaxClustersElement;
 
 	PCGEX_FOREACH_FIELD_RELAX_CLUSTER(PCGEX_OUTPUT_DECL_TOGGLE)
-	
+
 	UPCGExRelaxClusterOperation* Relaxing = nullptr;
 };
 
@@ -124,7 +124,7 @@ namespace PCGExRelaxClusters
 		TSharedPtr<TArray<FTransform>> SecondaryBuffer;
 
 		FPCGExInfluenceDetails InfluenceDetails;
-		
+
 		TSharedPtr<PCGExMT::TScopedValue<double>> MaxDistanceValue;
 
 	public:
@@ -134,7 +134,7 @@ namespace PCGExRelaxClusters
 		}
 
 		PCGEX_FOREACH_FIELD_RELAX_CLUSTER(PCGEX_OUTPUT_DECL)
-		
+
 		virtual ~FProcessor() override;
 
 		virtual TSharedPtr<PCGExCluster::FCluster> HandleCachedCluster(const TSharedRef<PCGExCluster::FCluster>& InClusterRef) override;
@@ -149,7 +149,7 @@ namespace PCGExRelaxClusters
 	class FBatch final : public PCGExClusterMT::TBatch<FProcessor>
 	{
 		PCGEX_FOREACH_FIELD_RELAX_CLUSTER(PCGEX_OUTPUT_DECL)
-		
+
 	public:
 		FBatch(FPCGExContext* InContext, const TSharedRef<PCGExData::FPointIO>& InVtx, TArrayView<TSharedRef<PCGExData::FPointIO>> InEdges);
 		virtual ~FBatch() override;

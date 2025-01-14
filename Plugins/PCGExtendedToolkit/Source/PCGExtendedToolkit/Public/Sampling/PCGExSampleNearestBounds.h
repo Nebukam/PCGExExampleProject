@@ -198,7 +198,7 @@ public:
 	/** Whether to output normalized distance or not*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Outputs", meta=(PCG_Overridable, DisplayName=" └─ Normalized", EditCondition="bWriteDistance", EditConditionHides, HideEditConditionToggle))
 	bool bOutputNormalizedDistance = false;
-	
+
 	/** Write the sampled Signed distance. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Outputs", meta=(PCG_Overridable, InlineEditConditionToggle))
 	bool bWriteSignedDistance = false;

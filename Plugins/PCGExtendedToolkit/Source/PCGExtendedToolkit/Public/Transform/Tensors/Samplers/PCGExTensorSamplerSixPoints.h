@@ -23,8 +23,8 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorSamplerSixPoints : public UPCGExTen
 
 public:
 	virtual void CopySettingsFrom(const UPCGExOperation* Other) override;
-	virtual bool PrepareForData(FPCGExContext* InContext);
-	virtual PCGExTensor::FTensorSample Sample(const TArray<UPCGExTensorOperation*>& InTensors, const FTransform& InProbe, bool& OutSuccess) const;
+	virtual bool PrepareForData(FPCGExContext* InContext) override;
+	virtual PCGExTensor::FTensorSample Sample(const TArray<UPCGExTensorOperation*>& InTensors, const FTransform& InProbe, bool& OutSuccess) const override;
 
 protected:
 	const FVector Points[6] = {FVector::ForwardVector, FVector::BackwardVector, FVector::UpVector, FVector::DownVector, FVector::LeftVector, FVector::RightVector};

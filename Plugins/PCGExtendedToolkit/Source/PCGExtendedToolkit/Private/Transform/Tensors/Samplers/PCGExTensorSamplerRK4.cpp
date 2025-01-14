@@ -29,7 +29,7 @@ PCGExTensor::FTensorSample UPCGExTensorSamplerRK4::Sample(const TArray<UPCGExTen
 
 	PCGExTensor::FTensorSample K2 = Super::RawSample(InTensors, K1.GetTransformed(InProbe, (Radius * 0.5)));
 	Result += K2;
-	
+
 	PCGExTensor::FTensorSample K3 = Super::RawSample(InTensors, K2.GetTransformed(InProbe, (Radius * 0.5)));
 	Result += K3;
 
