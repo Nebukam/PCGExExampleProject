@@ -16,6 +16,8 @@ It also comes with a set of lower-level, more generic features to manipulate att
 
 For questions & support, join the [PCGEx Discord Server](https://discord.gg/mde2vC5gbE)!
 
+#### *You can also get it from [FAB](https://www.fab.com/listings/3f0bea1c-7406-4441-951b-8b2ca155f624)!*
+
 ## **[Example Project](https://github.com/Nebukam/PCGExExampleProject)**
 ![image](https://github.com/user-attachments/assets/b8bd713e-0b60-4cdc-84d9-dd776d452bf8)
 
@@ -35,18 +37,37 @@ Powerful tool to extract, transfer and blend data between groups of points, spli
 
 ![hl-sampling](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/docs/_sources/assets/misc/highlight-samplers.jpg)
 
+### Path Manipulation
+Extensive toolset focusing on path manipulation & modification
+![hl-paths](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/docs/_sources/assets/misc/highlight-paths.jpg)
+
+### Tensors & vector fields
+A very easy to use toolset to create & work with tensors, allowing to transform points & extrude paths using spatial effectors
+
+![hl-misc](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/docs/_sources/assets/misc/highlight-tensors.jpg)
+
 ### Low level utilities
 A lot of simple yet powerful utility nodes ranging from complex sorting, complex partitioning, remapping, advanced filters with chainable conditions, to bitmask operations.
 
 ![hl-misc](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/docs/_sources/assets/misc/highlight-miscjpg.jpg)
 
-#### *And so much more -- PCGEx has 100+ nodes!*
+#### *And so much more -- PCGEx has 180+ nodes!*
+
+### Contributions
+To contribute, fork main and please make sure that your code :
+* Compile & Package on 5.3
+* Compile & Package on 5.4
+* Compile & Package on 5.5
+  
+*Plugin packaging works differently from project packaging, please check both!*
 
 ### Disclaimer
 This software is provided under the MIT License. It is freely available for use & modifications, and may be incorporated into commercial products without the necessity of attribution (*though it is appreciated*). **The contents of this project are entirely original, comprising no AI-generated materials or third-party content, including but not limited to code and assets.**
 
-### Thanks
+### Special Thanks
 - Kudo to [@MikeC](https://github.com/mikec316) for his reckless experiments with uncooked releases, feedbacks, suggestions. Without him this plugin wouldn't be as useful and stable as it is today.
 - The Epic staff in the person of [@Amathlog](https://github.com/Amathlog), for his availability and readiness to help with all things PCG.
 - [@Erlandys](https://github.com/Erlandys) for his invaluable insights into advanced C++.
+- [@Syscrusher](https://github.com/sna-scourtney) for his invaluable help and support on Linux
 - [@MaximeDup](https://github.com/MaximeDup) & [@EmSeta](https://github.com/EmSeta) for helping with the macOS version
+- And of course the contributors, but they have their own special place on the sidebar <3
