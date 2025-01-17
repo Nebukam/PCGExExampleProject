@@ -49,7 +49,7 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExTensorFlow : public UPCGExTensorPointOper
 	GENERATED_BODY()
 
 public:
-	FPCGExTensorFlowConfig Config;
+	FPCGExTensorFlowConfig Config;	
 	virtual bool Init(FPCGExContext* InContext, const UPCGExTensorFactoryData* InFactory) override;
 
 	virtual PCGExTensor::FTensorSample Sample(const FTransform& InProbe) const override;

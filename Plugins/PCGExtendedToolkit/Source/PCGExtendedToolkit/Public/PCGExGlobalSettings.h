@@ -67,6 +67,10 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExGlobalSettings : public UObject
 	GENERATED_BODY()
 
 public:
+	/** Value applied by default to node caching when `Default` is selected*/
+	UPROPERTY(EditAnywhere, config, Category = Performance, meta=(ClampMin=1))
+	bool bDefaultCacheBehaviorValue = true;
+	
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Cluster", meta=(ClampMin=1))
 	int32 SmallClusterSize = 256;
 

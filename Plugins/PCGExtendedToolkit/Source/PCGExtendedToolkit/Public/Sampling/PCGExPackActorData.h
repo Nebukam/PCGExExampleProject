@@ -590,6 +590,9 @@ public:
 	/** */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Settings)
 	bool bOmitEmptyOutputs = true;
+
+protected:
+	virtual bool ShouldCache() const override { return false; }
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPackActorDataContext final : FPCGExPointsProcessorContext

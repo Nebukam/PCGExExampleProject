@@ -58,6 +58,7 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExBitmaskFilterFactory : public UPCGExFilte
 	GENERATED_BODY()
 
 public:
+	UPROPERTY()
 	FPCGExBitmaskFilterConfig Config;
 
 	virtual TSharedPtr<PCGExPointFilter::FFilter> CreateFilter() const override;

@@ -44,14 +44,14 @@ TArray<FPCGPinProperties> UPCGExEdgesProcessorSettings::InputPinProperties() con
 
 	if (SupportsPointFilters())
 	{
-		if (RequiresPointFilters()) { PCGEX_PIN_PARAMS(GetPointFilterPin(), GetPointFilterTooltip(), Required, {}) }
-		else { PCGEX_PIN_PARAMS(GetPointFilterPin(), GetPointFilterTooltip(), Normal, {}) }
+		if (RequiresPointFilters()) { PCGEX_PIN_FACTORIES(GetPointFilterPin(), GetPointFilterTooltip(), Required, {}) }
+		else { PCGEX_PIN_FACTORIES(GetPointFilterPin(), GetPointFilterTooltip(), Normal, {}) }
 	}
 
 	if (SupportsEdgeSorting())
 	{
-		if (RequiresEdgeSorting()) { PCGEX_PIN_PARAMS(PCGExGraph::SourceEdgeSortingRules, "Plug sorting rules here. Order is defined by each rule' priority value, in ascending order.", Required, {}) }
-		else { PCGEX_PIN_PARAMS(PCGExGraph::SourceEdgeSortingRules, "Plug sorting rules here. Order is defined by each rule' priority value, in ascending order.", Normal, {}) }
+		if (RequiresEdgeSorting()) { PCGEX_PIN_FACTORIES(PCGExGraph::SourceEdgeSortingRules, "Plug sorting rules here. Order is defined by each rule' priority value, in ascending order.", Required, {}) }
+		else { PCGEX_PIN_FACTORIES(PCGExGraph::SourceEdgeSortingRules, "Plug sorting rules here. Order is defined by each rule' priority value, in ascending order.", Normal, {}) }
 	}
 	return PinProperties;
 }

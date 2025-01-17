@@ -31,6 +31,14 @@
 struct FPCGExPointsProcessorContext;
 class FPCGExPointsProcessorElement;
 
+UENUM()
+enum class EPCGExCachingBehavior : uint8
+{
+	Default  = 0 UMETA(DisplayName = "Default", Tooltip="Uses the default value selected in settings"),
+	Enabled  = 1 UMETA(DisplayName = "Enabled", Tooltip="Caching of this node is enabled, if possible."),
+	Disabled = 2 UMETA(DisplayName = "Disabled", Tooltip="Caching of this node is disabled, if possible.")
+};
+
 UCLASS(Abstract, BlueprintType, ClassGroup = (Procedural))
 class PCGEXTENDEDTOOLKIT_API UPCGExPointsProcessorSettings : public UPCGSettings
 {
@@ -68,7 +76,7 @@ public:
 	virtual bool RequiresPointFilters() const { return false; }
 
 	bool SupportsPointFilters() const { return !GetPointFilterPin().IsNone(); }
-
+	
 	/** Forces execution on main thread. Work is still chunked. Turning this off ensure linear order of operations, and, in most case, determinism.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, DisplayName="Do Async Processing (Debug)", AdvancedDisplay))
 	bool bDoAsyncProcessing = true;
@@ -79,8 +87,8 @@ public:
 
 	/** Cache the results of this node. Can yield unexpected result in certain cases.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
-	bool bCacheResult = false;
-
+	EPCGExCachingBehavior CachingBehavior = EPCGExCachingBehavior::Default;
+		
 	/** Flatten the output of this node.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
 	bool bFlattenOutput = false;
@@ -106,6 +114,9 @@ public:
 	bool bQuietMissingInputError = false;
 
 	//~End UPCGExPointsProcessorSettings
+
+protected:
+	virtual bool ShouldCache() const;
 };
 
 struct PCGEXTENDEDTOOLKIT_API FPCGExPointsProcessorContext : FPCGExContext

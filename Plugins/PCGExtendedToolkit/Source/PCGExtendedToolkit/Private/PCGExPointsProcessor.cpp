@@ -50,8 +50,8 @@ TArray<FPCGPinProperties> UPCGExPointsProcessorSettings::InputPinProperties() co
 
 	if (SupportsPointFilters())
 	{
-		if (RequiresPointFilters()) { PCGEX_PIN_PARAMS(GetPointFilterPin(), GetPointFilterTooltip(), Required, {}) }
-		else { PCGEX_PIN_PARAMS(GetPointFilterPin(), GetPointFilterTooltip(), Normal, {}) }
+		if (RequiresPointFilters()) { PCGEX_PIN_FACTORIES(GetPointFilterPin(), GetPointFilterTooltip(), Required, {}) }
+		else { PCGEX_PIN_FACTORIES(GetPointFilterPin(), GetPointFilterTooltip(), Normal, {}) }
 	}
 
 	return PinProperties;
@@ -66,6 +66,20 @@ TArray<FPCGPinProperties> UPCGExPointsProcessorSettings::OutputPinProperties() c
 }
 
 PCGExData::EIOInit UPCGExPointsProcessorSettings::GetMainOutputInitMode() const { return PCGExData::EIOInit::New; }
+
+bool UPCGExPointsProcessorSettings::ShouldCache() const
+{
+	switch (CachingBehavior)
+	{
+	default:
+	case EPCGExCachingBehavior::Default:
+		return GetDefault<UPCGExGlobalSettings>()->bDefaultCacheBehaviorValue;
+	case EPCGExCachingBehavior::Enabled:
+		return true;
+	case EPCGExCachingBehavior::Disabled:
+		return false;
+	}
+}
 
 FPCGExPointsProcessorContext::~FPCGExPointsProcessorContext()
 {
@@ -278,7 +292,7 @@ FPCGContext* FPCGExPointsProcessorElement::Initialize(
 bool FPCGExPointsProcessorElement::IsCacheable(const UPCGSettings* InSettings) const
 {
 	const UPCGExPointsProcessorSettings* Settings = static_cast<const UPCGExPointsProcessorSettings*>(InSettings);
-	return Settings->bCacheResult;
+	return Settings->ShouldCache();
 }
 
 void FPCGExPointsProcessorElement::DisabledPassThroughData(FPCGContext* Context) const
