@@ -112,5 +112,5 @@ public:
 #endif
 
 protected:
-	virtual bool ShouldCache() const override { return true; }
+	virtual bool IsCacheable() const override { return true; }
 };

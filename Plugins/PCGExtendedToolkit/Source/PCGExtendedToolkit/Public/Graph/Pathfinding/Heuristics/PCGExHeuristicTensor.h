@@ -126,5 +126,5 @@ public:
 #endif
 
 protected:
-	virtual bool ShouldCache() const override { return false; } // can't cache tensors yet
+	virtual bool IsCacheable() const override { return false; } // can't cache tensors yet
 };

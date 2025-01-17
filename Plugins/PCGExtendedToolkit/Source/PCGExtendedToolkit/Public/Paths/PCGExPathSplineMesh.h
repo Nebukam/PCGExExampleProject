@@ -133,7 +133,7 @@ public:
 	TArray<FName> PostProcessFunctionNames;
 
 protected:
-	virtual bool ShouldCache() const override { return false; }
+	virtual bool IsCacheable() const override { return false; }
 	
 };
 

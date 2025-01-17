@@ -38,6 +38,14 @@
 #endif
 
 UENUM()
+enum class EPCGExCachingBehavior : uint8
+{
+	Default  = 0 UMETA(DisplayName = "Default", Tooltip="Uses the default value selected in settings"),
+	Enabled  = 1 UMETA(DisplayName = "Enabled", Tooltip="Caching of this node is enabled, if possible."),
+	Disabled = 2 UMETA(DisplayName = "Disabled", Tooltip="Caching of this node is disabled, if possible.")
+};
+
+UENUM()
 enum class EPCGExTransformMode : uint8
 {
 	Absolute = 0 UMETA(DisplayName = "Absolute", ToolTip="Absolute, ignores source transform."),

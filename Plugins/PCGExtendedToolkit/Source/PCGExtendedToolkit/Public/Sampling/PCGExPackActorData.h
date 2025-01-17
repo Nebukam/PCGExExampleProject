@@ -592,7 +592,7 @@ public:
 	bool bOmitEmptyOutputs = true;
 
 protected:
-	virtual bool ShouldCache() const override { return false; }
+	virtual bool IsCacheable() const override { return false; }
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExPackActorDataContext final : FPCGExPointsProcessorContext

@@ -69,6 +69,8 @@ PCGExData::EIOInit UPCGExPointsProcessorSettings::GetMainOutputInitMode() const 
 
 bool UPCGExPointsProcessorSettings::ShouldCache() const
 {
+	if (!IsCacheable()) { return false; }
+	
 	switch (CachingBehavior)
 	{
 	default:

@@ -31,14 +31,6 @@
 struct FPCGExPointsProcessorContext;
 class FPCGExPointsProcessorElement;
 
-UENUM()
-enum class EPCGExCachingBehavior : uint8
-{
-	Default  = 0 UMETA(DisplayName = "Default", Tooltip="Uses the default value selected in settings"),
-	Enabled  = 1 UMETA(DisplayName = "Enabled", Tooltip="Caching of this node is enabled, if possible."),
-	Disabled = 2 UMETA(DisplayName = "Disabled", Tooltip="Caching of this node is disabled, if possible.")
-};
-
 UCLASS(Abstract, BlueprintType, ClassGroup = (Procedural))
 class PCGEXTENDEDTOOLKIT_API UPCGExPointsProcessorSettings : public UPCGSettings
 {
@@ -116,6 +108,7 @@ public:
 	//~End UPCGExPointsProcessorSettings
 
 protected:
+	virtual bool IsCacheable() const { return false; }
 	virtual bool ShouldCache() const;
 };
 

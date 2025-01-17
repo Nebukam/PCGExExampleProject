@@ -71,6 +71,22 @@ bool UPCGExFactoryProviderSettings::GetPinExtraIcon(const UPCGPin* InPin, FName&
 }
 #endif
 
+bool UPCGExFactoryProviderSettings::ShouldCache() const
+{
+	if (!IsCacheable()) { return false; }
+	
+	switch (CachingBehavior)
+	{
+	default:
+	case EPCGExCachingBehavior::Default:
+		return GetDefault<UPCGExGlobalSettings>()->bDefaultCacheBehaviorValue;
+	case EPCGExCachingBehavior::Enabled:
+		return true;
+	case EPCGExCachingBehavior::Disabled:
+		return false;
+	}
+}
+
 FPCGExFactoryProviderContext::~FPCGExFactoryProviderContext()
 {
 	for (const TSharedPtr<PCGExMT::FDeferredCallbackHandle>& Task : DeferredTasks) { CancelDeferredCallback(Task); }

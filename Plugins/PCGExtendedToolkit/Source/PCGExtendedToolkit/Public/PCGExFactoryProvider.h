@@ -60,7 +60,7 @@ class PCGEXTENDEDTOOLKIT_API UPCGExParamDataBase : public UPCGExPointData
 	GENERATED_BODY()
 
 public:
-	virtual EPCGDataType GetDataType() const override { return EPCGDataType::PointOrParam; }
+	virtual EPCGDataType GetDataType() const override { return EPCGDataType::Param; } //PointOrParam would be best but it's gray and I don't like it
 
 	virtual void OutputConfigToMetadata();
 
@@ -120,7 +120,7 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExFactoryProviderSettings : public UPCGSett
 	GENERATED_BODY()
 
 	friend class FPCGExFactoryProviderElement;
-	
+
 public:
 	//~Begin UPCGSettings
 #if WITH_EDITOR
@@ -148,12 +148,17 @@ public:
 #endif
 	//~End UPCGExFactoryProviderSettings
 
+	/** Cache the results of this node. Can yield unexpected result in certain cases.*/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
+	EPCGExCachingBehavior CachingBehavior = EPCGExCachingBehavior::Default;
+	
 	/** Whether this factory can register consumable attributes or not. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Cleanup", meta = (PCG_NotOverridable))
 	bool bCleanupConsumableAttributes = false;
 
 protected:
-	virtual bool ShouldCache() const { return false; } // Until I find a way to properly cache factories :(
+	virtual bool IsCacheable() const { return false; } // Until I find a way to properly cache factories :(
+	virtual bool ShouldCache() const; 
 };
 
 struct /*PCGEXTENDEDTOOLKIT_API*/ FPCGExFactoryProviderContext : FPCGExContext
