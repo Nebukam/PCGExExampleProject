@@ -191,10 +191,12 @@ namespace PCGExFuseClusters
 		if (&Batch->Processors.Last().Get() != this) { return; }
 
 		AsyncManager->DeferredResumeExecution(
-			[PCGEX_ASYNC_THIS_CAPTURE]()
+			[PCGEX_ASYNC_THIS_CAPTURE, Token = AsyncManager->TryCreateToken("EarlyExit")]()
 			{
+				// We get a token to ensure we're not immediately done
 				// Hack to force daisy chain advance, since we know when we're ready to do so
 				PCGEX_ASYNC_THIS
+				if (const TSharedPtr<PCGExMT::FAsyncToken> Pinned = Token.Pin()) { Pinned->Release(); }
 				This->Context->ProcessClusters(PCGExGraph::State_PreparingUnion); // Force move to next
 			});
 	}

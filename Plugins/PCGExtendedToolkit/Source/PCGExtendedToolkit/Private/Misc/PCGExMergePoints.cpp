@@ -180,15 +180,16 @@ namespace PCGExMergePoints
 
 	void FBatch::OnProcessingPreparationComplete()
 	{
-		PCGEX_ASYNC_GROUP_CHKD_VOID(AsyncManager, LaunchMerge)
-		LaunchMerge->AddSimpleCallback(
+		StartMerge();
+		/*
+		PCGEX_LAUNCH(
+			PCGExMT::FDeferredCallbackTask,
 			[PCGEX_ASYNC_THIS_CAPTURE]()
 			{
 				PCGEX_ASYNC_THIS
 				This->StartMerge();
 			});
-
-		LaunchMerge->StartSimpleCallbacks();
+			*/
 	}
 
 	void FBatch::Write()
@@ -224,7 +225,7 @@ namespace PCGExMergePoints
 
 		// Cleanup tags that are used internally for data recognition, along with the tags we will be converting to data
 		Context->CompositeDataFacade->Source->Tags->Remove(IgnoredAttributes);
-		
+
 		TBatch<FProcessor>::OnProcessingPreparationComplete(); //!
 	}
 }

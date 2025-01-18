@@ -127,6 +127,8 @@ void FPCGExEdgesProcessorContext::OutputBatches() const
 
 bool FPCGExEdgesProcessorContext::ProcessClusters(const PCGEx::ContextState NextStateId, const bool bIsNextStateAsync)
 {
+	//FWriteScopeLock WriteScopeLock(ClusterProcessingLock); // Just in case
+
 	if (!bBatchProcessingEnabled) { return true; }
 
 	if (bClusterBatchInlined)

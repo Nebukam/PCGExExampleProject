@@ -92,6 +92,7 @@ struct PCGEXTENDEDTOOLKIT_API FPCGExEdgesProcessorContext : FPCGExPointsProcesso
 	void OutputBatches() const;
 
 protected:
+	mutable FRWLock ClusterProcessingLock;
 	TArray<TObjectPtr<const UPCGExHeuristicsFactoryData>> HeuristicsFactories;
 
 	virtual bool ProcessClusters(const PCGEx::ContextState NextStateId, const bool bIsNextStateAsync = false);

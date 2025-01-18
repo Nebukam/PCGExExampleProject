@@ -40,6 +40,8 @@ enum class EPCGExDataBlendingTypeDefault : uint8
 	AbsoluteMax      = 13 UMETA(DisplayName = "Unsigned Max", ToolTip="Component-wise MAX on unsigned value, but keeps the sign on written data."),
 	WeightedSubtract = 14 UMETA(DisplayName = "Weighted Subtract", ToolTip="Substraction of all the data, weighted"),
 	CopyOther        = 15 UMETA(DisplayName = "Copy (Source)", ToolTip="Copy source data (first value)"),
+	Hash             = 16 UMETA(DisplayName = "Hash", ToolTip="Combine the values into a hash"),
+	UnsignedHash     = 17 UMETA(DisplayName = "Hash (Unsigned)", ToolTip="Combine the values into a hash but sort the values first to create an order-independent hash."),
 };
 
 namespace PCGEx
