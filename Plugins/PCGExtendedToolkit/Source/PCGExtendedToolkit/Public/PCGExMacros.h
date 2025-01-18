@@ -181,6 +181,12 @@ FPCGElementPtr UPCGEx##_NAME##Settings::CreateElement() const{	return MakeShared
 #define PCGEX_CHECK_WORK_PERMIT(_RET) if(!WorkPermit.IsValid()){return _RET;}
 #define PCGEX_CHECK_WORK_PERMIT_OR(_OR, _RET) if(!WorkPermit.IsValid() || _OR){return _RET;}
 
+#define PCGEX_GET_OPTION_STATE(_OPTION, _DEFAULT)\
+switch (_OPTION){ \
+default: case EPCGExOptionState::Default: return GetDefault<UPCGExGlobalSettings>()->_DEFAULT; \
+case EPCGExOptionState::Enabled: return true; \
+case EPCGExOptionState::Disabled: return false; }
+
 #define PCGEX_TYPED_CONTEXT_AND_SETTINGS(_NAME) FPCGEx##_NAME##Context* Context = static_cast<FPCGEx##_NAME##Context*>(ExecutionContext); const UPCGEx##_NAME##Settings* Settings = Context->GetInputSettings<UPCGEx##_NAME##Settings>(); check(Settings);
 
 #if WITH_EDITOR

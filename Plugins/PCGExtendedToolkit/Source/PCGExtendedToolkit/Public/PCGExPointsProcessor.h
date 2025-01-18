@@ -68,7 +68,7 @@ public:
 	virtual bool RequiresPointFilters() const { return false; }
 
 	bool SupportsPointFilters() const { return !GetPointFilterPin().IsNone(); }
-	
+
 	/** Forces execution on main thread. Work is still chunked. Turning this off ensure linear order of operations, and, in most case, determinism.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, DisplayName="Do Async Processing (Debug)", AdvancedDisplay))
 	bool bDoAsyncProcessing = true;
@@ -77,17 +77,17 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay, EditCondition="bDoAsyncProcessing"))
 	EPCGExAsyncPriority WorkPriority = EPCGExAsyncPriority::Default;
 
-	/** Cache the results of this node. Can yield unexpected result in certain cases.*/
+	/** Cache the results of this node. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
-	EPCGExCachingBehavior CachingBehavior = EPCGExCachingBehavior::Default;
-		
+	EPCGExOptionState CacheData = EPCGExOptionState::Default;
+
 	/** Flatten the output of this node.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
 	bool bFlattenOutput = false;
 
 	/** Whether scoped attribute read is enabled or not. Disabling this on small dataset may greatly improve performance. It's enabled by default for legacy reasons. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
-	bool bScopedAttributeGet = true;
+	EPCGExOptionState ScopedAttributeGet = EPCGExOptionState::Default;
 
 	/** If the node registers consumable attributes, these will be deleted from the output data. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Cleanup", meta=(PCG_NotOverridable))
@@ -110,6 +110,7 @@ public:
 protected:
 	virtual bool IsCacheable() const { return false; }
 	virtual bool ShouldCache() const;
+	virtual bool WantsScopedAttributeGet() const;
 };
 
 struct PCGEXTENDEDTOOLKIT_API FPCGExPointsProcessorContext : FPCGExContext

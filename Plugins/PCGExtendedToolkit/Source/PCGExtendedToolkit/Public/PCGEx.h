@@ -38,11 +38,11 @@
 #endif
 
 UENUM()
-enum class EPCGExCachingBehavior : uint8
+enum class EPCGExOptionState : uint8
 {
 	Default  = 0 UMETA(DisplayName = "Default", Tooltip="Uses the default value selected in settings"),
-	Enabled  = 1 UMETA(DisplayName = "Enabled", Tooltip="Caching of this node is enabled, if possible."),
-	Disabled = 2 UMETA(DisplayName = "Disabled", Tooltip="Caching of this node is disabled, if possible.")
+	Enabled  = 1 UMETA(DisplayName = "Enabled", Tooltip="Option is enabled, if supported."),
+	Disabled = 2 UMETA(DisplayName = "Disabled", Tooltip="Option is disabled, if supported.")
 };
 
 UENUM()

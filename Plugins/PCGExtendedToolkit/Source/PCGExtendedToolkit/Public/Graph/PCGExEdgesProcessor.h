@@ -44,7 +44,9 @@ public:
 
 	/** Whether scoped attribute read is enabled or not. Disabling this on small dataset may greatly improve performance. It's enabled by default for legacy reasons. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
-	bool bScopedIndexLookupBuild = false;
+	EPCGExOptionState ScopedIndexLookupBuild = EPCGExOptionState::Default;
+
+	bool WantsScopedIndexLookupBuild() const;
 };
 
 struct PCGEXTENDEDTOOLKIT_API FPCGExEdgesProcessorContext : FPCGExPointsProcessorContext
@@ -103,6 +105,7 @@ protected:
 	bool bScopedIndexLookupBuild = false;
 	bool bHasValidHeuristics = false;
 
+	bool bSkipClusterBatchCompletionStep = false;
 	bool bDoClusterBatchWritingStep = false;
 
 	bool bClusterRequiresHeuristics = false;
@@ -122,6 +125,7 @@ protected:
 
 		bBatchProcessingEnabled = false;
 		bClusterRequiresHeuristics = true;
+		bSkipClusterBatchCompletionStep = false;
 		bDoClusterBatchWritingStep = false;
 		bBuildEndpointsLookup = false;
 
@@ -150,6 +154,11 @@ protected:
 			if (NewBatch->bRequiresWriteStep)
 			{
 				bDoClusterBatchWritingStep = true;
+			}
+
+			if (NewBatch->bSkipCompletion)
+			{
+				bSkipClusterBatchCompletionStep = true;
 			}
 
 			if (NewBatch->RequiresHeuristics())

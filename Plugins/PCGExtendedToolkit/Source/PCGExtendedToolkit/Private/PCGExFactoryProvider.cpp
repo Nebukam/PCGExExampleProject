@@ -74,17 +74,7 @@ bool UPCGExFactoryProviderSettings::GetPinExtraIcon(const UPCGPin* InPin, FName&
 bool UPCGExFactoryProviderSettings::ShouldCache() const
 {
 	if (!IsCacheable()) { return false; }
-	
-	switch (CachingBehavior)
-	{
-	default:
-	case EPCGExCachingBehavior::Default:
-		return GetDefault<UPCGExGlobalSettings>()->bDefaultCacheBehaviorValue;
-	case EPCGExCachingBehavior::Enabled:
-		return true;
-	case EPCGExCachingBehavior::Disabled:
-		return false;
-	}
+	PCGEX_GET_OPTION_STATE(CachingBehavior, bDefaultCacheNodeOutput)
 }
 
 FPCGExFactoryProviderContext::~FPCGExFactoryProviderContext()

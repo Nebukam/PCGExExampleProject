@@ -328,7 +328,7 @@ namespace PCGExConnectPoints
 
 	void FProcessor::CompleteWork()
 	{
-		DistributedEdgesSet->ForEach([this](const TSet<uint64>& Edges) { GraphBuilder->Graph->InsertEdgesUnsafe(Edges, -1); });
+		DistributedEdgesSet->ForEach([this](const TSet<uint64>& Edges) { GraphBuilder->Graph->InsertEdges_Unsafe(Edges, -1); });
 		DistributedEdgesSet.Reset();
 
 		GraphBuilder->CompileAsync(AsyncManager, false);

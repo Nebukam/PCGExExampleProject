@@ -15,6 +15,11 @@ PCGExData::EIOInit UPCGExEdgesProcessorSettings::GetEdgeOutputInitMode() const {
 
 bool UPCGExEdgesProcessorSettings::GetMainAcceptMultipleData() const { return true; }
 
+bool UPCGExEdgesProcessorSettings::WantsScopedIndexLookupBuild() const
+{
+	PCGEX_GET_OPTION_STATE(ScopedIndexLookupBuild, bDefaultScopedIndexLookupBuild)
+}
+
 FPCGExEdgesProcessorContext::~FPCGExEdgesProcessorContext()
 {
 	PCGEX_TERMINATE_ASYNC
@@ -141,7 +146,11 @@ bool FPCGExEdgesProcessorContext::ProcessClusters(const PCGEx::ContextState Next
 		PCGEX_ON_ASYNC_STATE_READY_INTERNAL(PCGExClusterMT::MTState_ClusterProcessing)
 		{
 			SetAsyncState(PCGExClusterMT::MTState_ClusterCompletingWork);
-			CurrentBatch->CompleteWork();
+			if (!CurrentBatch->bSkipCompletion)
+			{
+				CurrentBatch->CompleteWork();
+				return false;
+			}
 		}
 
 		PCGEX_ON_ASYNC_STATE_READY_INTERNAL(PCGExClusterMT::MTState_ClusterCompletingWork)
@@ -154,8 +163,9 @@ bool FPCGExEdgesProcessorContext::ProcessClusters(const PCGEx::ContextState Next
 		PCGEX_ON_ASYNC_STATE_READY_INTERNAL(PCGExClusterMT::MTState_ClusterProcessing)
 		{
 			ClusterProcessing_InitialProcessingDone();
+
 			SetAsyncState(PCGExClusterMT::MTState_ClusterCompletingWork);
-			CompleteBatches(Batches);
+			if (!bSkipClusterBatchCompletionStep) { CompleteBatches(Batches); }
 		}
 
 		PCGEX_ON_ASYNC_STATE_READY_INTERNAL(PCGExClusterMT::MTState_ClusterCompletingWork)
@@ -398,7 +408,7 @@ FPCGExContext* FPCGExEdgesProcessorElement::InitializeContext(
 
 	PCGEX_CONTEXT_AND_SETTINGS(EdgesProcessor)
 
-	Context->bScopedIndexLookupBuild = Settings->bScopedIndexLookupBuild;
+	Context->bScopedIndexLookupBuild = Settings->WantsScopedIndexLookupBuild();
 
 	return Context;
 }

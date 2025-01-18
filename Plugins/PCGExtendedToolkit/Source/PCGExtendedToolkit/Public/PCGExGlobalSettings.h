@@ -18,7 +18,6 @@ enum class EPCGExAsyncPriority : uint8
 	BackgroundHigh   = 3 UMETA(DisplayName = "BackgroundHigh", ToolTip="..."),
 	BackgroundNormal = 4 UMETA(DisplayName = "BackgroundNormal", ToolTip="..."),
 	BackgroundLow    = 5 UMETA(DisplayName = "BackgroundLow", ToolTip="..."),
-	Count            = 6 UMETA(DisplayName = "Count", ToolTip="...")
 };
 
 UENUM()
@@ -67,17 +66,24 @@ class /*PCGEXTENDEDTOOLKIT_API*/ UPCGExGlobalSettings : public UObject
 	GENERATED_BODY()
 
 public:
+	/** Value applied by default to node caching when `Default` is selected -- note that some nodes may stop working as expected when working with cached data.*/
+	UPROPERTY(EditAnywhere, config, Category = "Performance|Defaults")
+	bool bDefaultCacheNodeOutput = false;
+
 	/** Value applied by default to node caching when `Default` is selected*/
-	UPROPERTY(EditAnywhere, config, Category = Performance, meta=(ClampMin=1))
-	bool bDefaultCacheBehaviorValue = true;
+	UPROPERTY(EditAnywhere, config, Category = "Performance|Defaults")
+	bool bDefaultScopedAttributeGet = true;
 	
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Cluster", meta=(ClampMin=1))
 	int32 SmallClusterSize = 256;
 
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Cluster", meta=(ClampMin=1))
-	int32 ClusterDefaultBatchChunkSize = 512;
+	int32 ClusterDefaultBatchChunkSize = 256;
 	int32 GetClusterBatchChunkSize(const int32 In = -1) const { return In <= -1 ? ClusterDefaultBatchChunkSize : In; }
 
+	UPROPERTY(EditAnywhere, config, Category = "Performance|Cluster")
+	bool bDefaultScopedIndexLookupBuild = false;
+	
 	/** Allow caching of clusters */
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Cluster")
 	bool bCacheClusters = true;
@@ -91,7 +97,7 @@ public:
 	bool IsSmallPointSize(const int32 InNum) const { return InNum <= SmallPointsSize; }
 
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Points", meta=(ClampMin=1))
-	int32 PointsDefaultBatchChunkSize = 512;
+	int32 PointsDefaultBatchChunkSize = 256;
 	int32 GetPointsBatchChunkSize(const int32 In = -1) const { return In <= -1 ? PointsDefaultBatchChunkSize : In; }
 
 	UPROPERTY(EditAnywhere, config, Category = "Performance|Async")

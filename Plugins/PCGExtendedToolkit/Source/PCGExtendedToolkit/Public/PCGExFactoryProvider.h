@@ -150,7 +150,7 @@ public:
 
 	/** Cache the results of this node. Can yield unexpected result in certain cases.*/
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Performance, meta=(PCG_NotOverridable, AdvancedDisplay))
-	EPCGExCachingBehavior CachingBehavior = EPCGExCachingBehavior::Default;
+	EPCGExOptionState CachingBehavior = EPCGExOptionState::Default;
 	
 	/** Whether this factory can register consumable attributes or not. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Cleanup", meta = (PCG_NotOverridable))
