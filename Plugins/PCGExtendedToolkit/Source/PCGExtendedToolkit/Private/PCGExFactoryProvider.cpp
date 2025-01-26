@@ -90,6 +90,8 @@ void FPCGExFactoryProviderContext::LaunchDeferredCallback(PCGExMT::FSimpleCallba
 
 UPCGExFactoryData* UPCGExFactoryProviderSettings::CreateFactory(FPCGExContext* InContext, UPCGExFactoryData* InFactory) const
 {
+	InFactory->bCleanupConsumableAttributes = bCleanupConsumableAttributes;
+	InFactory->bQuietMissingInputError = bQuietMissingInputError;
 	return InFactory;
 }
 
