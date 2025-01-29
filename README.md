@@ -1,14 +1,16 @@
-![5.5.2](https://img.shields.io/badge/5.5.1-darkgreen)
+![5.5.2](https://img.shields.io/badge/5.5.2-darkgreen)
 # PCGEx Example Project
 
 ![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
 
 # What is it?
- This is a lightweight Unreal 5.5.2 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
+This is a lightweight Unreal 5.5.2 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
 
- > This project is always being updated, come back regularily!
+⚠ **IMPORTANT** ⚠ : You need to have the [FAB plugin](https://www.fab.com/listings/3f0bea1c-7406-4441-951b-8b2ca155f624) installed, or install the plugin from the source repo & compile it from source.
 
-![image](https://github.com/user-attachments/assets/426a1f07-28de-4f8a-ad46-58a210af1b95)
+> This project is always being updated, come back regularily!
+
+![image](https://github.com/user-attachments/assets/8228cb69-8354-4f8e-9d60-fa4aaaf2023d)
 
 
 
