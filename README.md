@@ -1,10 +1,10 @@
-![5.5](https://img.shields.io/badge/5.5.1-darkgreen)
+![5.5.2](https://img.shields.io/badge/5.5.1-darkgreen)
 # PCGEx Example Project
 
 ![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
 
 # What is it?
- This is a lightweight Unreal 5.5 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
+ This is a lightweight Unreal 5.5.2 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
 
  > This project is always being updated, come back regularily!
 
