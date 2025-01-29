@@ -1,4 +1,4 @@
-![5.5.2](https://img.shields.io/badge/5.5.1-darkgreen)
+![5.5.2](https://img.shields.io/badge/5.5.2-darkgreen)
 # PCGEx Example Project
 
 ![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
