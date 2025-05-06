@@ -4,7 +4,7 @@
 ![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
 
 # What is it?
-This is a lightweight Unreal 5.5.2 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
+This is a lightweight Unreal 5.5.4 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
 
 ⚠ **IMPORTANT** ⚠ : You need to have the [FAB plugin](https://www.fab.com/listings/3f0bea1c-7406-4441-951b-8b2ca155f624) installed, or install the plugin from the source repo & compile it from source.
 
