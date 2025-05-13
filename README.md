@@ -1,6 +1,8 @@
-![5.5.2](https://img.shields.io/badge/5.5.2-darkgreen)
-# PCGEx Example Project
-
+![5.5.4](https://img.shields.io/badge/5.5.4-darkgreen)
+# PCGEx Example Project - 5.5.4
+> This is a cutoff branch, meaning I stopped maintaining it after the official 5.6 release, in order to avoid maintaining the same assets in multiple projects.
+  
+  
 ![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
 
 # What is it?
@@ -11,7 +13,6 @@ This is a lightweight Unreal 5.5.4 Project showcasing various capabilities of [P
 > This project is always being updated, come back regularily!
 
 ![image](https://github.com/user-attachments/assets/8228cb69-8354-4f8e-9d60-fa4aaaf2023d)
-
 
 
 ## Content Structure
