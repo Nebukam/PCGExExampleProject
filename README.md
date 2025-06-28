@@ -1,7 +1,7 @@
 ![5.6](https://img.shields.io/badge/5.6-darkgreen)
 # PCGEx Example Project
 
-![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/main/Resources/Icon128.png)
+![PCGEx](https://raw.githubusercontent.com/Nebukam/PCGExtendedToolkit/refs/heads/docs/_sources/smol-logo.png)
 
 # What is it?
 This is a lightweight Unreal 5.6 Project showcasing various capabilities of [PCGExtendedToolkit](https://github.com/Nebukam/PCGExtendedToolkit).  
