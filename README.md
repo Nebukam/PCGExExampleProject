@@ -25,6 +25,9 @@ This is a lightweight Unreal 5.6 Project showcasing various capabilities of [PCG
 #### Contouring
 ![image](https://github.com/user-attachments/assets/c0489916-ff62-4e57-b6ba-74a9b1db634d)
 
+#### Grid distribution/partitioning into tighly packed rooms
+![image](https://github.com/user-attachments/assets/4188e6a8-04c0-4ce2-9ffc-0568a16c3010)
+
 #### Stamping & merging clusters
 ![image](https://github.com/user-attachments/assets/cec3134d-eea4-4a75-a43a-bcbb0ecf6ad7)
 
